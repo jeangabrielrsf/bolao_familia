@@ -9,7 +9,7 @@ interface ParticipantCardProps {
 
 export function ParticipantCard({ id, nome, fotoUrl }: ParticipantCardProps) {
   return (
-    <Link href={`/participantes/${id}`}>
+    <Link href={`/participantes/${id}`} className="rounded-lg focus:ring-2 focus:ring-primary focus:outline-none">
       <Card padding="sm" className="flex flex-col items-center gap-3 hover:shadow-md transition-shadow cursor-pointer">
         <div className="w-20 h-20 rounded-full overflow-hidden bg-gray-200 flex items-center justify-center">
           {fotoUrl ? (

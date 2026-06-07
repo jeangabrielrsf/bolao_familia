@@ -2,10 +2,10 @@ import { notFound } from 'next/navigation'
 import { getParticipanteById } from '@/lib/db/queries/participantes'
 import { getRanking } from '@/lib/db/queries/ranking'
 import { getConfiguracao } from '@/lib/db/queries/config'
-import { calcularPontosJogo } from '@/lib/utils/helpers'
 import { Card } from '@/components/ui/Card'
 import { Badge } from '@/components/ui/Badge'
 import { Table, TableRow, TableCell } from '@/components/ui/Table'
+import { PalpitesTable } from '@/components/public/PalpitesTable'
 
 export const dynamic = 'force-dynamic'
 
@@ -88,45 +88,7 @@ export default async function ParticipanteProfilePage({
           {Array.from(gruposMap.entries())
             .sort(([a], [b]) => a.localeCompare(b))
             .map(([grupo, palpites]) => (
-              <Card key={grupo} padding="none">
-                <div className="bg-primary text-white px-4 py-2 rounded-t-lg">
-                  <h3 className="font-semibold">Grupo {grupo}</h3>
-                </div>
-                <Table headers={['Jogo', 'Data', 'Palpite', 'Resultado', 'Pts']}>
-                  {palpites.map((palpite) => {
-                    const finalizado = palpite.jogo.status === 'finalizado'
-                    const resultadoA = palpite.jogo.resultadoA
-                    const resultadoB = palpite.jogo.resultadoB
-                    let ptsJogo = 0
-                    if (finalizado && resultadoA !== null && resultadoB !== null) {
-                      ptsJogo = calcularPontosJogo(
-                        palpite.placarA, palpite.placarB,
-                        resultadoA, resultadoB,
-                        config
-                      ).pontos
-                    }
-                    const dataFormatada = palpite.jogo.dataHora.toLocaleDateString('pt-BR', {
-                      day: '2-digit',
-                      month: '2-digit',
-                    })
-                    return (
-                      <TableRow key={palpite.id}>
-                        <TableCell>{palpite.jogo.timeA} vs {palpite.jogo.timeB}</TableCell>
-                        <TableCell>{dataFormatada}</TableCell>
-                        <TableCell>{palpite.placarA} x {palpite.placarB}</TableCell>
-                        <TableCell>
-                          {finalizado ? `${resultadoA} x ${resultadoB}` : '-'}
-                        </TableCell>
-                        <TableCell>
-                          {finalizado ? (
-                            <Badge variant={ptsJogo > 0 ? 'success' : 'default'}>{ptsJogo}</Badge>
-                          ) : '-'}
-                        </TableCell>
-                      </TableRow>
-                    )
-                  })}
-                </Table>
-              </Card>
+              <PalpitesTable key={grupo} titulo={`Grupo ${grupo}`} palpites={palpites} config={config} />
             ))}
         </section>
       )}
@@ -135,45 +97,7 @@ export default async function ParticipanteProfilePage({
         <section className="space-y-4">
           <h2 className="text-xl font-bold text-foreground">Palpites - Eliminatórias</h2>
           {Array.from(fasesMap.entries()).map(([fase, palpites]) => (
-            <Card key={fase} padding="none">
-              <div className="bg-primary text-white px-4 py-2 rounded-t-lg">
-                <h3 className="font-semibold">{faseLabels[fase] ?? fase}</h3>
-              </div>
-              <Table headers={['Jogo', 'Data', 'Palpite', 'Resultado', 'Pts']}>
-                {palpites.map((palpite) => {
-                  const finalizado = palpite.jogo.status === 'finalizado'
-                  const resultadoA = palpite.jogo.resultadoA
-                  const resultadoB = palpite.jogo.resultadoB
-                  let ptsJogo = 0
-                  if (finalizado && resultadoA !== null && resultadoB !== null) {
-                    ptsJogo = calcularPontosJogo(
-                      palpite.placarA, palpite.placarB,
-                      resultadoA, resultadoB,
-                      config
-                    ).pontos
-                  }
-                  const dataFormatada = palpite.jogo.dataHora.toLocaleDateString('pt-BR', {
-                    day: '2-digit',
-                    month: '2-digit',
-                  })
-                  return (
-                    <TableRow key={palpite.id}>
-                      <TableCell>{palpite.jogo.timeA} vs {palpite.jogo.timeB}</TableCell>
-                      <TableCell>{dataFormatada}</TableCell>
-                      <TableCell>{palpite.placarA} x {palpite.placarB}</TableCell>
-                      <TableCell>
-                        {finalizado ? `${resultadoA} x ${resultadoB}` : '-'}
-                      </TableCell>
-                      <TableCell>
-                        {finalizado ? (
-                          <Badge variant={ptsJogo > 0 ? 'success' : 'default'}>{ptsJogo}</Badge>
-                        ) : '-'}
-                      </TableCell>
-                    </TableRow>
-                  )
-                })}
-              </Table>
-            </Card>
+            <PalpitesTable key={fase} titulo={faseLabels[fase] ?? fase} palpites={palpites} config={config} />
           ))}
         </section>
       )}
