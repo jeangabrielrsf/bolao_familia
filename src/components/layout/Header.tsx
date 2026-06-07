@@ -13,12 +13,14 @@ const links = [
 
 export function Header() {
   const [isAdmin, setIsAdmin] = useState(false)
+  const [authLoaded, setAuthLoaded] = useState(false)
 
   useEffect(() => {
     fetch('/api/admin/auth')
       .then((res) => res.json())
       .then((data) => setIsAdmin(data.autenticado))
       .catch(() => setIsAdmin(false))
+      .finally(() => setAuthLoaded(true))
   }, [])
 
   return (
@@ -38,7 +40,7 @@ export function Header() {
                 {link.label}
               </Link>
             ))}
-            {isAdmin && (
+            {authLoaded && isAdmin && (
               <Link
                 href="/admin"
                 className="px-3 py-2 rounded-md text-sm font-medium bg-secondary text-primary-dark hover:bg-secondary-dark transition-colors"

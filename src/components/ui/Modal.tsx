@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, type ReactNode } from 'react'
+import { useEffect, useRef, useCallback, type ReactNode } from 'react'
 import { Button } from './Button'
 
 interface ModalProps {
@@ -13,6 +13,24 @@ interface ModalProps {
 
 export function Modal({ open, onClose, title, children, footer }: ModalProps) {
   const overlayRef = useRef<HTMLDivElement>(null)
+  const modalRef = useRef<HTMLDivElement>(null)
+
+  const trapFocus = useCallback((e: KeyboardEvent) => {
+    if (e.key !== 'Tab' || !modalRef.current) return
+    const focusable = modalRef.current.querySelectorAll<HTMLElement>(
+      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+    )
+    if (focusable.length === 0) return
+    const first = focusable[0]
+    const last = focusable[focusable.length - 1]
+    if (e.shiftKey && document.activeElement === first) {
+      e.preventDefault()
+      last.focus()
+    } else if (!e.shiftKey && document.activeElement === last) {
+      e.preventDefault()
+      first.focus()
+    }
+  }, [])
 
   useEffect(() => {
     if (!open) return
@@ -20,12 +38,15 @@ export function Modal({ open, onClose, title, children, footer }: ModalProps) {
       if (e.key === 'Escape') onClose()
     }
     document.addEventListener('keydown', handleEsc)
+    document.addEventListener('keydown', trapFocus)
     document.body.style.overflow = 'hidden'
+    modalRef.current?.focus()
     return () => {
       document.removeEventListener('keydown', handleEsc)
+      document.removeEventListener('keydown', trapFocus)
       document.body.style.overflow = ''
     }
-  }, [open, onClose])
+  }, [open, onClose, trapFocus])
 
   if (!open) return null
 
@@ -37,9 +58,16 @@ export function Modal({ open, onClose, title, children, footer }: ModalProps) {
         if (e.target === overlayRef.current) onClose()
       }}
     >
-      <div className="bg-background rounded-lg shadow-xl w-full max-w-lg max-h-[90vh] flex flex-col">
+      <div
+        ref={modalRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="modal-title"
+        tabIndex={-1}
+        className="bg-background rounded-lg shadow-xl w-full max-w-lg max-h-[90vh] flex flex-col outline-none"
+      >
         <div className="flex items-center justify-between px-6 py-4 border-b border-border">
-          <h2 className="text-lg font-semibold text-foreground">{title}</h2>
+          <h2 id="modal-title" className="text-lg font-semibold text-foreground">{title}</h2>
           <Button variant="ghost" size="sm" onClick={onClose} aria-label="Fechar">
             ✕
           </Button>
