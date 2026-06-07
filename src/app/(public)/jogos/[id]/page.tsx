@@ -4,20 +4,12 @@ import { getJogoById } from '@/lib/db/queries/jogos'
 import { getConfiguracao } from '@/lib/db/queries/config'
 import { getRanking } from '@/lib/db/queries/ranking'
 import { calcularPontosJogo } from '@/lib/utils/helpers'
+import { FASE_LABELS } from '@/lib/utils/constants'
 import { Card } from '@/components/ui/Card'
 import { Badge } from '@/components/ui/Badge'
 import { Table, TableRow, TableCell } from '@/components/ui/Table'
 
 export const dynamic = 'force-dynamic'
-
-const faseLabels: Record<string, string> = {
-  grupos: 'Fase de Grupos',
-  oitavas: 'Oitavas de Final',
-  quartas: 'Quartas de Final',
-  semifinal: 'Semifinal',
-  terceiro: 'Disputa pelo 3º Lugar',
-  final: 'Final',
-}
 
 const statusLabels: Record<string, string> = {
   agendado: 'Agendado',
@@ -45,7 +37,7 @@ export default async function JogoDetailPage({
 
   if (!jogo) notFound()
 
-  const rankingMap = new Map(ranking.map((r) => [r.participanteId, r]))
+  const rankingMap = new Map(ranking.map((r, idx) => [r.participanteId, { ...r, posicao: idx + 1 }]))
 
   const palpitesComPontos = jogo.palpites.map((palpite) => {
     let pontos = 0
@@ -64,7 +56,7 @@ export default async function JogoDetailPage({
     }
 
     const rankingEntry = rankingMap.get(palpite.participanteId)
-    const posicaoRanking = rankingEntry ? ranking.indexOf(rankingEntry) + 1 : null
+    const posicaoRanking = rankingEntry?.posicao ?? null
 
     return {
       ...palpite,
@@ -103,7 +95,7 @@ export default async function JogoDetailPage({
           <div className="flex items-center gap-2">
             {jogo.grupo && <Badge variant="info">Grupo {jogo.grupo}</Badge>}
             {!jogo.grupo && (
-              <Badge variant="info">{faseLabels[jogo.fase] ?? jogo.fase}</Badge>
+              <Badge variant="info">{FASE_LABELS[jogo.fase] ?? jogo.fase}</Badge>
             )}
             <Badge variant={statusVariants[jogo.status] ?? 'default'}>
               {statusLabels[jogo.status] ?? jogo.status}

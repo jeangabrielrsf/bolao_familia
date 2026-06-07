@@ -1,18 +1,11 @@
+import Link from 'next/link'
 import { getTodosJogos } from '@/lib/db/queries/jogos'
 import { GameCard } from '@/components/public/GameCard'
 import { Card } from '@/components/ui/Card'
 import { Badge } from '@/components/ui/Badge'
+import { FASE_LABELS } from '@/lib/utils/constants'
 
 export const dynamic = 'force-dynamic'
-
-const faseLabels: Record<string, string> = {
-  grupos: 'Fase de Grupos',
-  oitavas: 'Oitavas de Final',
-  quartas: 'Quartas de Final',
-  semifinal: 'Semifinal',
-  terceiro: 'Disputa pelo 3º Lugar',
-  final: 'Final',
-}
 
 const faseOrder = ['grupos', 'oitavas', 'quartas', 'semifinal', 'terceiro', 'final']
 
@@ -50,7 +43,7 @@ export default async function JogosPage() {
           return (
             <section key={fase} className="space-y-6">
               <div className="flex items-center gap-3">
-                <h2 className="text-xl font-bold text-foreground">{faseLabels[fase]}</h2>
+                <h2 className="text-xl font-bold text-foreground">{FASE_LABELS[fase]}</h2>
                 <Badge variant="default">{jogosDaFase.length} jogos</Badge>
               </div>
 
@@ -61,17 +54,18 @@ export default async function JogosPage() {
                   </h3>
                   <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                     {jogosDoGrupo.map((jogo) => (
-                      <GameCard
-                        key={jogo.id}
-                        timeA={jogo.timeA}
-                        timeB={jogo.timeB}
-                        dataHora={jogo.dataHora}
-                        grupo={jogo.grupo}
-                        fase={jogo.fase}
-                        resultadoA={jogo.resultadoA}
-                        resultadoB={jogo.resultadoB}
-                        status={jogo.status}
-                      />
+                      <Link key={jogo.id} href={`/jogos/${jogo.id}`}>
+                        <GameCard
+                          timeA={jogo.timeA}
+                          timeB={jogo.timeB}
+                          dataHora={jogo.dataHora}
+                          grupo={jogo.grupo}
+                          fase={jogo.fase}
+                          resultadoA={jogo.resultadoA}
+                          resultadoB={jogo.resultadoB}
+                          status={jogo.status}
+                        />
+                      </Link>
                     ))}
                   </div>
                 </div>
@@ -83,23 +77,24 @@ export default async function JogosPage() {
         return (
           <section key={fase} className="space-y-4">
             <div className="flex items-center gap-3">
-              <h2 className="text-xl font-bold text-foreground">{faseLabels[fase]}</h2>
+              <h2 className="text-xl font-bold text-foreground">{FASE_LABELS[fase]}</h2>
               <Badge variant="default">{jogosDaFase.length} jogos</Badge>
             </div>
 
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {jogosDaFase.map((jogo) => (
-                <GameCard
-                  key={jogo.id}
-                  timeA={jogo.timeA}
-                  timeB={jogo.timeB}
-                  dataHora={jogo.dataHora}
-                  grupo={jogo.grupo}
-                  fase={jogo.fase}
-                  resultadoA={jogo.resultadoA}
-                  resultadoB={jogo.resultadoB}
-                  status={jogo.status}
-                />
+                <Link key={jogo.id} href={`/jogos/${jogo.id}`}>
+                  <GameCard
+                    timeA={jogo.timeA}
+                    timeB={jogo.timeB}
+                    dataHora={jogo.dataHora}
+                    grupo={jogo.grupo}
+                    fase={jogo.fase}
+                    resultadoA={jogo.resultadoA}
+                    resultadoB={jogo.resultadoB}
+                    status={jogo.status}
+                  />
+                </Link>
               ))}
             </div>
           </section>

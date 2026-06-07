@@ -27,3 +27,12 @@ export const TIMES_VALIDOS = [
 ] as const
 
 export const GRUPOS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L'] as const
+
+export const FASE_LABELS: Record<string, string> = {
+  grupos: 'Fase de Grupos',
+  oitavas: 'Oitavas de Final',
+  quartas: 'Quartas de Final',
+  semifinal: 'Semifinal',
+  terceiro: 'Disputa pelo 3º Lugar',
+  final: 'Final',
+}

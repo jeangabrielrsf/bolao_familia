@@ -1,5 +1,6 @@
 import { Card } from '@/components/ui/Card'
 import { Badge } from '@/components/ui/Badge'
+import { FASE_LABELS } from '@/lib/utils/constants'
 
 interface GameCardProps {
   timeA: string
@@ -10,15 +11,6 @@ interface GameCardProps {
   resultadoA: number | null
   resultadoB: number | null
   status: string
-}
-
-const faseLabels: Record<string, string> = {
-  grupos: 'Fase de Grupos',
-  oitavas: 'Oitavas',
-  quartas: 'Quartas',
-  semifinal: 'Semifinal',
-  terceiro: '3º Lugar',
-  final: 'Final',
 }
 
 export function GameCard({ timeA, timeB, dataHora, grupo, fase, resultadoA, resultadoB, status }: GameCardProps) {
@@ -36,7 +28,7 @@ export function GameCard({ timeA, timeB, dataHora, grupo, fase, resultadoA, resu
     <Card padding="sm" className="flex flex-col gap-3">
       <div className="flex items-center justify-between">
         {grupo && <Badge variant="info">Grupo {grupo}</Badge>}
-        {!grupo && <Badge variant="default">{faseLabels[fase] ?? fase}</Badge>}
+        {!grupo && <Badge variant="default">{FASE_LABELS[fase] ?? fase}</Badge>}
         <span className="text-xs text-muted">
           {dataFormatada} &bull; {horaFormatada}
         </span>

@@ -6,6 +6,7 @@ import { Card } from '@/components/ui/Card'
 import { Badge } from '@/components/ui/Badge'
 import { Table, TableRow, TableCell } from '@/components/ui/Table'
 import { PalpitesTable } from '@/components/public/PalpitesTable'
+import { FASE_LABELS } from '@/lib/utils/constants'
 
 export const dynamic = 'force-dynamic'
 
@@ -15,15 +16,6 @@ const tipoExtraLabels: Record<string, string> = {
   vice: 'Vice-campeão',
   terceiro: '3º Colocado',
   quarto: '4º Colocado',
-}
-
-const faseLabels: Record<string, string> = {
-  grupos: 'Fase de Grupos',
-  oitavas: 'Oitavas',
-  quartas: 'Quartas',
-  semifinal: 'Semifinal',
-  terceiro: '3º Lugar',
-  final: 'Final',
 }
 
 export default async function ParticipanteProfilePage({
@@ -97,7 +89,7 @@ export default async function ParticipanteProfilePage({
         <section className="space-y-4">
           <h2 className="text-xl font-bold text-foreground">Palpites - Eliminatórias</h2>
           {Array.from(fasesMap.entries()).map(([fase, palpites]) => (
-            <PalpitesTable key={fase} titulo={faseLabels[fase] ?? fase} palpites={palpites} config={config} />
+            <PalpitesTable key={fase} titulo={FASE_LABELS[fase] ?? fase} palpites={palpites} config={config} />
           ))}
         </section>
       )}
