@@ -8,6 +8,7 @@ import type { UploadResult } from '@/lib/utils/types'
 
 const EXCEL_MIME = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
 const IMAGE_MIMES = ['image/jpeg', 'image/png', 'image/webp']
+const MAX_FILE_SIZE = 10 * 1024 * 1024
 
 export async function POST(request: NextRequest) {
   const authError = await requireAdmin(request)
@@ -20,6 +21,10 @@ export async function POST(request: NextRequest) {
 
     if (!file) {
       return NextResponse.json({ error: 'Arquivo ausente' }, { status: 400 })
+    }
+
+    if (file.size > MAX_FILE_SIZE) {
+      return NextResponse.json({ error: 'Arquivo muito grande (máximo 10MB)' }, { status: 413 })
     }
 
     if (!participanteId || participanteId.trim() === '') {
@@ -50,6 +55,9 @@ export async function POST(request: NextRequest) {
         placarA: p.placarA,
         placarB: p.placarB,
       }))
+      if (mappedPalpites.some(p => !p.jogoId)) {
+        return NextResponse.json({ error: 'Número de palpites da foto excede número de jogos' }, { status: 400 })
+      }
       result = { ...fotoResult, palpites: mappedPalpites }
     }
 
@@ -61,6 +69,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       preview: {
+        participanteId,
         palpites: result.palpites.map((p) => ({ jogoId: p.jogoId, placarA: p.placarA, placarB: p.placarB })),
         extras: result.extras,
         fonte: result.fonte,
@@ -68,7 +77,7 @@ export async function POST(request: NextRequest) {
       validacao,
     })
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Erro interno do servidor'
-    return NextResponse.json({ error: message }, { status: 500 })
+    console.error('Upload error:', error)
+    return NextResponse.json({ error: 'Erro interno do servidor' }, { status: 500 })
   }
 }

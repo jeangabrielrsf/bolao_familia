@@ -1,9 +1,11 @@
 import { createClient } from '@supabase/supabase-js'
 
-const supabase = createClient(
-  process.env.SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_KEY!
-)
+const supabaseUrl = process.env.SUPABASE_URL
+const supabaseKey = process.env.SUPABASE_SERVICE_KEY
+if (!supabaseUrl || !supabaseKey) {
+  throw new Error('Variáveis de ambiente Supabase não configuradas (SUPABASE_URL, SUPABASE_SERVICE_KEY)')
+}
+const supabase = createClient(supabaseUrl, supabaseKey)
 
 export async function uploadFile(bucket: string, path: string, file: Buffer, contentType: string): Promise<string> {
   const { error } = await supabase.storage.from(bucket).upload(path, file, {
