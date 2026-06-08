@@ -238,6 +238,7 @@ describe('parseExcel', () => {
         read: () => ({ SheetNames: [], Sheets: {} }),
       }))
 
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
       const { parseExcel: isolatedParse } = require('../excel-parser')
       expect(() => isolatedParse(Buffer.from([]), makeJogosIds(1))).toThrow('Planilha vazia')
     })

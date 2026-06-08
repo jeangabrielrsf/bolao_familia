@@ -85,6 +85,7 @@ export default function AdminResultadosPage() {
   }, [])
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchJogos()
   }, [fetchJogos])
 

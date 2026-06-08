@@ -45,6 +45,7 @@ export default function AdminParticipantesPage() {
   }, [])
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchParticipantes()
   }, [fetchParticipantes])
 

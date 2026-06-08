@@ -52,6 +52,7 @@ export default function AdminConfigPage() {
   }, [])
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchConfig()
     fetchJogos()
   }, [fetchConfig, fetchJogos])

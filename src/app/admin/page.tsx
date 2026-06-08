@@ -37,6 +37,7 @@ export default async function AdminDashboardPage() {
     getRanking(),
     prisma.uploadLog.count({
       where: {
+        // eslint-disable-next-line react-hooks/purity
         criadoEm: { gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) },
       },
     }),
