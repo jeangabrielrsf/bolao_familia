@@ -80,7 +80,7 @@ export default function AdminJogosPage() {
   function updateSaveState(jogoId: string, partial: Partial<JogoSaveState>) {
     setSaveStates((prev) => ({
       ...prev,
-      [jogoId]: { ...getSaveState(jogoId), ...partial },
+      [jogoId]: { ...(prev[jogoId] || { resultadoA: '', resultadoB: '', saving: false, message: '', messageType: '' }), ...partial },
     }))
   }
 
@@ -118,6 +118,9 @@ export default function AdminJogosPage() {
       const updated = await res.json()
       setJogos((prev) => prev.map((j) => (j.id === updated.id ? updated : j)))
       updateSaveState(jogo.id, { resultadoA: '', resultadoB: '', saving: false, message: 'Salvo!', messageType: 'success' })
+      setTimeout(() => {
+        updateSaveState(jogo.id, { message: '', messageType: '' })
+      }, 3000)
     } catch (err) {
       updateSaveState(jogo.id, {
         saving: false,
@@ -205,7 +208,7 @@ export default function AdminJogosPage() {
                             Resultado: {jogo.resultadoA} x {jogo.resultadoB}
                           </p>
                         )}
-                        {jogo.status !== 'finalizado' && (
+                        {jogo.status === 'agendado' && (
                           <p className="text-sm text-muted italic">A realizar</p>
                         )}
                       </div>
@@ -216,6 +219,7 @@ export default function AdminJogosPage() {
                           <input
                             type="number"
                             min="0"
+                            aria-label={`Resultado ${jogo.timeA}`}
                             className="w-16 px-2 py-1 border border-border rounded-md text-center text-foreground bg-background focus:outline-none focus:ring-2 focus:ring-primary"
                             value={state.resultadoA}
                             onChange={(e) => updateSaveState(jogo.id, { resultadoA: e.target.value })}
@@ -228,6 +232,7 @@ export default function AdminJogosPage() {
                           <input
                             type="number"
                             min="0"
+                            aria-label={`Resultado ${jogo.timeB}`}
                             className="w-16 px-2 py-1 border border-border rounded-md text-center text-foreground bg-background focus:outline-none focus:ring-2 focus:ring-primary"
                             value={state.resultadoB}
                             onChange={(e) => updateSaveState(jogo.id, { resultadoB: e.target.value })}
