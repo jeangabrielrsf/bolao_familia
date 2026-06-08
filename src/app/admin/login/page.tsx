@@ -1,13 +1,11 @@
 'use client'
 
 import { useState, useEffect, type FormEvent } from 'react'
-import { useRouter } from 'next/navigation'
 import { Card } from '@/components/ui/Card'
 import { Input } from '@/components/ui/Input'
 import { Button } from '@/components/ui/Button'
 
 export default function AdminLoginPage() {
-  const router = useRouter()
   const [senha, setSenha] = useState('')
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
@@ -15,7 +13,10 @@ export default function AdminLoginPage() {
 
   useEffect(() => {
     fetch('/api/admin/auth')
-      .then((res) => res.json())
+      .then((res) => {
+        if (!res.ok) throw new Error()
+        return res.json()
+      })
       .then((data) => {
         if (data.autenticado) {
           window.location.href = '/admin'
@@ -55,7 +56,7 @@ export default function AdminLoginPage() {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <p className="text-foreground">Carregando...</p>
+        <p className="text-foreground" aria-live="polite">Carregando...</p>
       </div>
     )
   }
@@ -70,9 +71,10 @@ export default function AdminLoginPage() {
             type="password"
             value={senha}
             onChange={(e) => setSenha(e.target.value)}
+            autoComplete="current-password"
             required
           />
-          {error && <p className="text-sm text-danger">{error}</p>}
+          {error && <p className="text-sm text-danger" role="alert">{error}</p>}
           <Button type="submit" className="w-full" disabled={submitting}>
             {submitting ? 'Entrando...' : 'Entrar'}
           </Button>
