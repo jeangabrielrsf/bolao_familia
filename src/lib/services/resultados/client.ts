@@ -3,17 +3,25 @@ export async function syncResultados() {
     throw new Error('MICROSERVICE_URL não configurada')
   }
 
-  const response = await fetch(`${process.env.MICROSERVICE_URL}/resultados/lote`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-  })
+  const controller = new AbortController()
+  const timeout = setTimeout(() => controller.abort(), 30000)
 
-  if (!response.ok) throw new Error('Falha ao sincronizar resultados')
+  try {
+    const response = await fetch(`${process.env.MICROSERVICE_URL}/resultados/lote`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      signal: controller.signal,
+    })
 
-  return response.json() as Promise<Array<{
-    sofascoreId: string
-    resultadoA: number
-    resultadoB: number
-    status: string
-  }>>
+    if (!response.ok) throw new Error('Falha ao sincronizar resultados')
+
+    return response.json() as Promise<Array<{
+      sofascoreId: string
+      resultadoA: number
+      resultadoB: number
+      status: string
+    }>>
+  } finally {
+    clearTimeout(timeout)
+  }
 }

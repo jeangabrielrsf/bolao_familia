@@ -49,6 +49,15 @@ function formatDateTime(iso: string) {
   })
 }
 
+function groupByFase(jogosList: Jogo[]): Record<Fase, Jogo[]> {
+  const groups: Record<string, Jogo[]> = {}
+  for (const jogo of jogosList) {
+    if (!groups[jogo.fase]) groups[jogo.fase] = []
+    groups[jogo.fase].push(jogo)
+  }
+  return groups as Record<Fase, Jogo[]>
+}
+
 export default function AdminResultadosPage() {
   const [jogos, setJogos] = useState<Jogo[]>([])
   const [loading, setLoading] = useState(true)
@@ -104,15 +113,6 @@ export default function AdminResultadosPage() {
     }
   }
 
-  function groupByFase(jogosList: Jogo[]): Record<Fase, Jogo[]> {
-    const groups: Record<string, Jogo[]> = {}
-    for (const jogo of jogosList) {
-      if (!groups[jogo.fase]) groups[jogo.fase] = []
-      groups[jogo.fase].push(jogo)
-    }
-    return groups as Record<Fase, Jogo[]>
-  }
-
   if (loading) {
     return (
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -137,13 +137,15 @@ export default function AdminResultadosPage() {
 
       {syncError && (
         <Card padding="md">
-          <Badge variant="danger">{syncError}</Badge>
+          <div role="alert">
+            <Badge variant="danger">{syncError}</Badge>
+          </div>
         </Card>
       )}
 
       {syncResults && (
         <Card padding="md">
-          <div className="space-y-4">
+          <div aria-live="polite" className="space-y-4">
             <div className="flex items-center gap-2">
               <Badge variant="success">
                 {syncResults.atualizados} jogo{syncResults.atualizados !== 1 ? 's' : ''} atualizado{syncResults.atualizados !== 1 ? 's' : ''}
@@ -177,7 +179,7 @@ export default function AdminResultadosPage() {
 
       {error && (
         <Card padding="md">
-          <div className="flex items-center gap-2">
+          <div role="alert" className="flex items-center gap-2">
             <Badge variant="danger">{error}</Badge>
             <Button variant="secondary" size="sm" onClick={fetchJogos}>
               Tentar Novamente
