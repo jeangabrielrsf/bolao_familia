@@ -10,8 +10,45 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const { participanteId, palpites, extras, fonte, arquivoUrl, arquivoBase64, arquivoNome, arquivoContentType } = body
 
-    if (!participanteId || !palpites || !extras) {
-      return NextResponse.json({ error: 'Dados obrigatórios ausentes' }, { status: 400 })
+    if (!participanteId || typeof participanteId !== 'string' || participanteId.trim() === '') {
+      return NextResponse.json({ error: 'participanteId inválido' }, { status: 400 })
+    }
+
+    if (!Array.isArray(palpites)) {
+      return NextResponse.json({ error: 'palpites deve ser um array' }, { status: 400 })
+    }
+    for (const p of palpites) {
+      if (!p.jogoId || typeof p.jogoId !== 'string' || p.jogoId.trim() === '') {
+        return NextResponse.json({ error: 'jogoId inválido em palpites' }, { status: 400 })
+      }
+      if (!Number.isInteger(p.placarA) || p.placarA < 0) {
+        return NextResponse.json({ error: 'placarA deve ser um inteiro não negativo' }, { status: 400 })
+      }
+      if (!Number.isInteger(p.placarB) || p.placarB < 0) {
+        return NextResponse.json({ error: 'placarB deve ser um inteiro não negativo' }, { status: 400 })
+      }
+    }
+
+    if (!Array.isArray(extras)) {
+      return NextResponse.json({ error: 'extras deve ser um array' }, { status: 400 })
+    }
+    const validTipos = ['artilheiro', 'campeao', 'vice', 'terceiro', 'quarto'] as const
+    for (const e of extras) {
+      if (!validTipos.includes(e.tipo)) {
+        return NextResponse.json({ error: `tipo inválido em extras: ${e.tipo}` }, { status: 400 })
+      }
+      if (!e.valor || typeof e.valor !== 'string' || e.valor.trim() === '') {
+        return NextResponse.json({ error: 'valor inválido em extras' }, { status: 400 })
+      }
+    }
+
+    if (fonte !== 'excel' && fonte !== 'foto') {
+      return NextResponse.json({ error: 'fonte deve ser "excel" ou "foto"' }, { status: 400 })
+    }
+
+    const participante = await prisma.participante.findUnique({ where: { id: participanteId } })
+    if (!participante) {
+      return NextResponse.json({ error: 'Participante não encontrado' }, { status: 404 })
     }
 
     let finalArquivoUrl = arquivoUrl || ''

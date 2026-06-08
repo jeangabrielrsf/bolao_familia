@@ -42,17 +42,18 @@ export default function AdminUploadPage() {
   const [confirming, setConfirming] = useState(false)
   const [errorMessage, setErrorMessage] = useState('')
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
+  const [fetchError, setFetchError] = useState('')
 
   useEffect(() => {
     fetch('/api/participantes')
       .then((r) => r.json())
       .then((data) => setParticipantes(data))
-      .catch(() => {})
+      .catch(() => setFetchError('Erro ao carregar participantes'))
 
     fetch('/api/jogos')
       .then((r) => r.json())
       .then((data) => setJogos(data))
-      .catch(() => {})
+      .catch(() => setFetchError((prev) => prev ? prev + ' e jogos' : 'Erro ao carregar jogos'))
   }, [])
 
   const handleUploadSuccess = useCallback(
@@ -80,8 +81,13 @@ export default function AdminUploadPage() {
           setShowReplaceModal(true)
           return
         }
+      } else {
+        setShowReplaceModal(true)
+        return
       }
     } catch {
+      setShowReplaceModal(true)
+      return
     }
 
     await doConfirm()
@@ -191,6 +197,15 @@ export default function AdminUploadPage() {
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
       <h1 className="text-2xl sm:text-3xl font-bold text-primary">Upload de Palpites</h1>
+
+      {fetchError && (
+        <Card padding="md">
+          <div className="flex items-center gap-2">
+            <Badge variant="danger">{fetchError}</Badge>
+            <Button variant="secondary" onClick={() => window.location.reload()}>Tentar Novamente</Button>
+          </div>
+        </Card>
+      )}
 
       <Card padding="md">
         <Select

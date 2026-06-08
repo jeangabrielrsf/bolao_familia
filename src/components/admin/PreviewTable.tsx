@@ -35,7 +35,7 @@ export function PreviewTable({ preview, validacao, jogos, onEdit }: PreviewTable
   }, [palpites, extras, onEdit])
 
   function handlePlacarChange(jogoId: string, field: 'placarA' | 'placarB', value: string) {
-    const num = parseInt(value) || 0
+    const num = Math.max(0, parseInt(value) || 0)
     setPalpites((prev) =>
       prev.map((p) => (p.jogoId === jogoId ? { ...p, [field]: num } : p))
     )
