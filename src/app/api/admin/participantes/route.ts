@@ -8,6 +8,22 @@ import {
 } from '@/lib/db/queries/participantes'
 import { prisma } from '@/lib/db/client'
 
+const MAX_FILE_SIZE = 5 * 1024 * 1024
+const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp']
+
+function extractStoragePath(url: string): string {
+  const marker = '/fotos/'
+  const idx = url.indexOf(marker)
+  if (idx === -1) return url
+  return url.slice(idx + marker.length)
+}
+
+function validateFoto(foto: File): string | null {
+  if (foto.size > MAX_FILE_SIZE) return 'Foto deve ter no máximo 5MB'
+  if (!ALLOWED_MIME_TYPES.includes(foto.type)) return 'Formato de imagem inválido. Use JPEG, PNG ou WebP'
+  return null
+}
+
 export async function GET(request: NextRequest) {
   const authError = await requireAdmin(request)
   if (authError) return authError
@@ -36,6 +52,10 @@ export async function POST(request: NextRequest) {
       const foto = formData.get('foto') as File | null
 
       if (foto && foto.size > 0) {
+        const validationError = validateFoto(foto)
+        if (validationError) {
+          return NextResponse.json({ error: validationError }, { status: foto.size > MAX_FILE_SIZE ? 413 : 400 })
+        }
         const { uploadFile } = await import('@/lib/services/storage/supabase')
         const buffer = Buffer.from(await foto.arrayBuffer())
         const path = `participantes/${Date.now()}-${foto.name}`
@@ -76,10 +96,18 @@ export async function PUT(request: NextRequest) {
       const foto = formData.get('foto') as File | null
 
       if (foto && foto.size > 0) {
-        const { uploadFile } = await import('@/lib/services/storage/supabase')
+        const validationError = validateFoto(foto)
+        if (validationError) {
+          return NextResponse.json({ error: validationError }, { status: foto.size > MAX_FILE_SIZE ? 413 : 400 })
+        }
+        const { uploadFile, deleteFile } = await import('@/lib/services/storage/supabase')
+        const existente = await prisma.participante.findUnique({ where: { id: id! }, select: { fotoUrl: true } })
         const buffer = Buffer.from(await foto.arrayBuffer())
         const path = `participantes/${Date.now()}-${foto.name}`
         fotoUrl = await uploadFile('fotos', path, buffer, foto.type || 'image/jpeg')
+        if (existente?.fotoUrl) {
+          try { await deleteFile('fotos', extractStoragePath(existente.fotoUrl)) } catch { /* ignore */ }
+        }
       }
     } else {
       const body = await request.json()
@@ -121,12 +149,21 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'ID é obrigatório' }, { status: 400 })
     }
 
+    const existente = await prisma.participante.findUnique({ where: { id }, select: { fotoUrl: true } })
+
     await prisma.$transaction(async (tx) => {
       await tx.palpite.deleteMany({ where: { participanteId: id } })
       await tx.palpiteExtra.deleteMany({ where: { participanteId: id } })
       await tx.uploadLog.deleteMany({ where: { participanteId: id } })
       await deleteParticipante(id)
     })
+
+    if (existente?.fotoUrl) {
+      try {
+        const { deleteFile } = await import('@/lib/services/storage/supabase')
+        await deleteFile('fotos', extractStoragePath(existente.fotoUrl))
+      } catch { /* ignore */ }
+    }
 
     return NextResponse.json({ success: true })
   } catch (error) {

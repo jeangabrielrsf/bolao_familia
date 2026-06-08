@@ -70,6 +70,7 @@ export default function AdminParticipantesPage() {
 
   async function handleAdd(e: FormEvent) {
     e.preventDefault()
+    if (submitting) return
     if (!formNome.trim()) {
       setFormError('Nome é obrigatório')
       return
@@ -104,6 +105,7 @@ export default function AdminParticipantesPage() {
 
   async function handleEdit(e: FormEvent) {
     e.preventDefault()
+    if (submitting) return
     if (!selected) return
     if (!formNome.trim()) {
       setFormError('Nome é obrigatório')
@@ -322,9 +324,12 @@ export default function AdminParticipantesPage() {
           </>
         }
       >
-        <p className="text-foreground">
-          Tem certeza que deseja excluir <strong>{selected?.nome}</strong>? Todos os palpites, extras e logs de upload associados serão excluídos. Essa ação não pode ser desfeita.
-        </p>
+        <div className="space-y-4">
+          <p className="text-foreground">
+            Tem certeza que deseja excluir <strong>{selected?.nome}</strong>? Todos os palpites, extras e logs de upload associados serão excluídos. Essa ação não pode ser desfeita.
+          </p>
+          {formError && <Badge variant="danger">{formError}</Badge>}
+        </div>
       </Modal>
     </div>
   )
