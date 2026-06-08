@@ -48,9 +48,7 @@ export default function AdminConfigPage() {
         const data: Jogo[] = await res.json()
         setTotalJogos(data.length)
       }
-    } catch {
-      // ignore
-    }
+    } catch {}
   }, [])
 
   useEffect(() => {
@@ -120,42 +118,44 @@ export default function AdminConfigPage() {
       <h1 className="text-2xl sm:text-3xl font-bold text-primary">Configurações de Pontuação</h1>
 
       {feedback && (
-        <Card padding="md">
+        <Card padding="md" role="status" aria-live="polite">
           <Badge variant={feedback.tipo === 'sucesso' ? 'success' : 'danger'}>
             {feedback.mensagem}
           </Badge>
         </Card>
       )}
 
-      <Card padding="md">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {CAMPOS.map(({ chave, label }) => (
-            <Input
-              key={chave}
-              label={label}
-              type="number"
-              min="0"
-              value={config[chave]}
-              onChange={(e) => handleChange(chave, e.target.value)}
-            />
-          ))}
-        </div>
-      </Card>
-
-      <Card padding="md">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
-            <p className="text-sm text-muted">Máximo possível por participante</p>
-            <p className="text-2xl font-bold text-primary">{maximoPossivel} pontos</p>
-            <p className="text-xs text-muted">
-              {totalJogos} jogos × {config.placarExato} pts + extras ({config.campeao + config.vice + config.terceiro + config.quarto + config.artilheiro} pts)
-            </p>
+      <form onSubmit={(e) => { e.preventDefault(); handleSalvar() }}>
+        <Card padding="md">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {CAMPOS.map(({ chave, label }) => (
+              <Input
+                key={chave}
+                label={label}
+                type="number"
+                min="0"
+                value={config[chave]}
+                onChange={(e) => handleChange(chave, e.target.value)}
+              />
+            ))}
           </div>
-          <Button onClick={handleSalvar} disabled={saving}>
-            {saving ? 'Salvando...' : 'Salvar'}
-          </Button>
-        </div>
-      </Card>
+        </Card>
+
+        <Card padding="md">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+              <p className="text-sm text-muted">Máximo possível por participante</p>
+              <p className="text-2xl font-bold text-primary">{maximoPossivel} pontos</p>
+              <p className="text-xs text-muted">
+                {totalJogos} jogos × {config.placarExato} pts + extras ({config.campeao + config.vice + config.terceiro + config.quarto + config.artilheiro} pts)
+              </p>
+            </div>
+            <Button type="submit" disabled={saving}>
+              {saving ? 'Salvando...' : 'Salvar'}
+            </Button>
+          </div>
+        </Card>
+      </form>
     </div>
   )
 }
