@@ -1,0 +1,136 @@
+import { NextRequest, NextResponse } from 'next/server'
+import { requireAdmin } from '@/lib/auth/middleware'
+import {
+  getTodosParticipantes,
+  createParticipante,
+  updateParticipante,
+  deleteParticipante,
+} from '@/lib/db/queries/participantes'
+import { prisma } from '@/lib/db/client'
+
+export async function GET(request: NextRequest) {
+  const authError = await requireAdmin(request)
+  if (authError) return authError
+
+  try {
+    const participantes = await getTodosParticipantes()
+    return NextResponse.json(participantes)
+  } catch (error) {
+    console.error('GET participantes error:', error)
+    return NextResponse.json({ error: 'Erro ao buscar participantes' }, { status: 500 })
+  }
+}
+
+export async function POST(request: NextRequest) {
+  const authError = await requireAdmin(request)
+  if (authError) return authError
+
+  try {
+    const contentType = request.headers.get('content-type') || ''
+    let nome: string | undefined
+    let fotoUrl: string | undefined
+
+    if (contentType.includes('multipart/form-data')) {
+      const formData = await request.formData()
+      nome = formData.get('nome') as string | null ?? undefined
+      const foto = formData.get('foto') as File | null
+
+      if (foto && foto.size > 0) {
+        const { uploadFile } = await import('@/lib/services/storage/supabase')
+        const buffer = Buffer.from(await foto.arrayBuffer())
+        const path = `participantes/${Date.now()}-${foto.name}`
+        fotoUrl = await uploadFile('fotos', path, buffer, foto.type || 'image/jpeg')
+      }
+    } else {
+      const body = await request.json()
+      nome = body.nome
+      fotoUrl = body.fotoUrl
+    }
+
+    if (!nome || typeof nome !== 'string' || nome.trim() === '') {
+      return NextResponse.json({ error: 'Nome é obrigatório' }, { status: 400 })
+    }
+
+    const participante = await createParticipante(nome.trim(), fotoUrl)
+    return NextResponse.json(participante, { status: 201 })
+  } catch (error) {
+    console.error('POST participante error:', error)
+    return NextResponse.json({ error: 'Erro ao criar participante' }, { status: 500 })
+  }
+}
+
+export async function PUT(request: NextRequest) {
+  const authError = await requireAdmin(request)
+  if (authError) return authError
+
+  try {
+    const contentType = request.headers.get('content-type') || ''
+    let id: string | undefined
+    let nome: string | undefined
+    let fotoUrl: string | undefined
+
+    if (contentType.includes('multipart/form-data')) {
+      const formData = await request.formData()
+      id = formData.get('id') as string | null ?? undefined
+      nome = formData.get('nome') as string | null ?? undefined
+      const foto = formData.get('foto') as File | null
+
+      if (foto && foto.size > 0) {
+        const { uploadFile } = await import('@/lib/services/storage/supabase')
+        const buffer = Buffer.from(await foto.arrayBuffer())
+        const path = `participantes/${Date.now()}-${foto.name}`
+        fotoUrl = await uploadFile('fotos', path, buffer, foto.type || 'image/jpeg')
+      }
+    } else {
+      const body = await request.json()
+      id = body.id
+      nome = body.nome
+      fotoUrl = body.fotoUrl
+    }
+
+    if (!id || typeof id !== 'string' || id.trim() === '') {
+      return NextResponse.json({ error: 'ID é obrigatório' }, { status: 400 })
+    }
+
+    const data: { nome?: string; fotoUrl?: string } = {}
+    if (nome !== undefined) data.nome = nome.trim()
+    if (fotoUrl !== undefined) data.fotoUrl = fotoUrl
+
+    const participante = await updateParticipante(id, data)
+    return NextResponse.json(participante)
+  } catch (error) {
+    console.error('PUT participante error:', error)
+    return NextResponse.json({ error: 'Erro ao atualizar participante' }, { status: 500 })
+  }
+}
+
+export async function DELETE(request: NextRequest) {
+  const authError = await requireAdmin(request)
+  if (authError) return authError
+
+  try {
+    const { searchParams } = new URL(request.url)
+    let id = searchParams.get('id')
+
+    if (!id) {
+      const body = await request.json()
+      id = body.id
+    }
+
+    if (!id || typeof id !== 'string' || id.trim() === '') {
+      return NextResponse.json({ error: 'ID é obrigatório' }, { status: 400 })
+    }
+
+    await prisma.$transaction(async (tx) => {
+      await tx.palpite.deleteMany({ where: { participanteId: id } })
+      await tx.palpiteExtra.deleteMany({ where: { participanteId: id } })
+      await tx.uploadLog.deleteMany({ where: { participanteId: id } })
+      await deleteParticipante(id)
+    })
+
+    return NextResponse.json({ success: true })
+  } catch (error) {
+    console.error('DELETE participante error:', error)
+    return NextResponse.json({ error: 'Erro ao excluir participante' }, { status: 500 })
+  }
+}
