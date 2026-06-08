@@ -105,9 +105,9 @@ export default async function AdminDashboardPage() {
                 </thead>
                 <tbody>
                   {ultimosUploads.map((upload) => {
-                    const status = statusMap[upload.status] ?? statusMap.sucesso
+                    const status = statusMap[upload.status] ?? { variant: 'warning' as const, label: upload.status }
                     return (
-                      <tr key={upload.id} className="border-b border-border hover:bg-gray-50 transition-colors">
+                      <tr key={upload.id} className="border-b border-border hover:bg-muted transition-colors">
                         <td className="px-4 py-3">{upload.participante.nome}</td>
                         <td className="px-4 py-3">{upload.tipoArquivo}</td>
                         <td className="px-4 py-3">
