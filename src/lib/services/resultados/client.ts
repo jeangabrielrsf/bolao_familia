@@ -1,15 +1,19 @@
-export async function syncResultados() {
+export async function syncResultados(sofascoreIds: string[]) {
   if (!process.env.MICROSERVICE_URL) {
     throw new Error('MICROSERVICE_URL não configurada')
   }
 
   const controller = new AbortController()
-  const timeout = setTimeout(() => controller.abort(), 30000)
+  const timeout = setTimeout(() => controller.abort(), 60000)
 
   try {
     const response = await fetch(`${process.env.MICROSERVICE_URL}/resultados/lote`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        sofascore_ids: sofascoreIds,
+        force_refresh: true,
+      }),
       signal: controller.signal,
     })
 

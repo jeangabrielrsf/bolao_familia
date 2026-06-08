@@ -1,9 +1,13 @@
+import asyncio
+import logging
 from typing import Optional
 
 from curl_cffi import requests
 
 from app.config import settings
 from app.services.cache import cache
+
+logger = logging.getLogger(__name__)
 
 BASE_URL = "https://api.football-data.org/v4"
 
@@ -15,7 +19,7 @@ def _headers() -> dict[str, str]:
     }
 
 
-def get_match_result(match_id: str) -> Optional[dict]:
+def _fetch_match_result(match_id: str) -> Optional[dict]:
     cache_key = f"football_data:{match_id}"
     cached = cache.get(cache_key)
     if cached is not None:
@@ -32,6 +36,7 @@ def get_match_result(match_id: str) -> Optional[dict]:
             timeout=10,
         )
         if response.status_code != 200:
+            logger.warning("football-data.org returned %d for match %s", response.status_code, match_id)
             return None
 
         data = response.json()
@@ -52,4 +57,9 @@ def get_match_result(match_id: str) -> Optional[dict]:
         cache.set(cache_key, result, settings.CACHE_TTL_SECONDS)
         return result
     except Exception:
+        logger.exception("Error fetching football-data.org match %s", match_id)
         return None
+
+
+async def get_match_result(match_id: str) -> Optional[dict]:
+    return await asyncio.to_thread(_fetch_match_result, match_id)

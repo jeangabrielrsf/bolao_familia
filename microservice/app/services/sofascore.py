@@ -1,9 +1,13 @@
-import time
+import asyncio
+import logging
 from typing import Optional
 
 from curl_cffi import requests
 
+from app.config import settings
 from app.services.cache import cache
+
+logger = logging.getLogger(__name__)
 
 BASE_URL = "https://api.sofascore.com/api/v1"
 HEADERS = {
@@ -11,7 +15,7 @@ HEADERS = {
 }
 
 
-def get_event_result(sofascore_id: str) -> Optional[dict]:
+def _fetch_event_result(sofascore_id: str) -> Optional[dict]:
     cache_key = f"sofascore:{sofascore_id}"
     cached = cache.get(cache_key)
     if cached is not None:
@@ -25,6 +29,7 @@ def get_event_result(sofascore_id: str) -> Optional[dict]:
             timeout=10,
         )
         if response.status_code != 200:
+            logger.warning("Sofascore returned %d for event %s", response.status_code, sofascore_id)
             return None
 
         data = response.json()
@@ -41,18 +46,34 @@ def get_event_result(sofascore_id: str) -> Optional[dict]:
             "resultadoB": int(away_score),
             "status": status_type,
         }
-        cache.set(cache_key, result, 300)
+        cache.set(cache_key, result, settings.CACHE_TTL_SECONDS)
         return result
     except Exception:
+        logger.exception("Error fetching Sofascore event %s", sofascore_id)
         return None
 
 
-def get_all_results(sofascore_ids: list[str]) -> list[dict]:
+async def get_event_result(sofascore_id: str) -> Optional[dict]:
+    return await asyncio.to_thread(_fetch_event_result, sofascore_id)
+
+
+def _fetch_all_results(sofascore_ids: list[str]) -> list[dict]:
     results: list[dict] = []
     for i, sofascore_id in enumerate(sofascore_ids):
-        result = get_event_result(sofascore_id)
+        result = _fetch_event_result(sofascore_id)
         if result is not None:
             results.append({"sofascoreId": sofascore_id, **result})
         if i < len(sofascore_ids) - 1:
+            import time
             time.sleep(0.5)
     return results
+
+
+async def get_all_results(sofascore_ids: list[str]) -> list[dict]:
+    return await asyncio.to_thread(_fetch_all_results, sofascore_ids)
+
+
+async def get_all_results_no_cache(sofascore_ids: list[str]) -> list[dict]:
+    for sid in sofascore_ids:
+        cache.delete(f"sofascore:{sid}")
+    return await get_all_results(sofascore_ids)

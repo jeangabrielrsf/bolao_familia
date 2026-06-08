@@ -9,25 +9,28 @@ export async function POST(request: NextRequest) {
   if (authError) return authError
 
   try {
-    const resultados = await syncResultados()
+    const jogos = await getTodosJogos()
+
+    const sofascoreIds = jogos
+      .filter((j) => j.sofascoreId)
+      .map((j) => j.sofascoreId!)
+
+    if (sofascoreIds.length === 0) {
+      return NextResponse.json({
+        success: true,
+        atualizados: 0,
+        resultados: [],
+      })
+    }
+
+    const resultados = await syncResultados(sofascoreIds)
 
     const validResultados = resultados.filter((r) => {
-      if (typeof r.sofascoreId !== 'string' || r.sofascoreId.length === 0) {
-        console.warn('Invalid sofascoreId:', r)
-        return false
-      }
-      if (!Number.isInteger(r.resultadoA) || r.resultadoA < 0) {
-        console.warn('Invalid resultadoA:', r)
-        return false
-      }
-      if (!Number.isInteger(r.resultadoB) || r.resultadoB < 0) {
-        console.warn('Invalid resultadoB:', r)
-        return false
-      }
+      if (typeof r.sofascoreId !== 'string' || r.sofascoreId.length === 0) return false
+      if (!Number.isInteger(r.resultadoA) || r.resultadoA < 0) return false
+      if (!Number.isInteger(r.resultadoB) || r.resultadoB < 0) return false
       return true
     })
-
-    const jogos = await getTodosJogos()
 
     const jogosBySofascoreId = new Map(
       jogos
