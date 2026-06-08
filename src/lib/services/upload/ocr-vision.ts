@@ -10,8 +10,15 @@ Os jogos estão numerados de 1 a 33. As colunas de placar são as que o particip
 Os palpites extras estão no final da planilha.
 Retorne APENAS o JSON, sem texto adicional.`
 
-export async function parseFoto(imageBuffer: Buffer): Promise<UploadResult> {
+export async function parseFoto(imageBuffer: Buffer, mimeType = 'image/jpeg'): Promise<UploadResult> {
+  if (!process.env.OPENROUTER_API_KEY) {
+    throw new Error('OPENROUTER_API_KEY não configurada')
+  }
+
   const base64 = imageBuffer.toString('base64')
+
+  const controller = new AbortController()
+  const timeout = setTimeout(() => controller.abort(), 30_000)
 
   let response: Response
   try {
@@ -28,15 +35,21 @@ export async function parseFoto(imageBuffer: Buffer): Promise<UploadResult> {
             role: 'user',
             content: [
               { type: 'text', text: PROMPT },
-              { type: 'image_url', image_url: { url: `data:image/jpeg;base64,${base64}` } },
+              { type: 'image_url', image_url: { url: `data:${mimeType};base64,${base64}` } },
             ],
           },
         ],
         max_tokens: 2000,
       }),
+      signal: controller.signal,
     })
   } catch (error) {
+    if ((error as Error).name === 'AbortError') {
+      throw new Error('Tempo limite excedido na conexão com o serviço de OCR')
+    }
     throw new Error(`Falha na conexão com o serviço de OCR: ${(error as Error).message}`)
+  } finally {
+    clearTimeout(timeout)
   }
 
   if (!response.ok) {
@@ -50,18 +63,29 @@ export async function parseFoto(imageBuffer: Buffer): Promise<UploadResult> {
     throw new Error('Resposta inválida do serviço de OCR: conteúdo ausente')
   }
 
+  const cleaned = content.replace(/^```(?:json)?\s*/, '').replace(/\s*```$/, '')
+
   let parsed: {
     palpites?: Array<{ jogo_numero: number; placar_a: number; placar_b: number }>
     extras?: Record<string, string>
   }
   try {
-    parsed = JSON.parse(content)
+    parsed = JSON.parse(cleaned)
   } catch {
     throw new Error('Resposta inválida do serviço de OCR: JSON malformado')
   }
 
   if (!Array.isArray(parsed.palpites)) {
     throw new Error('Resposta inválida do serviço de OCR: campo "palpites" ausente')
+  }
+
+  for (const p of parsed.palpites) {
+    if (!Number.isInteger(p.placar_a) || p.placar_a < 0) {
+      throw new Error(`Placar inválido: placar_a do jogo ${p.jogo_numero} não é um inteiro não-negativo`)
+    }
+    if (!Number.isInteger(p.placar_b) || p.placar_b < 0) {
+      throw new Error(`Placar inválido: placar_b do jogo ${p.jogo_numero} não é um inteiro não-negativo`)
+    }
   }
 
   if (!parsed.extras || typeof parsed.extras !== 'object') {
