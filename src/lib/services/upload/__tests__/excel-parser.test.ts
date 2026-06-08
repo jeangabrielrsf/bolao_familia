@@ -5,6 +5,7 @@ function createTestExcelBuffer(overrides?: {
   nome?: string
   jogos?: Array<{ placarA: number | string; placarB: number | string }>
   extras?: Record<string, string>
+  uppercaseX?: boolean
 }): Buffer {
   const wb = XLSX.utils.book_new()
   const data: Array<Array<string | number | undefined>> = []
@@ -35,7 +36,7 @@ function createTestExcelBuffer(overrides?: {
     const row = gameRows[i]
     data[row][0] = `${i + 1}/junho`
     data[row][1] = `Time ${i + 1}A`
-    data[row][3] = 'x'
+    data[row][3] = overrides?.uppercaseX ? 'X' : 'x'
     data[row][5] = `Time ${i + 1}B`
 
     if (jogos[i]) {
@@ -210,5 +211,57 @@ describe('parseExcel', () => {
     expect(result.palpites[0].placarB).toBe(2)
     expect(typeof result.palpites[0].placarA).toBe('number')
     expect(typeof result.palpites[0].placarB).toBe('number')
+  })
+
+  it('throws when a score cell contains non-numeric text', () => {
+    const jogos = Array.from({ length: 33 }, (_, i) => ({
+      placarA: i === 0 ? 'abc' : i,
+      placarB: i,
+    }))
+
+    const extras = {
+      artilheiro: 'X',
+      quarto: 'X',
+      terceiro: 'X',
+      vice: 'X',
+      campeao: 'X',
+    }
+
+    const buffer = createTestExcelBuffer({ jogos, extras })
+
+    expect(() => parseExcel(buffer, makeJogosIds(33))).toThrow('Placar inválido no jogo 1')
+  })
+
+  it('throws when workbook has no sheets', () => {
+    jest.isolateModules(() => {
+      jest.doMock('xlsx', () => ({
+        read: () => ({ SheetNames: [], Sheets: {} }),
+      }))
+
+      const { parseExcel: isolatedParse } = require('../excel-parser')
+      expect(() => isolatedParse(Buffer.from([]), makeJogosIds(1))).toThrow('Planilha vazia')
+    })
+  })
+
+  it('recognizes uppercase X as a game row marker', () => {
+    const jogos = Array.from({ length: 33 }, () => ({
+      placarA: 2,
+      placarB: 1,
+    }))
+
+    const extras = {
+      artilheiro: 'X',
+      quarto: 'X',
+      terceiro: 'X',
+      vice: 'X',
+      campeao: 'X',
+    }
+
+    const buffer = createTestExcelBuffer({ jogos, extras, uppercaseX: true })
+
+    const result = parseExcel(buffer, makeJogosIds(33))
+
+    expect(result.palpites).toHaveLength(33)
+    expect(result.palpites[0]).toEqual({ jogoId: 'jogo-id-1', placarA: 2, placarB: 1 })
   })
 })

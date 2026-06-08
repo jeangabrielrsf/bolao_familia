@@ -3,13 +3,18 @@ import type { UploadResult } from '@/lib/utils/types'
 
 export function parseExcel(buffer: Buffer, jogosIds: string[]): UploadResult {
   const workbook = XLSX.read(buffer, { type: 'buffer' })
+
+  if (!workbook.SheetNames.length) {
+    throw new Error('Planilha vazia')
+  }
+
   const sheet = workbook.Sheets[workbook.SheetNames[0]]
   const range = XLSX.utils.decode_range(sheet['!ref'] || 'A1')
 
   const gameRows: number[] = []
   for (let r = 0; r <= range.e.r; r++) {
     const cell = sheet[XLSX.utils.encode_cell({ r, c: 3 })]
-    if (cell?.v === 'x') {
+    if (cell?.v != null && String(cell.v).toLowerCase() === 'x') {
       gameRows.push(r)
     }
   }
@@ -25,10 +30,20 @@ export function parseExcel(buffer: Buffer, jogosIds: string[]): UploadResult {
       throw new Error(`Palpite em branco no jogo ${i + 1}`)
     }
 
+    const placarA = Number(placarACell.v)
+    const placarB = Number(placarBCell.v)
+
+    if (!Number.isInteger(placarA) || placarA < 0) {
+      throw new Error(`Placar inválido no jogo ${i + 1}`)
+    }
+    if (!Number.isInteger(placarB) || placarB < 0) {
+      throw new Error(`Placar inválido no jogo ${i + 1}`)
+    }
+
     palpites.push({
       jogoId: jogosIds[i],
-      placarA: Number(placarACell.v),
-      placarB: Number(placarBCell.v),
+      placarA,
+      placarB,
     })
   }
 
@@ -38,7 +53,7 @@ export function parseExcel(buffer: Buffer, jogosIds: string[]): UploadResult {
     const row = 42 + i
     const cell = sheet[XLSX.utils.encode_cell({ r: row, c: 2 })]
 
-    if (!cell?.v) {
+    if (cell?.v == null || cell.v === '') {
       throw new Error(`Extra '${tiposExtra[i]}' em branco`)
     }
 
