@@ -24,6 +24,9 @@ export const TIMES_VALIDOS = [
   'Chile', 'Peru', 'Paraguai', 'Venezuela', 'Bolívia', 'Panamá',
   'Honduras', 'El Salvador', 'Jamaica', 'Nigéria', 'Egito', 'Argélia',
   'Costa do Marfim', 'África do Sul', 'Tanzânia',
+  'Haiti', 'Curaçao', 'Cabo Verde', 'Bósnia', 'Suécia', 'Iraque',
+  'Jordânia', 'Uzebequistão', 'República Checa', 'Congo', 'Noruega',
+  'Turquia', 'Nova Zelândia',
 ] as const
 
 export const GRUPOS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L'] as const
