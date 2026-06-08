@@ -16,13 +16,30 @@ export function validateUpload(
     erros.push(`Esperados ${totalJogos} palpites, recebidos ${result.palpites.length}`)
   }
 
+  const jogoIdsVistos = new Set<string>()
   for (const palpite of result.palpites) {
+    if (jogoIdsVistos.has(palpite.jogoId)) {
+      erros.push(`jogoId duplicado: ${palpite.jogoId}`)
+    }
+    jogoIdsVistos.add(palpite.jogoId)
+
+    if (!Number.isInteger(palpite.placarA) || !Number.isInteger(palpite.placarB)) {
+      erros.push(`Placar não inteiro no jogo ${palpite.jogoId}`)
+    }
     if (palpite.placarA < 0 || palpite.placarB < 0) {
       erros.push(`Placar negativo no jogo ${palpite.jogoId}`)
     }
     if (palpite.placarA > PLACAR_ALTO_LIMITE || palpite.placarB > PLACAR_ALTO_LIMITE) {
       alertas.push(`Placar muito alto no jogo ${palpite.jogoId}`)
     }
+  }
+
+  const tiposVistos = new Set<string>()
+  for (const extra of result.extras) {
+    if (tiposVistos.has(extra.tipo)) {
+      erros.push(`tipo duplicado nos extras: ${extra.tipo}`)
+    }
+    tiposVistos.add(extra.tipo)
   }
 
   for (const tipo of EXTRAS_OBRIGATORIOS) {

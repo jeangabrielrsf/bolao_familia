@@ -151,6 +151,51 @@ describe('validateUpload', () => {
     expect(result.alertas.length).toBeGreaterThanOrEqual(1)
   })
 
+  it('returns erro when placar is not an integer', () => {
+    const palpites = Array.from({ length: 33 }, (_, i) => ({
+      jogoId: `jogo-${i + 1}`,
+      placarA: i === 2 ? 2.5 : 1,
+      placarB: 1,
+    }))
+
+    const upload = makeValidUpload({ palpites })
+    const result = validateUpload(upload, makeTimesJogos(33))
+
+    expect(result.valido).toBe(false)
+    expect(result.erros.some((e) => e.includes('não inteiro') && e.includes('jogo-3'))).toBe(true)
+  })
+
+  it('returns erro when palpites contain duplicate jogoId', () => {
+    const palpites = Array.from({ length: 33 }, (_, i) => ({
+      jogoId: i === 1 ? 'jogo-1' : `jogo-${i + 1}`,
+      placarA: 1,
+      placarB: 1,
+    }))
+
+    const upload = makeValidUpload({ palpites })
+    const result = validateUpload(upload, makeTimesJogos(33))
+
+    expect(result.valido).toBe(false)
+    expect(result.erros.some((e) => e.includes('duplicado') && e.includes('jogo-1'))).toBe(true)
+  })
+
+  it('returns erro when extras contain duplicate tipo', () => {
+    const extras = [
+      { tipo: 'artilheiro' as const, valor: 'Mbappé' },
+      { tipo: 'artilheiro' as const, valor: 'CR7' },
+      { tipo: 'campeao' as const, valor: 'Brasil' },
+      { tipo: 'vice' as const, valor: 'Argentina' },
+      { tipo: 'terceiro' as const, valor: 'França' },
+      { tipo: 'quarto' as const, valor: 'Alemanha' },
+    ]
+
+    const upload = makeValidUpload({ extras })
+    const result = validateUpload(upload, makeTimesJogos(33))
+
+    expect(result.valido).toBe(false)
+    expect(result.erros.some((e) => e.includes('duplicado') && e.includes('artilheiro'))).toBe(true)
+  })
+
   it('returns alerta but valido=true for valid upload with unknown team', () => {
     const extras = [
       { tipo: 'artilheiro' as const, valor: 'Mbappé' },
