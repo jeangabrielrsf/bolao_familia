@@ -11,9 +11,15 @@ export default async function RankingPage() {
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
       <h1 className="text-2xl sm:text-3xl font-bold text-primary">Ranking</h1>
 
-      <Card padding="none">
-        <RankingTable ranking={ranking} />
-      </Card>
+      {ranking.length === 0 ? (
+        <Card padding="md">
+          <p className="text-center text-muted-foreground">Nenhum participante cadastrado ainda.</p>
+        </Card>
+      ) : (
+        <Card padding="none">
+          <RankingTable ranking={ranking} />
+        </Card>
+      )}
     </div>
   )
 }

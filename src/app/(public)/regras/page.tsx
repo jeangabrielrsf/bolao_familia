@@ -2,7 +2,7 @@ import { Card } from '@/components/ui/Card'
 
 export default function RegrasPage() {
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
       <h1 className="text-2xl sm:text-3xl font-bold text-primary">Regras</h1>
 
       <section className="space-y-4">
@@ -10,10 +10,11 @@ export default function RegrasPage() {
         <Card padding="md">
           <div className="overflow-x-auto">
             <table className="w-full text-left">
+              <caption className="sr-only">Tabela de pontuação do bolão</caption>
               <thead>
                 <tr className="border-b border-border">
-                  <th className="py-2 pr-4 font-semibold text-foreground">Palpite</th>
-                  <th className="py-2 font-semibold text-foreground text-right">Pontos</th>
+                  <th scope="col" className="py-2 pr-4 font-semibold text-foreground">Palpite</th>
+                  <th scope="col" className="py-2 font-semibold text-foreground text-right">Pontos</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
