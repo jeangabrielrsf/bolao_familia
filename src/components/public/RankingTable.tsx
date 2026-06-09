@@ -32,16 +32,18 @@ export function RankingTable({ ranking }: RankingTableProps) {
         {ranking.map((entry, index) => {
           const posicao = index + 1
           return (
-            <TableRow key={entry.participanteId}>
+            <TableRow key={entry.palpiteGrupoId}>
               <TableCell>{posicaoBadges[posicao] ? <span className="text-lg">{posicaoBadges[posicao]}</span> : <span className="text-muted-foreground font-medium">{posicao}</span>}</TableCell>
               <TableCell>
                 <div className="flex items-center gap-3">
                   {entry.fotoUrl ? (
-                    <Image src={entry.fotoUrl} alt={entry.nome} width={32} height={32} className="rounded-full object-cover" />
+                    <Image src={entry.fotoUrl} alt={entry.nomeGrupo} width={32} height={32} className="rounded-full object-cover" />
                   ) : (
-                    <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-bold">{entry.nome.charAt(0).toUpperCase()}</div>
+                    <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-bold">{entry.nomeParticipante.charAt(0).toUpperCase()}</div>
                   )}
-                  <span className="font-medium">{entry.nome}</span>
+                  <div className="flex flex-col">
+                    <span className="font-medium">{entry.nomeGrupo}</span>
+                  </div>
                 </div>
               </TableCell>
               <TableCell className="text-right"><span className="font-display text-xl text-primary">{entry.pontos}</span></TableCell>
