@@ -4,7 +4,7 @@ import { useState, useRef, type DragEvent, type ChangeEvent } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Progress } from '@/components/ui/progress'
-import { Upload, FileText, Loader2 } from 'lucide-react'
+import { Upload, FileText } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { PalpiteDTO, PalpiteExtraDTO, ValidationResult } from '@/lib/utils/types'
 

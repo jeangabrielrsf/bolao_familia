@@ -57,8 +57,8 @@ export async function POST(request: NextRequest) {
       result = parseExcel(buffer, jogosIds)
     } else if (isPdf) {
       console.log('[upload] Parseando PDF...')
-      result = await parsePdf(buffer)
-      const mappedPalpites = result.palpites.map((p) => {
+      const pdfResult = await parsePdf(buffer)
+      const mappedPalpites = pdfResult.palpites.map((p) => {
         const jogo = jogos.find(j =>
           j.timeA.toLowerCase() === p.timeA.toLowerCase() &&
           j.timeB.toLowerCase() === p.timeB.toLowerCase()
@@ -72,13 +72,13 @@ export async function POST(request: NextRequest) {
       if (mappedPalpites.some(p => !p.jogoId)) {
         const naoEncontrados = mappedPalpites
           .filter(p => !p.jogoId)
-          .map(p => `${result.palpites[mappedPalpites.indexOf(p)].timeA} x ${result.palpites[mappedPalpites.indexOf(p)].timeB}`)
+          .map(p => `${pdfResult.palpites[mappedPalpites.indexOf(p)].timeA} x ${pdfResult.palpites[mappedPalpites.indexOf(p)].timeB}`)
         return NextResponse.json({
           error: 'Jogos não encontrados no banco',
           detalhes: naoEncontrados,
         }, { status: 400 })
       }
-      result = { ...result, palpites: mappedPalpites }
+      result = { ...pdfResult, palpites: mappedPalpites }
       timesJogosValidacao = timesJogos.slice(0, mappedPalpites.length)
     } else {
       console.log('[upload] Parseando imagem...')

@@ -29,7 +29,7 @@ export function Header() {
       .finally(() => setAuthLoaded(true))
   }, [])
 
-  useEffect(() => { setMobileOpen(false) }, [pathname])
+  useEffect(() => { setMobileOpen(false) }, [pathname]) // eslint-disable-line react-hooks/set-state-in-effect
 
   return (
     <header className="sticky top-0 z-50 border-t-[3px] border-primary bg-background/80 backdrop-blur-xl border-b border-border">
