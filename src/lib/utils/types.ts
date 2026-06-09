@@ -12,7 +12,7 @@ export interface PalpiteExtraDTO {
 export interface UploadResult {
   palpites: PalpiteDTO[]
   extras: PalpiteExtraDTO[]
-  fonte: 'excel' | 'foto'
+  fonte: 'excel' | 'foto' | 'pdf'
 }
 
 export interface ValidationResult {

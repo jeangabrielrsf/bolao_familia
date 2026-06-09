@@ -24,6 +24,7 @@ enum StatusJogo {
 enum Fonte {
   excel
   foto
+  pdf
 }
 
 enum TipoExtra {
