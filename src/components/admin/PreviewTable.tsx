@@ -26,21 +26,16 @@ export function PreviewTable({ preview, validacao, jogos, onEdit }: PreviewTable
 
   function handlePlacarChange(jogoId: string, field: 'placarA' | 'placarB', value: string) {
     const num = Math.max(0, parseInt(value) || 0)
-    setPalpites((prev) => {
-      const next = prev.map((p) => (p.jogoId === jogoId ? { ...p, [field]: num } : p))
-      onEdit(next, extras)
-      return next
-    })
+    const novosPalpites = palpites.map((p) => (p.jogoId === jogoId ? { ...p, [field]: num } : p))
+    setPalpites(novosPalpites)
+    onEdit(novosPalpites, extras)
   }
 
   function handleExtraChange(tipo: string, value: string) {
-    setExtras((prev) => {
-      const next = prev.map((e) => (e.tipo === tipo ? { ...e, valor: value } : e))
-      onEdit(palpites, next)
-      return next
-    })
+    const novosExtras = extras.map((e) => (e.tipo === tipo ? { ...e, valor: value } : e))
+    setExtras(novosExtras)
+    onEdit(palpites, novosExtras)
   }
-
   return (
     <div className="space-y-6">
       {validacao.alertas.length > 0 && (
