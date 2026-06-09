@@ -48,8 +48,7 @@ model Participante {
   criadoEm    DateTime @default(now()) @map("criado_em")
   atualizadoEm DateTime @updatedAt @map("atualizado_em")
 
-  palpites    Palpite[]
-  extras      PalpiteExtra[]
+  grupos      PalpiteGrupo[]
   uploads     UploadLog[]
 
   @@map("participantes")
@@ -73,33 +72,49 @@ model Jogo {
   @@map("jogos")
 }
 
+model PalpiteGrupo {
+  id              String   @id @default(uuid())
+  participanteId  String   @map("participante_id")
+  nome            String
+  apelido         String
+  fonte           Fonte    @default(excel)
+  criadoEm        DateTime @default(now()) @map("criado_em")
+
+  participante    Participante @relation(fields: [participanteId], references: [id], onDelete: Cascade)
+  palpites        Palpite[]
+  extras          PalpiteExtra[]
+
+  @@unique([participanteId, nome])
+  @@map("palpites_grupos")
+}
+
 model Palpite {
   id              String      @id @default(uuid())
-  participanteId  String      @map("participante_id")
+  palpiteGrupoId  String      @map("palpite_grupo_id")
   jogoId          String      @map("jogo_id")
   placarA         Int         @map("placar_a")
   placarB         Int         @map("placar_b")
   fonte           Fonte       @default(excel)
   criadoEm        DateTime    @default(now()) @map("criado_em")
 
-  participante    Participante @relation(fields: [participanteId], references: [id])
+  palpiteGrupo    PalpiteGrupo @relation(fields: [palpiteGrupoId], references: [id], onDelete: Cascade)
   jogo            Jogo         @relation(fields: [jogoId], references: [id])
 
-  @@unique([participanteId, jogoId])
+  @@unique([palpiteGrupoId, jogoId])
   @@map("palpites")
 }
 
 model PalpiteExtra {
   id              String    @id @default(uuid())
-  participanteId  String    @map("participante_id")
+  palpiteGrupoId  String    @map("palpite_grupo_id")
   tipo            TipoExtra
   valor           String
   fonte           Fonte     @default(excel)
   criadoEm        DateTime  @default(now()) @map("criado_em")
 
-  participante    Participante @relation(fields: [participanteId], references: [id])
+  palpiteGrupo    PalpiteGrupo @relation(fields: [palpiteGrupoId], references: [id], onDelete: Cascade)
 
-  @@unique([participanteId, tipo])
+  @@unique([palpiteGrupoId, tipo])
   @@map("palpites_extras")
 }
 
