@@ -1,24 +1,27 @@
 import Link from 'next/link'
-import { Card } from '@/components/ui/Card'
-import { Badge } from '@/components/ui/Badge'
+import { Card, CardContent } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table'
 import { StatsCard } from '@/components/admin/StatsCard'
 import { getTodosParticipantes } from '@/lib/db/queries/participantes'
 import { getJogosDoDia, getTodosJogos } from '@/lib/db/queries/jogos'
 import { getRanking } from '@/lib/db/queries/ranking'
 import { prisma } from '@/lib/db/client'
+import { Users, Calendar, Trophy, Upload, ChevronRight } from 'lucide-react'
 
 export const dynamic = 'force-dynamic'
 
-const statusMap: Record<string, { variant: 'success' | 'danger' | 'warning'; label: string }> = {
+const statusMap: Record<string, { variant: 'success' | 'destructive' | 'warning'; label: string }> = {
   sucesso: { variant: 'success', label: 'Sucesso' },
-  falha: { variant: 'danger', label: 'Falha' },
+  falha: { variant: 'destructive', label: 'Falha' },
   pendente_revisao: { variant: 'warning', label: 'Pendente' },
 }
 
-const posicaoBadges: Record<number, { variant: 'warning' | 'default' | 'danger'; label: string }> = {
-  1: { variant: 'warning', label: '1º' },
+const posicaoBadges: Record<number, { variant: 'secondary' | 'default' | 'destructive'; label: string }> = {
+  1: { variant: 'secondary', label: '1º' },
   2: { variant: 'default', label: '2º' },
-  3: { variant: 'danger', label: '3º' },
+  3: { variant: 'destructive', label: '3º' },
 }
 
 const adminLinks = [
@@ -51,34 +54,32 @@ export default async function AdminDashboardPage() {
   const top3 = ranking.slice(0, 3)
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
-      <h1 className="text-2xl sm:text-3xl font-bold text-primary">Dashboard</h1>
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8 animate-fade-in-up">
+      <h1 className="text-3xl font-display tracking-wide">Dashboard</h1>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatsCard titulo="Total de Participantes" valor={participantes.length} variant="default" />
-        <StatsCard titulo="Jogos Hoje" valor={jogosHoje.length} variant="success" />
-        <StatsCard titulo="Total de Jogos" valor={todosJogos.length} variant="default" />
-        <StatsCard titulo="Uploads Recentes" valor={uploadsRecentes} variant="warning" />
+        <StatsCard titulo="Total de Participantes" valor={participantes.length} icone={<Users />} variant="default" />
+        <StatsCard titulo="Jogos Hoje" valor={jogosHoje.length} icone={<Calendar />} variant="success" />
+        <StatsCard titulo="Total de Jogos" valor={todosJogos.length} icone={<Trophy />} variant="default" />
+        <StatsCard titulo="Uploads Recentes" valor={uploadsRecentes} icone={<Upload />} variant="warning" />
       </div>
 
       <section className="space-y-4">
-        <h2 className="text-xl font-bold text-foreground">Top 3 do Ranking</h2>
+        <h2 className="text-xl font-display tracking-wide">Top 3 do Ranking</h2>
         {top3.length === 0 ? (
-          <Card padding="md">
-            <p className="text-center text-muted">Nenhum participante cadastrado ainda.</p>
-          </Card>
+          <Card><CardContent className="flex flex-col items-center justify-center py-8"><p className="text-muted-foreground">Nenhum participante cadastrado ainda.</p></CardContent></Card>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             {top3.map((entry, index) => {
               const posicao = index + 1
               const badge = posicaoBadges[posicao]
               return (
-                <Card key={entry.participanteId} padding="md" className="flex items-center gap-3">
-                  <Badge variant={badge.variant}>{badge.label}</Badge>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium truncate">{entry.nome}</p>
-                  </div>
-                  <span className="text-lg font-bold text-primary">{entry.pontos} pts</span>
+                <Card key={entry.participanteId}>
+                  <CardContent className="p-4 flex items-center gap-3">
+                    <Badge variant={badge.variant}>{badge.label}</Badge>
+                    <div className="flex-1 min-w-0"><p className="font-medium truncate">{entry.nome}</p></div>
+                    <span className="text-lg font-display text-primary">{entry.pontos} pts</span>
+                  </CardContent>
                 </Card>
               )
             })}
@@ -87,63 +88,48 @@ export default async function AdminDashboardPage() {
       </section>
 
       <section className="space-y-4">
-        <h2 className="text-xl font-bold text-foreground">Últimos Uploads</h2>
+        <h2 className="text-xl font-display tracking-wide">Últimos Uploads</h2>
         {ultimosUploads.length === 0 ? (
-          <Card padding="md">
-            <p className="text-center text-muted">Nenhum upload registrado.</p>
-          </Card>
+          <Card><CardContent className="flex flex-col items-center justify-center py-8"><p className="text-muted-foreground">Nenhum upload registrado.</p></CardContent></Card>
         ) : (
-          <Card padding="none">
-            <div className="overflow-x-auto">
-              <table className="w-full border-collapse text-sm">
-                <thead>
-                  <tr className="bg-primary text-white">
-                    <th className="px-4 py-3 text-left font-medium">Participante</th>
-                    <th className="px-4 py-3 text-left font-medium">Tipo</th>
-                    <th className="px-4 py-3 text-left font-medium">Status</th>
-                    <th className="px-4 py-3 text-left font-medium">Data</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {ultimosUploads.map((upload) => {
-                    const status = statusMap[upload.status] ?? { variant: 'warning' as const, label: upload.status }
-                    return (
-                      <tr key={upload.id} className="border-b border-border hover:bg-muted transition-colors">
-                        <td className="px-4 py-3">{upload.participante.nome}</td>
-                        <td className="px-4 py-3">{upload.tipoArquivo}</td>
-                        <td className="px-4 py-3">
-                          <Badge variant={status.variant}>{status.label}</Badge>
-                        </td>
-                        <td className="px-4 py-3 text-muted">
-                          {upload.criadoEm.toLocaleDateString('pt-BR', {
-                            day: '2-digit',
-                            month: '2-digit',
-                            year: 'numeric',
-                            hour: '2-digit',
-                            minute: '2-digit',
-                          })}
-                        </td>
-                      </tr>
-                    )
-                  })}
-                </tbody>
-              </table>
-            </div>
+          <Card>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Participante</TableHead>
+                  <TableHead>Tipo</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Data</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {ultimosUploads.map((upload) => {
+                  const status = statusMap[upload.status] ?? { variant: 'warning' as const, label: upload.status }
+                  return (
+                    <TableRow key={upload.id}>
+                      <TableCell>{upload.participante.nome}</TableCell>
+                      <TableCell>{upload.tipoArquivo}</TableCell>
+                      <TableCell><Badge variant={status.variant}>{status.label}</Badge></TableCell>
+                      <TableCell className="text-muted-foreground">{upload.criadoEm.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</TableCell>
+                    </TableRow>
+                  )
+                })}
+              </TableBody>
+            </Table>
           </Card>
         )}
       </section>
 
       <section className="space-y-4">
-        <h2 className="text-xl font-bold text-foreground">Navegação</h2>
+        <h2 className="text-xl font-display tracking-wide">Navegação</h2>
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
           {adminLinks.map((link) => (
-            <Link
-              key={link.href}
-              href={link.href}
-              className="bg-card border border-border rounded-lg p-4 text-center font-medium text-foreground hover:border-primary hover:text-primary transition-colors"
-            >
-              {link.label}
-            </Link>
+            <Button key={link.href} variant="outline" asChild className="h-auto py-4 flex flex-col gap-1">
+              <Link href={link.href}>
+                <span className="font-medium">{link.label}</span>
+                <ChevronRight className="w-4 h-4 ml-auto" />
+              </Link>
+            </Button>
           ))}
         </div>
       </section>

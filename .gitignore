@@ -50,3 +50,6 @@ __pycache__/
 /prototypes/
 
 assets/arquivos_planilhas
+
+
+microservice/.venv

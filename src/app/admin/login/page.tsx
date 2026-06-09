@@ -1,9 +1,10 @@
 'use client'
 
 import { useState, useEffect, type FormEvent } from 'react'
-import { Card } from '@/components/ui/Card'
-import { Input } from '@/components/ui/Input'
-import { Button } from '@/components/ui/Button'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
+import { Button } from '@/components/ui/button'
+import { Loader2 } from 'lucide-react'
 
 export default function AdminLoginPage() {
   const [senha, setSenha] = useState('')
@@ -56,29 +57,29 @@ export default function AdminLoginPage() {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <p className="text-foreground" aria-live="polite">Carregando...</p>
+        <Loader2 className="w-6 h-6 animate-spin text-primary" />
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4">
-      <Card padding="lg" className="w-full max-w-sm">
-        <h1 className="text-2xl font-bold text-primary text-center mb-6">Administração</h1>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <Input
-            label="Senha"
-            type="password"
-            value={senha}
-            onChange={(e) => setSenha(e.target.value)}
-            autoComplete="current-password"
-            required
-          />
-          {error && <p className="text-sm text-danger" role="alert">{error}</p>}
-          <Button type="submit" className="w-full" disabled={submitting}>
-            {submitting ? 'Entrando...' : 'Entrar'}
-          </Button>
-        </form>
+    <div className="min-h-screen flex items-center justify-center px-4 animate-fade-in-up">
+      <Card className="w-full max-w-sm">
+        <CardHeader className="text-center">
+          <CardTitle className="text-2xl font-display tracking-wide">Administração</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="space-y-2">
+              <label htmlFor="senha" className="text-sm font-medium">Senha</label>
+              <Input id="senha" type="password" value={senha} onChange={(e) => setSenha(e.target.value)} autoComplete="current-password" required />
+            </div>
+            {error && <p className="text-sm text-danger" role="alert">{error}</p>}
+            <Button type="submit" className="w-full" disabled={submitting}>
+              {submitting ? <><Loader2 className="w-4 h-4 animate-spin" /> Entrando...</> : 'Entrar'}
+            </Button>
+          </form>
+        </CardContent>
       </Card>
     </div>
   )
