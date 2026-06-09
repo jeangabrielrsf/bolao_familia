@@ -10,6 +10,8 @@ This version has breaking changes — APIs, conventions, and file structure may 
 
 Bolão familiar da Copa do Mundo FIFA 2026. Site **informativo** (somente leitura para participantes) onde o admin carrega planilhas Excel com os palpites de cada participante para 33 jogos da fase de grupos + 5 palpites extras (artilheiro, campeão, vice, 3º, 4º). Participantes **NÃO** fazem palpites pelo site — tudo é importado via upload de planilha pelo admin.
 
+**Upload em Lote:** Suporta upload de planilhas multi-abas, onde cada aba contém os palpites de um participante (ou múltiplos palpites do mesmo participante). O sistema cria automaticamente grupos de palpites (`PalpiteGrupo`) para cada aba, permitindo que um participante tenha vários conjuntos de palpites.
+
 ## Stack
 
 - **Frontend/API:** Next.js 16.2.7, React 19, TypeScript 5, Tailwind CSS 4
@@ -38,7 +40,7 @@ Bolão familiar da Copa do Mundo FIFA 2026. Site **informativo** (somente leitur
 
 Formato da planilha que cada participante preenche:
 - **33 jogos** da fase de grupos: placar coluna C e E, com "x" na coluna D separando os times
-- **5 extras** nas linhas 42-46 (0-indexed): artilheiro, quarto, terceiro, vice, campeao (coluna C)
+- **5 extras** nas linhas 42-46 (0-indexed): artilheiro, quarto, terceiro, vice, campeao (coluna B)
 - O parser (`src/lib/services/upload/excel-parser.ts`) identifica linhas de jogo pela coluna D="x"
 
 ## Sistema de Pontuação
@@ -59,9 +61,10 @@ Lógica em `src/lib/utils/helpers.ts` (`calcularPontosJogo`, `calcularPontosExtr
 | Modelo | Tabela | Descrição |
 |--------|--------|-----------|
 | `Participante` | `participantes` | nome (unique), fotoUrl opcional |
+| `PalpiteGrupo` | `palpites_grupos` | Grupo de palpites (participante pode ter vários), unique(participanteId, nome) |
 | `Jogo` | `jogos` | fase (enum: grupos→final), grupo, times, resultado, status, sofascoreId |
-| `Palpite` | `palpites` | placarA/placarB por participante+jogo (unique pair), fonte (excel/foto/pdf) |
-| `PalpiteExtra` | `palpites_extras` | tipo (artilheiro/campeao/vice/terceiro/quarto), valor string |
+| `Palpite` | `palpites` | placarA/placarB por grupo+jogo (unique pair), fonte (excel/foto/pdf) |
+| `PalpiteExtra` | `palpites_extras` | tipo (artilheiro/campeao/vice/terceiro/quarto), valor string, por grupo |
 | `ResultadoExtra` | `resultados_extras` | resultado oficial dos extras |
 | `Configuracao` | `configuracoes` | chave/valor (pontuação) |
 | `AdminAuth` | `admin_auth` | senhaHash |
@@ -78,7 +81,7 @@ src/components/
   ui/                → primitivos: Button, Card, Input, Modal, Table, Badge, Select, Tabs
   layout/            → Header, Footer, Navigation
   public/            → GameCard, RankingTable, ParticipantCard
-  admin/             → UploadForm, PreviewTable, StatsCard
+  admin/             → UploadForm, PreviewTable, StatsCard, UploadModeSelector, BatchPreviewTabs
 src/lib/
   auth/              → session.ts (JWT), password.ts (bcrypt), middleware.ts
   db/                → client.ts (Prisma singleton), queries/ (config, jogos, participantes, ranking, resultados)
@@ -96,10 +99,22 @@ docs/superpowers/    → specs e plans (superpowers workflow)
 
 ## Fluxo de Upload (Admin)
 
+### Upload Individual
 1. Admin seleciona participante + arquivo (Excel, imagem ou PDF)
 2. `POST /api/upload` → parse (excel-parser / ocr-vision / pdf-parser) → validação → retorna preview
 3. Admin revisa/edita preview na UI
-4. `POST /api/admin/upload/confirm` → salva palpites no DB + arquiva arquivo no Supabase Storage
+4. `POST /api/admin/upload/confirm` → cria/atualiza PalpiteGrupo + salva palpites no DB + arquiva arquivo no Supabase Storage
+
+### Upload em Lote (Multi-Abas)
+1. Admin seleciona arquivo Excel com múltiplas abas (cada aba = um grupo de palpites)
+2. `POST /api/upload/lote` → parseExcelMultiSheet → valida cada grupo → retorna preview com tabs
+3. Admin revisa preview (tabs por grupo, badges "existente"/"novo")
+4. `POST /api/admin/upload/confirm-lote` → busca/cria participantes, busca/cria PalpiteGrupos, salva palpites
+
+**Parser Multi-Abas:** `parseExcelMultiSheet(buffer, jogosIds)` em `src/lib/services/upload/excel-parser.ts`
+- Filtra aba "Modelo" (case-insensitive)
+- Extrai nome do participante e apelido do grupo do nome da aba (regex sufixo: "Leo 1", "João - Palpite 2", etc.)
+- Retorna `PalpiteGrupoParsed[]` com palpites e extras de cada aba
 
 ## Resultados ao Vivo
 
