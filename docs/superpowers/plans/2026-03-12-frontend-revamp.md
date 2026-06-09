@@ -23,8 +23,15 @@ src/components/ui/skeleton.tsx            — Skeleton loading
 src/components/ui/alert-dialog.tsx        — AlertDialog (Radix)
 src/components/ui/tooltip.tsx             — Tooltip (Radix)
 src/components/ui/accordion.tsx           — Accordion (Radix)
+src/components/ui/alert.tsx               — Alert (banner informativo)
+src/components/ui/progress.tsx            — Progress bar (Radix)
 src/components/public/hero.tsx            — Hero section da home
 src/components/public/ranking-podium.tsx  — Podium top 3
+src/components/public/stats-card.tsx      — Stats card reutilizável (público)
+src/components/public/ranking-card.tsx    — Card de ranking reutilizável
+src/components/public/filter-tabs.tsx     — FilterTabs client component (jogos)
+src/app/global-error.tsx                  — Error Boundary global
+src/app/admin/layout.tsx                  — Layout admin (sidebar/header)
 ```
 
 ### Modified Files
@@ -56,6 +63,7 @@ src/app/(public)/participantes/page.tsx   — Grid redesenhado
 src/app/(public)/participantes/[id]/page.tsx — Profile redesenhado
 src/app/(public)/regras/page.tsx          — Accordion layout
 src/app/admin/page.tsx                    — Dashboard redesenhado
+src/app/admin/layout.tsx                  — Layout admin (TooltipProvider, estrutura)
 src/app/admin/login/page.tsx              — Login redesenhado
 src/app/admin/upload/page.tsx             — Upload redesenhado
 src/app/admin/participantes/page.tsx      — CRUD redesenhado
@@ -88,7 +96,7 @@ src/components/ui/Tabs.tsx     → substituído por tabs.tsx
 - [ ] **Step 1: Install npm dependencies**
 
 ```bash
-npm install next-themes sonner lucide-react class-variance-authority clsx tailwind-merge @radix-ui/react-dialog @radix-ui/react-tabs @radix-ui/react-alert-dialog @radix-ui/react-tooltip @radix-ui/react-accordion @radix-ui/react-slot @radix-ui/react-select @radix-ui/react-label tailwindcss-animate
+npm install next-themes sonner lucide-react class-variance-authority clsx tailwind-merge @radix-ui/react-dialog @radix-ui/react-tabs @radix-ui/react-alert-dialog @radix-ui/react-tooltip @radix-ui/react-accordion @radix-ui/react-slot @radix-ui/react-select @radix-ui/react-label @radix-ui/react-progress tailwindcss-animate
 ```
 
 - [ ] **Step 2: Create `src/lib/utils.ts`**
@@ -307,7 +315,7 @@ import { ThemeProvider as NextThemesProvider } from "next-themes"
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   return (
-    <NextThemesProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
+    <NextThemesProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange storageKey="theme-preference">
       {children}
     </NextThemesProvider>
   )
@@ -783,13 +791,15 @@ git commit -m "feat: add shadcn/ui Input, Select, Dialog, and Tabs components"
 
 ---
 
-### Task 7: Create Skeleton + AlertDialog + Tooltip + Accordion
+### Task 7: Create Skeleton + AlertDialog + Tooltip + Accordion + Alert + Progress
 
 **Files:**
 - Create: `src/components/ui/skeleton.tsx`
 - Create: `src/components/ui/alert-dialog.tsx`
 - Create: `src/components/ui/tooltip.tsx`
 - Create: `src/components/ui/accordion.tsx`
+- Create: `src/components/ui/alert.tsx`
+- Create: `src/components/ui/progress.tsx`
 
 - [ ] **Step 1: Create `src/components/ui/skeleton.tsx`**
 
@@ -931,11 +941,82 @@ AccordionContent.displayName = AccordionPrimitive.Content.displayName
 export { Accordion, AccordionItem, AccordionTrigger, AccordionContent }
 ```
 
-- [ ] **Step 5: Commit**
+- [ ] **Step 5: Create `src/components/ui/alert.tsx`**
+
+```tsx
+import { forwardRef } from "react"
+import { cva, type VariantProps } from "class-variance-authority"
+import { cn } from "@/lib/utils"
+
+const alertVariants = cva(
+  "relative w-full rounded-lg border px-4 py-3 text-sm [&>svg+div]:translate-y-[-3px] [&>svg]:absolute [&>svg]:left-4 [&>svg]:top-4 [&>svg]:text-foreground [&>svg~*]:pl-7",
+  {
+    variants: {
+      variant: {
+        default: "bg-background text-foreground",
+        destructive: "border-danger/50 text-danger dark:text-red-400 [&>svg]:text-danger",
+        success: "border-success/50 text-success dark:text-green-400 [&>svg]:text-success",
+        warning: "border-warning/50 text-warning dark:text-yellow-400 [&>svg]:text-warning",
+        info: "border-accent/50 text-accent dark:text-blue-400 [&>svg]:text-accent",
+      },
+    },
+    defaultVariants: { variant: "default" },
+  }
+)
+
+const Alert = forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement> & VariantProps<typeof alertVariants>>(
+  ({ className, variant, ...props }, ref) => (
+    <div ref={ref} role="alert" className={cn(alertVariants({ variant }), className)} {...props} />
+  )
+)
+Alert.displayName = "Alert"
+
+const AlertTitle = forwardRef<HTMLParagraphElement, React.HTMLAttributes<HTMLHeadingElement>>(
+  ({ className, ...props }, ref) => (
+    <h5 ref={ref} className={cn("mb-1 font-medium leading-none tracking-tight", className)} {...props} />
+  )
+)
+AlertTitle.displayName = "AlertTitle"
+
+const AlertDescription = forwardRef<HTMLParagraphElement, React.HTMLAttributes<HTMLParagraphElement>>(
+  ({ className, ...props }, ref) => (
+    <div ref={ref} className={cn("text-sm [&_p]:leading-relaxed", className)} {...props} />
+  )
+)
+AlertDescription.displayName = "AlertDescription"
+
+export { Alert, AlertTitle, AlertDescription }
+```
+
+- [ ] **Step 6: Create `src/components/ui/progress.tsx`**
+
+```tsx
+"use client"
+
+import { forwardRef } from "react"
+import * as ProgressPrimitive from "@radix-ui/react-progress"
+import { cn } from "@/lib/utils"
+
+const Progress = forwardRef<React.ComponentRef<typeof ProgressPrimitive.Root>, React.ComponentPropsWithoutRef<typeof ProgressPrimitive.Root>>(
+  ({ className, value, ...props }, ref) => (
+    <ProgressPrimitive.Root ref={ref} className={cn("relative h-2 w-full overflow-hidden rounded-full bg-muted", className)} {...props}>
+      <ProgressPrimitive.Indicator
+        className="h-full w-full flex-1 bg-primary transition-all duration-300"
+        style={{ transform: `translateX(-${100 - (value ?? 0)}%)` }}
+      />
+    </ProgressPrimitive.Root>
+  )
+)
+Progress.displayName = ProgressPrimitive.Root.displayName
+
+export { Progress }
+```
+
+- [ ] **Step 7: Commit**
 
 ```bash
-git add src/components/ui/skeleton.tsx src/components/ui/alert-dialog.tsx src/components/ui/tooltip.tsx src/components/ui/accordion.tsx
-git commit -m "feat: add Skeleton, AlertDialog, Tooltip, and Accordion components"
+git add src/components/ui/skeleton.tsx src/components/ui/alert-dialog.tsx src/components/ui/tooltip.tsx src/components/ui/accordion.tsx src/components/ui/alert.tsx src/components/ui/progress.tsx
+git commit -m "feat: add Skeleton, AlertDialog, Tooltip, Accordion, Alert, and Progress components"
 ```
 
 ---
@@ -1075,45 +1156,175 @@ git commit -m "feat: refactor Footer with new design"
 
 ---
 
-### Task 10: Delete Old Uppercase UI Components
+### Task 10: Error Boundary + Admin Layout
 
 **Files:**
-- Delete: `src/components/ui/Button.tsx`
-- Delete: `src/components/ui/Card.tsx`
-- Delete: `src/components/ui/Badge.tsx`
-- Delete: `src/components/ui/Table.tsx`
-- Delete: `src/components/ui/Input.tsx`
-- Delete: `src/components/ui/Select.tsx`
-- Delete: `src/components/ui/Modal.tsx`
-- Delete: `src/components/ui/Tabs.tsx`
+- Create: `src/app/global-error.tsx`
+- Create: `src/app/admin/layout.tsx`
 
-- [ ] **Step 1: Delete old component files**
+- [ ] **Step 1: Create `src/app/global-error.tsx`**
 
-```bash
-rm src/components/ui/Button.tsx src/components/ui/Card.tsx src/components/ui/Badge.tsx src/components/ui/Table.tsx src/components/ui/Input.tsx src/components/ui/Select.tsx src/components/ui/Modal.tsx src/components/ui/Tabs.tsx
+```tsx
+"use client"
+
+import { useEffect } from "react"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent } from "@/components/ui/card"
+import { AlertTriangle } from "lucide-react"
+
+export default function GlobalError({
+  error,
+  reset,
+}: {
+  error: Error & { digest?: string }
+  reset: () => void
+}) {
+  useEffect(() => {
+    console.error("Global error:", error)
+  }, [error])
+
+  return (
+    <html lang="pt-BR">
+      <body className="min-h-screen flex items-center justify-center bg-background px-4">
+        <Card className="w-full max-w-md">
+          <CardContent className="flex flex-col items-center justify-center py-12 space-y-4">
+            <AlertTriangle className="w-12 h-12 text-danger" />
+            <h2 className="text-xl font-display tracking-wide text-center">Algo deu errado</h2>
+            <p className="text-muted-foreground text-center text-sm">
+              Ocorreu um erro inesperado. Tente recarregar a página.
+            </p>
+            <div className="flex gap-3">
+              <Button onClick={reset} variant="outline">Tentar novamente</Button>
+              <Button onClick={() => window.location.href = "/"}>Voltar ao início</Button>
+            </div>
+          </CardContent>
+        </Card>
+      </body>
+    </html>
+  )
+}
 ```
 
-- [ ] **Step 2: Commit**
+- [ ] **Step 2: Create `src/app/admin/layout.tsx`**
+
+```tsx
+import { TooltipProvider } from "@/components/ui/tooltip"
+
+export default function AdminLayout({ children }: { children: React.ReactNode }) {
+  return <TooltipProvider delayDuration={200}>{children}</TooltipProvider>
+}
+```
+
+- [ ] **Step 3: Commit**
 
 ```bash
-git add -A
-git commit -m "chore: remove old uppercase UI components replaced by shadcn/ui"
+git add src/app/global-error.tsx src/app/admin/layout.tsx
+git commit -m "feat: add global error boundary and admin layout with TooltipProvider"
 ```
 
 ---
 
-### Task 11: Migrate Home Page + Hero + GameCard + RankingTable
+### Task 11: Migrate Home Page + Hero + GameCard + RankingTable + StatsCard + RankingCard
 
 **Files:**
+- Create: `src/components/public/stats-card.tsx`
+- Create: `src/components/public/ranking-card.tsx`
 - Create: `src/components/public/hero.tsx`
 - Modify: `src/components/public/GameCard.tsx`
 - Modify: `src/components/public/RankingTable.tsx`
 - Modify: `src/app/(public)/page.tsx`
 
-- [ ] **Step 1: Create `src/components/public/hero.tsx`**
+- [ ] **Step 1: Create `src/components/public/stats-card.tsx`**
+
+```tsx
+import { Card, CardContent } from "@/components/ui/card"
+import type { LucideIcon } from "lucide-react"
+
+interface StatsCardProps {
+  label: string
+  value: string | number
+  icon: LucideIcon
+  iconColor?: string
+  iconBg?: string
+}
+
+export function StatsCard({ label, value, icon: Icon, iconColor = "text-primary", iconBg = "bg-primary/10" }: StatsCardProps) {
+  return (
+    <Card>
+      <CardContent className="p-4 flex items-center gap-3">
+        <div className={`w-10 h-10 rounded-full ${iconBg} flex items-center justify-center shrink-0`}>
+          <Icon className={`w-5 h-5 ${iconColor}`} />
+        </div>
+        <div className="min-w-0">
+          <p className="text-sm text-muted-foreground truncate">{label}</p>
+          <p className="text-xl font-display text-primary truncate">{value}</p>
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
+```
+
+- [ ] **Step 2: Create `src/components/public/ranking-card.tsx`**
+
+```tsx
+import Link from "next/link"
+import { RankingTable } from "@/components/public/RankingTable"
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { ChevronRight, Trophy } from "lucide-react"
+import type { RankingEntry } from "@/lib/utils/types"
+
+interface RankingCardProps {
+  ranking: RankingEntry[]
+  title?: string
+  subtitle?: string
+  maxItems?: number
+  showViewAll?: boolean
+  viewAllHref?: string
+}
+
+export function RankingCard({
+  ranking,
+  title = "Ranking",
+  subtitle,
+  maxItems,
+  showViewAll = false,
+  viewAllHref = "/ranking",
+}: RankingCardProps) {
+  const displayRanking = maxItems ? ranking.slice(0, maxItems) : ranking
+
+  return (
+    <Card>
+      <CardHeader className="pb-2">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Trophy className="w-5 h-5 text-secondary" />
+            <div>
+              <CardTitle className="text-base">{title}</CardTitle>
+              {subtitle && <p className="text-xs text-muted-foreground">{subtitle}</p>}
+            </div>
+          </div>
+          {showViewAll && ranking.length > (maxItems ?? 0) && (
+            <Button variant="ghost" size="sm" asChild>
+              <Link href={viewAllHref}>Ver completo <ChevronRight className="w-4 h-4" /></Link>
+            </Button>
+          )}
+        </div>
+      </CardHeader>
+      <CardContent className="p-0">
+        <RankingTable ranking={displayRanking} />
+      </CardContent>
+    </Card>
+  )
+}
+```
+
+- [ ] **Step 3: Create `src/components/public/hero.tsx`**
 
 ```tsx
 import { Users, Trophy, Calendar } from "lucide-react"
+import { StatsCard } from "@/components/public/stats-card"
 
 interface HeroProps {
   totalParticipantes: number
@@ -1132,21 +1343,9 @@ export function Hero({ totalParticipantes, totalJogos }: HeroProps) {
         <h1 className="text-4xl sm:text-5xl lg:text-6xl font-display tracking-wide text-foreground">BOLÃO DA FAMÍLIA</h1>
         <p className="text-lg text-muted-foreground max-w-2xl mx-auto">Faça seus palpites e dispute o ranking com a família!</p>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 max-w-lg mx-auto pt-4">
-          <div className="flex flex-col items-center gap-1 p-3 rounded-lg bg-card border border-border">
-            <Users className="w-5 h-5 text-primary" />
-            <span className="text-2xl font-display text-primary">{totalParticipantes}</span>
-            <span className="text-xs text-muted-foreground uppercase tracking-wide">Participantes</span>
-          </div>
-          <div className="flex flex-col items-center gap-1 p-3 rounded-lg bg-card border border-border">
-            <Calendar className="w-5 h-5 text-primary" />
-            <span className="text-2xl font-display text-primary">{totalJogos}</span>
-            <span className="text-xs text-muted-foreground uppercase tracking-wide">Jogos</span>
-          </div>
-          <div className="flex flex-col items-center gap-1 p-3 rounded-lg bg-card border border-border col-span-2 sm:col-span-1">
-            <Trophy className="w-5 h-5 text-secondary" />
-            <span className="text-2xl font-display text-primary">380</span>
-            <span className="text-xs text-muted-foreground uppercase tracking-wide">Pts Máx</span>
-          </div>
+          <StatsCard label="Participantes" value={totalParticipantes} icon={Users} />
+          <StatsCard label="Jogos" value={totalJogos} icon={Calendar} />
+          <StatsCard label="Pts Máx" value={380} icon={Trophy} iconColor="text-secondary" iconBg="bg-secondary/10" />
         </div>
       </div>
     </section>
@@ -1154,7 +1353,7 @@ export function Hero({ totalParticipantes, totalJogos }: HeroProps) {
 }
 ```
 
-- [ ] **Step 2: Replace `src/components/public/GameCard.tsx`**
+- [ ] **Step 4: Replace `src/components/public/GameCard.tsx`**
 
 ```tsx
 import Link from "next/link"
@@ -1221,9 +1420,10 @@ export function GameCard({ id, timeA, timeB, dataHora, grupo, fase, resultadoA, 
 }
 ```
 
-- [ ] **Step 3: Replace `src/components/public/RankingTable.tsx`**
+- [ ] **Step 5: Replace `src/components/public/RankingTable.tsx`**
 
 ```tsx
+import Image from "next/image"
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table"
 import type { RankingEntry } from "@/lib/utils/types"
 
@@ -1262,7 +1462,7 @@ export function RankingTable({ ranking }: RankingTableProps) {
               <TableCell>
                 <div className="flex items-center gap-3">
                   {entry.fotoUrl ? (
-                    <img src={entry.fotoUrl} alt={entry.nome} className="w-8 h-8 rounded-full object-cover" />
+                    <Image src={entry.fotoUrl} alt={entry.nome} width={32} height={32} className="rounded-full object-cover" />
                   ) : (
                     <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-bold">{entry.nome.charAt(0).toUpperCase()}</div>
                   )}
@@ -1281,7 +1481,7 @@ export function RankingTable({ ranking }: RankingTableProps) {
 }
 ```
 
-- [ ] **Step 4: Replace `src/app/(public)/page.tsx`**
+- [ ] **Step 6: Replace `src/app/(public)/page.tsx`**
 
 ```tsx
 import Link from "next/link"
@@ -1289,11 +1489,11 @@ import { getJogosDoDia, getTodosJogos } from "@/lib/db/queries/jogos"
 import { getRanking } from "@/lib/db/queries/ranking"
 import { getTodosParticipantes } from "@/lib/db/queries/participantes"
 import { GameCard } from "@/components/public/GameCard"
-import { RankingTable } from "@/components/public/RankingTable"
+import { RankingCard } from "@/components/public/ranking-card"
 import { Hero } from "@/components/public/hero"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { ChevronRight, Trophy } from "lucide-react"
+import { ChevronRight } from "lucide-react"
 
 export const dynamic = "force-dynamic"
 
@@ -1301,7 +1501,6 @@ export default async function HomePage() {
   const [jogosDoDia, ranking, todosJogos, participantes] = await Promise.all([
     getJogosDoDia(), getRanking(), getTodosJogos(), getTodosParticipantes(),
   ])
-  const top5 = ranking.slice(0, 5)
 
   return (
     <div className="space-y-10">
@@ -1326,166 +1525,235 @@ export default async function HomePage() {
             </CardContent></Card>
           )}
         </section>
-        <section className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2"><Trophy className="w-5 h-5 text-secondary" /><h2 className="text-2xl font-display tracking-wide">Ranking</h2></div>
-            <Button variant="ghost" size="sm" asChild><Link href="/ranking">Ver completo <ChevronRight className="w-4 h-4" /></Link></Button>
-          </div>
-          <Card>
-            <CardHeader className="pb-2"><CardTitle className="text-sm text-muted-foreground">Top 5 participantes</CardTitle></CardHeader>
-            <CardContent className="p-0"><RankingTable ranking={top5} /></CardContent>
-          </Card>
-        </section>
+        <RankingCard
+          ranking={ranking}
+          title="Top 5 participantes"
+          maxItems={5}
+          showViewAll
+        />
       </div>
     </div>
   )
 }
 ```
 
-- [ ] **Step 5: Verify build**
+- [ ] **Step 7: Verify build**
 
 ```bash
 npm run build
 ```
 
-- [ ] **Step 6: Commit**
+- [ ] **Step 8: Commit**
 
 ```bash
-git add src/components/public/hero.tsx src/components/public/GameCard.tsx src/components/public/RankingTable.tsx "src/app/(public)/page.tsx"
-git commit -m "feat: revamp home page with hero, stats, and new card designs"
+git add src/components/public/stats-card.tsx src/components/public/ranking-card.tsx src/components/public/hero.tsx src/components/public/GameCard.tsx src/components/public/RankingTable.tsx "src/app/(public)/page.tsx"
+git commit -m "feat: revamp home page with hero, stats-card, ranking-card, and new card designs"
 ```
 
 ---
 
-### Task 12: Migrate Jogos Pages
+### Task 12: Migrate Jogos Pages + FilterTabs
 
 **Files:**
+- Create: `src/components/public/filter-tabs.tsx`
 - Modify: `src/app/(public)/jogos/page.tsx`
 - Modify: `src/app/(public)/jogos/[id]/page.tsx`
 
-- [ ] **Step 1: Replace `src/app/(public)/jogos/page.tsx`**
+- [ ] **Step 1: Create `src/components/public/filter-tabs.tsx`**
 
 ```tsx
-import Link from 'next/link'
-import { getTodosJogos } from '@/lib/db/queries/jogos'
-import { GameCard } from '@/components/public/GameCard'
-import { Badge } from '@/components/ui/badge'
-import { Card, CardContent } from '@/components/ui/card'
-import { FASE_LABELS } from '@/lib/utils/constants'
+"use client"
 
-export const dynamic = 'force-dynamic'
+import { useState } from "react"
+import { cn } from "@/lib/utils"
+import { GRUPOS } from "@/lib/utils/constants"
 
-const faseOrder = ['grupos', 'oitavas', 'quartas', 'semifinal', 'terceiro', 'final']
+type FilterValue = "todos" | string
 
-export default async function JogosPage() {
-  const jogos = await getTodosJogos()
+interface FilterTabsProps {
+  onFilterChange: (filter: FilterValue) => void
+}
 
-  const fasesMap = new Map<string, typeof jogos>()
-  for (const jogo of jogos) {
-    const fase = jogo.fase
-    if (!fasesMap.has(fase)) fasesMap.set(fase, [])
-    fasesMap.get(fase)!.push(jogo)
+export function FilterTabs({ onFilterChange }: FilterTabsProps) {
+  const [active, setActive] = useState<FilterValue>("todos")
+
+  const tabs: { value: FilterValue; label: string }[] = [
+    { value: "todos", label: "Todos" },
+    ...GRUPOS.map((g) => ({ value: `grupo-${g}`, label: `Grupo ${g}` })),
+    { value: "encerrados", label: "Encerrados" },
+  ]
+
+  function handleSelect(value: FilterValue) {
+    setActive(value)
+    onFilterChange(value)
+  }
+
+  return (
+    <div className="flex flex-wrap gap-2">
+      {tabs.map((tab) => (
+        <button
+          key={tab.value}
+          onClick={() => handleSelect(tab.value)}
+          className={cn(
+            "px-3 py-1.5 text-sm font-medium rounded-md transition-colors",
+            active === tab.value
+              ? "bg-primary text-primary-foreground"
+              : "bg-muted text-muted-foreground hover:text-foreground hover:bg-muted/80"
+          )}
+        >
+          {tab.label}
+        </button>
+      ))}
+    </div>
+  )
+}
+```
+
+- [ ] **Step 2: Replace `src/app/(public)/jogos/page.tsx`**
+
+```tsx
+"use client"
+
+import { useState, useEffect } from "react"
+import { GameCard } from "@/components/public/GameCard"
+import { Badge } from "@/components/ui/badge"
+import { Card, CardContent } from "@/components/ui/card"
+import { Skeleton } from "@/components/ui/skeleton"
+import { FilterTabs } from "@/components/public/filter-tabs"
+import { FASE_LABELS } from "@/lib/utils/constants"
+
+interface Jogo {
+  id: string
+  timeA: string
+  timeB: string
+  dataHora: string
+  grupo: string | null
+  fase: string
+  resultadoA: number | null
+  resultadoB: number | null
+  status: string
+}
+
+const faseOrder = ["grupos", "oitavas", "quartas", "semifinal", "terceiro", "final"]
+
+export default function JogosPage() {
+  const [jogos, setJogos] = useState<Jogo[]>([])
+  const [loading, setLoading] = useState(true)
+  const [filter, setFilter] = useState("todos")
+
+  useEffect(() => {
+    fetch("/api/jogos")
+      .then((r) => r.json())
+      .then((data) => setJogos(data))
+      .catch(() => {})
+      .finally(() => setLoading(false))
+  }, [])
+
+  const jogosFiltrados = jogos.filter((jogo) => {
+    if (filter === "todos") return true
+    if (filter === "encerrados") return jogo.status === "finalizado"
+    if (filter.startsWith("grupo-")) {
+      const grupo = filter.replace("grupo-", "")
+      return jogo.grupo === grupo
+    }
+    return true
+  })
+
+  if (loading) {
+    return (
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+        <h1 className="text-3xl font-display tracking-wide">Jogos</h1>
+        <Skeleton className="h-10 w-full" />
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <Skeleton className="h-40" /><Skeleton className="h-40" /><Skeleton className="h-40" />
+        </div>
+      </div>
+    )
+  }
+
+  const fasesMap = new Map<string, Jogo[]>()
+  for (const jogo of jogosFiltrados) {
+    if (!fasesMap.has(jogo.fase)) fasesMap.set(jogo.fase, [])
+    fasesMap.get(jogo.fase)!.push(jogo)
   }
 
   const fasesOrdenadas = faseOrder.filter((f) => fasesMap.has(f))
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8 animate-fade-in-up">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6 animate-fade-in-up">
       <h1 className="text-3xl font-display tracking-wide">Jogos</h1>
 
-      {fasesOrdenadas.map((fase) => {
-        const jogosDaFase = fasesMap.get(fase)!
+      <FilterTabs onFilterChange={setFilter} />
 
-        if (fase === 'grupos') {
-          const gruposMap = new Map<string, typeof jogos>()
-          for (const jogo of jogosDaFase) {
-            const grupo = jogo.grupo ?? '?'
-            if (!gruposMap.has(grupo)) gruposMap.set(grupo, [])
-            gruposMap.get(grupo)!.push(jogo)
-          }
-
-          const gruposOrdenados = Array.from(gruposMap.entries()).sort(([a], [b]) =>
-            a.localeCompare(b)
-          )
-
-          return (
-            <section key={fase} className="space-y-6">
-              <div className="flex items-center gap-3">
-                <h2 className="text-xl font-display tracking-wide">{FASE_LABELS[fase]}</h2>
-                <Badge>{jogosDaFase.length} jogos</Badge>
-              </div>
-
-              {gruposOrdenados.map(([grupo, jogosDoGrupo]) => (
-                <div key={grupo} className="space-y-3">
-                  <h3 className="text-lg font-semibold">Grupo {grupo}</h3>
-                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                    {jogosDoGrupo.map((jogo) => (
-                      <GameCard
-                        key={jogo.id}
-                        id={jogo.id}
-                        timeA={jogo.timeA}
-                        timeB={jogo.timeB}
-                        dataHora={jogo.dataHora}
-                        grupo={jogo.grupo}
-                        fase={jogo.fase}
-                        resultadoA={jogo.resultadoA}
-                        resultadoB={jogo.resultadoB}
-                        status={jogo.status}
-                      />
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </section>
-          )
-        }
-
-        return (
-          <section key={fase} className="space-y-4">
-            <div className="flex items-center gap-3">
-              <h2 className="text-xl font-display tracking-wide">{FASE_LABELS[fase]}</h2>
-              <Badge>{jogosDaFase.length} jogos</Badge>
-            </div>
-
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {jogosDaFase.map((jogo) => (
-                <GameCard
-                  key={jogo.id}
-                  id={jogo.id}
-                  timeA={jogo.timeA}
-                  timeB={jogo.timeB}
-                  dataHora={jogo.dataHora}
-                  grupo={jogo.grupo}
-                  fase={jogo.fase}
-                  resultadoA={jogo.resultadoA}
-                  resultadoB={jogo.resultadoB}
-                  status={jogo.status}
-                />
-              ))}
-            </div>
-          </section>
-        )
-      })}
-
-      {jogos.length === 0 && (
+      {jogosFiltrados.length === 0 ? (
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12">
             <span className="text-6xl mb-4">⚽</span>
             <h3 className="text-xl font-semibold mb-2">Nenhum jogo encontrado</h3>
-            <p className="text-muted-foreground text-center max-w-md">Os jogos aparecerão aqui quando cadastrados.</p>
+            <p className="text-muted-foreground text-center max-w-md">
+              {filter === "todos" ? "Os jogos aparecerão aqui quando cadastrados." : "Nenhum jogo para o filtro selecionado."}
+            </p>
           </CardContent>
         </Card>
+      ) : (
+        fasesOrdenadas.map((fase) => {
+          const jogosDaFase = fasesMap.get(fase)!
+
+          if (fase === "grupos") {
+            const gruposMap = new Map<string, Jogo[]>()
+            for (const jogo of jogosDaFase) {
+              const grupo = jogo.grupo ?? "?"
+              if (!gruposMap.has(grupo)) gruposMap.set(grupo, [])
+              gruposMap.get(grupo)!.push(jogo)
+            }
+            const gruposOrdenados = Array.from(gruposMap.entries()).sort(([a], [b]) => a.localeCompare(b))
+
+            return (
+              <section key={fase} className="space-y-6">
+                <div className="flex items-center gap-3">
+                  <h2 className="text-xl font-display tracking-wide">{FASE_LABELS[fase]}</h2>
+                  <Badge>{jogosDaFase.length} jogos</Badge>
+                </div>
+                {gruposOrdenados.map(([grupo, jogosDoGrupo]) => (
+                  <div key={grupo} className="space-y-3">
+                    <h3 className="text-lg font-semibold">Grupo {grupo}</h3>
+                    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                      {jogosDoGrupo.map((jogo) => (
+                        <GameCard key={jogo.id} id={jogo.id} timeA={jogo.timeA} timeB={jogo.timeB} dataHora={new Date(jogo.dataHora)} grupo={jogo.grupo} fase={jogo.fase} resultadoA={jogo.resultadoA} resultadoB={jogo.resultadoB} status={jogo.status} />
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </section>
+            )
+          }
+
+          return (
+            <section key={fase} className="space-y-4">
+              <div className="flex items-center gap-3">
+                <h2 className="text-xl font-display tracking-wide">{FASE_LABELS[fase]}</h2>
+                <Badge>{jogosDaFase.length} jogos</Badge>
+              </div>
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {jogosDaFase.map((jogo) => (
+                  <GameCard key={jogo.id} id={jogo.id} timeA={jogo.timeA} timeB={jogo.timeB} dataHora={new Date(jogo.dataHora)} grupo={jogo.grupo} fase={jogo.fase} resultadoA={jogo.resultadoA} resultadoB={jogo.resultadoB} status={jogo.status} />
+                ))}
+              </div>
+            </section>
+          )
+        })
       )}
     </div>
   )
 }
 ```
 
-- [ ] **Step 2: Replace `src/app/(public)/jogos/[id]/page.tsx`**
+- [ ] **Step 3: Replace `src/app/(public)/jogos/[id]/page.tsx`**
 
 ```tsx
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
+import Image from 'next/image'
 import { getJogoById } from '@/lib/db/queries/jogos'
 import { getConfiguracao } from '@/lib/db/queries/config'
 import { getRanking } from '@/lib/db/queries/ranking'
@@ -1618,7 +1886,7 @@ export default async function JogoDetailPage({
                       <Link href={`/participantes/${palpite.participanteId}`} className="flex items-center gap-3 hover:text-primary transition-colors">
                         <div className="w-8 h-8 rounded-full overflow-hidden bg-muted flex items-center justify-center shrink-0">
                           {palpite.participante.fotoUrl ? (
-                            <img src={palpite.participante.fotoUrl} alt={palpite.participante.nome} className="w-full h-full object-cover" />
+                            <Image src={palpite.participante.fotoUrl} alt={palpite.participante.nome} width={32} height={32} className="w-full h-full object-cover" />
                           ) : (
                             <span className="text-xs font-bold text-muted-foreground">{palpite.participante.nome.charAt(0).toUpperCase()}</span>
                           )}
@@ -1662,17 +1930,17 @@ export default async function JogoDetailPage({
 }
 ```
 
-- [ ] **Step 3: Verify build**
+- [ ] **Step 4: Verify build**
 
 ```bash
 npm run build
 ```
 
-- [ ] **Step 4: Commit**
+- [ ] **Step 5: Commit**
 
 ```bash
-git add "src/app/(public)/jogos/page.tsx" "src/app/(public)/jogos/[id]/page.tsx"
-git commit -m "feat: revamp jogos listing and detail pages"
+git add src/components/public/filter-tabs.tsx "src/app/(public)/jogos/page.tsx" "src/app/(public)/jogos/[id]/page.tsx"
+git commit -m "feat: revamp jogos listing with FilterTabs and detail pages"
 ```
 
 ---
@@ -1686,6 +1954,7 @@ git commit -m "feat: revamp jogos listing and detail pages"
 - [ ] **Step 1: Create `src/components/public/ranking-podium.tsx`**
 
 ```tsx
+import Image from "next/image"
 import type { RankingEntry } from "@/lib/utils/types"
 
 interface RankingPodiumProps { ranking: RankingEntry[] }
@@ -1707,9 +1976,9 @@ export function RankingPodium({ ranking }: RankingPodiumProps) {
         return (
           <div key={entry.participanteId} className={`rounded-lg border border-border ${style.border} ${style.bg} p-6 flex flex-col items-center gap-3 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg`}>
             <span className="text-sm font-medium text-muted-foreground">{style.label}</span>
-            <div className={`${style.size} rounded-full overflow-hidden bg-background flex items-center justify-center ring-2 ring-border`}>
+            <div className={`${style.size} rounded-full overflow-hidden bg-background flex items-center justify-center ring-2 ring-border relative`}>
               {entry.fotoUrl ? (
-                <img src={entry.fotoUrl} alt={entry.nome} className="w-full h-full object-cover" />
+                <Image src={entry.fotoUrl} alt={entry.nome} fill className="object-cover" />
               ) : (
                 <span className="text-2xl font-display font-bold text-primary">{entry.nome.charAt(0).toUpperCase()}</span>
               )}
@@ -1730,7 +1999,8 @@ export function RankingPodium({ ranking }: RankingPodiumProps) {
 import { getRanking } from '@/lib/db/queries/ranking'
 import { RankingTable } from '@/components/public/RankingTable'
 import { RankingPodium } from '@/components/public/ranking-podium'
-import { Card, CardContent } from '@/components/ui/card'
+import { StatsCard } from '@/components/public/stats-card'
+import { Card } from '@/components/ui/card'
 import { Trophy, Target, BarChart3 } from 'lucide-react'
 
 export const dynamic = 'force-dynamic'
@@ -1748,48 +2018,18 @@ export default async function RankingPage() {
 
       {ranking.length === 0 ? (
         <Card>
-          <CardContent className="flex flex-col items-center justify-center py-12">
+          <div className="flex flex-col items-center justify-center py-12">
             <span className="text-6xl mb-4">🏆</span>
             <h3 className="text-xl font-semibold mb-2">Nenhum participante ainda</h3>
             <p className="text-muted-foreground text-center max-w-md">Os participantes aparecerão aqui quando cadastrados.</p>
-          </CardContent>
+          </div>
         </Card>
       ) : (
         <>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <Card>
-              <CardContent className="p-4 flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                  <Trophy className="w-5 h-5 text-primary" />
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Maior pontuação</p>
-                  <p className="text-xl font-display text-primary">{maiorPontuacao} pts</p>
-                </div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="p-4 flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-secondary/10 flex items-center justify-center">
-                  <BarChart3 className="w-5 h-5 text-secondary" />
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Média de pontos</p>
-                  <p className="text-xl font-display text-primary">{mediaPontos} pts</p>
-                </div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="p-4 flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-green-100 dark:bg-green-900/20 flex items-center justify-center">
-                  <Target className="w-5 h-5 text-green-600 dark:text-green-400" />
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Placares exatos</p>
-                  <p className="text-xl font-display text-primary">{totalExatos}</p>
-                </div>
-              </CardContent>
-            </Card>
+            <StatsCard label="Maior pontuação" value={`${maiorPontuacao} pts`} icon={Trophy} />
+            <StatsCard label="Média de pontos" value={`${mediaPontos} pts`} icon={BarChart3} iconColor="text-secondary" iconBg="bg-secondary/10" />
+            <StatsCard label="Placares exatos" value={totalExatos} icon={Target} iconColor="text-green-600 dark:text-green-400" iconBg="bg-green-100 dark:bg-green-900/20" />
           </div>
 
           <RankingPodium ranking={ranking} />
@@ -1831,6 +2071,7 @@ git commit -m "feat: revamp ranking page with podium and stats summary"
 
 ```tsx
 import Link from 'next/link'
+import Image from 'next/image'
 import { Card, CardContent } from '@/components/ui/card'
 
 interface ParticipantCardProps {
@@ -1844,9 +2085,9 @@ export function ParticipantCard({ id, nome, fotoUrl }: ParticipantCardProps) {
     <Link href={`/participantes/${id}`} className="rounded-lg focus:ring-2 focus:ring-ring focus:outline-none block">
       <Card className="group hover:-translate-y-1 hover:border-primary/50 hover:shadow-lg transition-all duration-300">
         <CardContent className="flex flex-col items-center gap-3 p-4">
-          <div className="w-20 h-20 rounded-full overflow-hidden bg-muted flex items-center justify-center ring-2 ring-border group-hover:ring-primary/30 transition-all">
+          <div className="w-20 h-20 rounded-full overflow-hidden bg-muted flex items-center justify-center ring-2 ring-border group-hover:ring-primary/30 transition-all relative">
             {fotoUrl ? (
-              <img src={fotoUrl} alt={nome} className="w-full h-full object-cover" />
+              <Image src={fotoUrl} alt={nome} fill className="object-cover" />
             ) : (
               <span className="text-2xl font-display font-bold text-primary">{nome.charAt(0).toUpperCase()}</span>
             )}
@@ -1989,6 +2230,7 @@ export default async function ParticipantesPage() {
 
 ```tsx
 import { notFound } from 'next/navigation'
+import Image from 'next/image'
 import { getParticipanteById } from '@/lib/db/queries/participantes'
 import { getRanking } from '@/lib/db/queries/ranking'
 import { getConfiguracao } from '@/lib/db/queries/config'
@@ -2048,9 +2290,9 @@ export default async function ParticipanteProfilePage({
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8 animate-fade-in-up">
       <Card>
         <CardContent className="p-6 flex flex-col sm:flex-row items-center gap-6">
-          <div className="w-28 h-28 rounded-full overflow-hidden bg-muted flex items-center justify-center shrink-0 ring-4 ring-border">
+          <div className="w-28 h-28 rounded-full overflow-hidden bg-muted flex items-center justify-center shrink-0 ring-4 ring-border relative">
             {participante.fotoUrl ? (
-              <img src={participante.fotoUrl} alt={participante.nome} className="w-full h-full object-cover" />
+              <Image src={participante.fotoUrl} alt={participante.nome} fill className="object-cover" />
             ) : (
               <span className="text-4xl font-display font-bold text-primary">{participante.nome.charAt(0).toUpperCase()}</span>
             )}
@@ -2541,6 +2783,7 @@ git commit -m "feat: revamp admin dashboard, login, and stats card"
 import { useState, useRef, type DragEvent, type ChangeEvent } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
+import { Progress } from '@/components/ui/progress'
 import { Upload, FileText, Loader2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { PalpiteDTO, PalpiteExtraDTO, ValidationResult } from '@/lib/utils/types'
@@ -2557,6 +2800,7 @@ interface UploadFormProps {
 export function UploadForm({ onUploadSuccess, onFileSelect, participanteId }: UploadFormProps) {
   const [file, setFile] = useState<File | null>(null)
   const [uploading, setUploading] = useState(false)
+  const [progress, setProgress] = useState(0)
   const [error, setError] = useState<string | null>(null)
   const [dragging, setDragging] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -2592,25 +2836,37 @@ export function UploadForm({ onUploadSuccess, onFileSelect, participanteId }: Up
     if (selected) handleFileSelect(selected)
   }
 
-  async function handleUpload() {
+  function handleUpload() {
     if (!file) return
-    setUploading(true); setError(null)
-    try {
-      const formData = new FormData()
-      formData.append('file', file)
-      formData.append('participanteId', participanteId)
-      const res = await fetch('/api/upload', { method: 'POST', body: formData })
-      const data = await res.json()
-      if (!res.ok) {
-        const errorDetails = data.detalhes || data.validacao?.erros
-        if (Array.isArray(errorDetails) && errorDetails.length > 0) {
-          setError(`${data.error || 'Erros de validação'}:\n• ${errorDetails.join('\n• ')}`)
-        } else { setError(data.error || 'Erro ao processar arquivo') }
-        return
+    setUploading(true); setError(null); setProgress(0)
+    const formData = new FormData()
+    formData.append('file', file)
+    formData.append('participanteId', participanteId)
+    const xhr = new XMLHttpRequest()
+    xhr.open('POST', '/api/upload')
+    xhr.upload.onprogress = (e) => {
+      if (e.lengthComputable) setProgress(Math.round((e.loaded / e.total) * 100))
+    }
+    xhr.onload = () => {
+      setUploading(false)
+      if (xhr.status >= 200 && xhr.status < 300) {
+        setProgress(100)
+        try {
+          const data = JSON.parse(xhr.responseText)
+          onUploadSuccess(data.preview, data.validacao)
+        } catch { setError('Erro ao processar resposta do servidor') }
+      } else {
+        try {
+          const data = JSON.parse(xhr.responseText)
+          const errorDetails = data.detalhes || data.validacao?.erros
+          if (Array.isArray(errorDetails) && errorDetails.length > 0) {
+            setError(`${data.error || 'Erros de validação'}:\n• ${errorDetails.join('\n• ')}`)
+          } else { setError(data.error || 'Erro ao processar arquivo') }
+        } catch { setError('Erro de conexão ao enviar arquivo') }
       }
-      onUploadSuccess(data.preview, data.validacao)
-    } catch { setError('Erro de conexão ao enviar arquivo') }
-    finally { setUploading(false) }
+    }
+    xhr.onerror = () => { setUploading(false); setError('Erro de conexão ao enviar arquivo') }
+    xhr.send(formData)
   }
 
   function formatSize(bytes: number): string {
@@ -2646,10 +2902,20 @@ export function UploadForm({ onUploadSuccess, onFileSelect, participanteId }: Up
 
         {error && <p className="text-sm text-danger">{error}</p>}
 
-        {file && (
+        {uploading && (
+          <div className="space-y-1">
+            <div className="flex justify-between text-xs text-muted-foreground">
+              <span>Enviando...</span>
+              <span>{progress}%</span>
+            </div>
+            <Progress value={progress} />
+          </div>
+        )}
+
+        {file && !uploading && (
           <div className="flex justify-end">
-            <Button onClick={handleUpload} disabled={uploading}>
-              {uploading ? <><Loader2 className="w-4 h-4 animate-spin" /> Enviando...</> : 'Enviar'}
+            <Button onClick={handleUpload}>
+              Enviar
             </Button>
           </div>
         )}
@@ -2962,6 +3228,7 @@ git commit -m "feat: revamp admin upload page with new components and toasts"
 'use client'
 
 import { useState, useEffect, useCallback, type FormEvent } from 'react'
+import Image from 'next/image'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -2970,6 +3237,7 @@ import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog'
 import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogAction, AlertDialogCancel } from '@/components/ui/alert-dialog'
 import { Skeleton } from '@/components/ui/skeleton'
+import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip'
 import { toast } from 'sonner'
 import { Loader2, Users } from 'lucide-react'
 
@@ -3093,7 +3361,7 @@ export default function AdminParticipantesPage() {
                 <TableRow key={p.id}>
                   <TableCell>
                     {p.fotoUrl ? (
-                      <img src={p.fotoUrl} alt={p.nome} className="w-10 h-10 rounded-full object-cover" />
+                      <Image src={p.fotoUrl} alt={p.nome} width={40} height={40} className="rounded-full object-cover" />
                     ) : (
                       <div className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center text-primary font-bold text-sm">{p.nome.charAt(0).toUpperCase()}</div>
                     )}
@@ -3101,8 +3369,18 @@ export default function AdminParticipantesPage() {
                   <TableCell>{p.nome}</TableCell>
                   <TableCell className="text-right">
                     <div className="flex gap-2 justify-end">
-                      <Button variant="secondary" size="sm" onClick={() => openEditModal(p)}>Editar</Button>
-                      <Button variant="destructive" size="sm" onClick={() => openDeleteModal(p)}>Excluir</Button>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button variant="secondary" size="sm" onClick={() => openEditModal(p)}>Editar</Button>
+                        </TooltipTrigger>
+                        <TooltipContent>Editar dados do participante</TooltipContent>
+                      </Tooltip>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button variant="destructive" size="sm" onClick={() => openDeleteModal(p)}>Excluir</Button>
+                        </TooltipTrigger>
+                        <TooltipContent>Excluir participante e todos os palpites</TooltipContent>
+                      </Tooltip>
                     </div>
                   </TableCell>
                 </TableRow>
@@ -3144,7 +3422,7 @@ export default function AdminParticipantesPage() {
             </div>
             <div className="flex flex-col gap-1">
               <label className="text-sm font-medium">Foto</label>
-              {selected?.fotoUrl && <img src={selected.fotoUrl} alt={selected.nome} className="w-16 h-16 rounded-full object-cover mb-2" />}
+              {selected?.fotoUrl && <Image src={selected.fotoUrl} alt={selected.nome} width={64} height={64} className="rounded-full object-cover mb-2" />}
               <input type="file" accept="image/*" onChange={(e) => setFormFoto(e.target.files?.[0] || null)} className="w-full text-sm file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-primary file:text-white hover:file:bg-primary-dark" />
             </div>
             <DialogFooter>
@@ -3453,7 +3731,7 @@ export default function AdminResultadosPage() {
     <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8 animate-fade-in-up">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <h1 className="text-3xl font-display tracking-wide">Resultados</h1>
-        <Button onClick={handleSync} disabled={syncing}>
+        <Button onClick={handleSync} disabled={syncing} className={syncing ? 'animate-shimmer text-primary-foreground' : ''}>
           {syncing ? <><Loader2 className="w-4 h-4 animate-spin" /> Sincronizando...</> : <><RefreshCw className="w-4 h-4" /> Sincronizar Resultados</>}
         </Button>
       </div>
@@ -3678,7 +3956,40 @@ git commit -m "feat: revamp admin jogos, resultados, and config pages"
 
 ---
 
-### Task 20: Run Lint + Tests + Final Verification
+### Task 20: Delete Old Uppercase UI Components
+
+**Files:**
+- Delete: `src/components/ui/Button.tsx`
+- Delete: `src/components/ui/Card.tsx`
+- Delete: `src/components/ui/Badge.tsx`
+- Delete: `src/components/ui/Table.tsx`
+- Delete: `src/components/ui/Input.tsx`
+- Delete: `src/components/ui/Select.tsx`
+- Delete: `src/components/ui/Modal.tsx`
+- Delete: `src/components/ui/Tabs.tsx`
+
+- [ ] **Step 1: Delete old component files**
+
+```bash
+rm src/components/ui/Button.tsx src/components/ui/Card.tsx src/components/ui/Badge.tsx src/components/ui/Table.tsx src/components/ui/Input.tsx src/components/ui/Select.tsx src/components/ui/Modal.tsx src/components/ui/Tabs.tsx
+```
+
+- [ ] **Step 2: Verify build**
+
+```bash
+npm run build
+```
+
+- [ ] **Step 3: Commit**
+
+```bash
+git add -A
+git commit -m "chore: remove old uppercase UI components replaced by shadcn/ui"
+```
+
+---
+
+### Task 21: Run Lint + Tests + Final Verification
 
 - [ ] **Step 1: Run lint**
 
@@ -3736,17 +4047,18 @@ git commit -m "fix: address lint and visual issues from frontend revamp"
 | 4 | Layout update (fonts, Toaster) | src/app/layout.tsx |
 | 5 | Button + Card + Badge + Table | src/components/ui/ |
 | 6 | Input + Select + Dialog + Tabs | src/components/ui/ |
-| 7 | Skeleton + AlertDialog + Tooltip + Accordion | src/components/ui/ |
+| 7 | Skeleton + AlertDialog + Tooltip + Accordion + Alert + Progress | src/components/ui/ |
 | 8 | Header (navbar, mobile, toggle) | src/components/layout/Header.tsx |
 | 9 | Footer | src/components/layout/Footer.tsx |
-| 10 | Delete old uppercase components | src/components/ui/ |
-| 11 | Home + Hero + GameCard + RankingTable | src/app/(public)/page.tsx |
-| 12 | Jogos pages | src/app/(public)/jogos/ |
-| 13 | Ranking + Podium | src/app/(public)/ranking/ |
+| 10 | Error Boundary + Admin Layout | src/app/global-error.tsx, src/app/admin/layout.tsx |
+| 11 | Home + Hero + StatsCard + RankingCard + GameCard + RankingTable | src/app/(public)/page.tsx |
+| 12 | Jogos pages + FilterTabs | src/app/(public)/jogos/ |
+| 13 | Ranking + Podium + StatsCard | src/app/(public)/ranking/ |
 | 14 | Participantes pages | src/app/(public)/participantes/ |
 | 15 | Regras (accordion) | src/app/(public)/regras/ |
-| 16 | Admin Dashboard + Login | src/app/admin/ |
-| 17 | Admin Upload | src/app/admin/upload/ |
+| 16 | Admin Dashboard + Login + RankingCard | src/app/admin/ |
+| 17 | Admin Upload + Progress Bar | src/app/admin/upload/ |
 | 18 | Admin Participantes CRUD | src/app/admin/participantes/ |
 | 19 | Admin Jogos + Resultados + Config | src/app/admin/ |
-| 20 | Lint + Tests + Final Verification | all |
+| 20 | Delete old uppercase components | src/components/ui/ |
+| 21 | Lint + Tests + Final Verification | all |
