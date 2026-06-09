@@ -3,10 +3,12 @@ import { requireAdmin } from '@/lib/auth/middleware'
 import { getTodosJogos } from '@/lib/db/queries/jogos'
 import { parseExcel } from '@/lib/services/upload/excel-parser'
 import { parseFoto } from '@/lib/services/upload/ocr-vision'
+import { parsePdf } from '@/lib/services/upload/pdf-parser'
 import { validateUpload } from '@/lib/services/upload/validator'
 import type { UploadResult } from '@/lib/utils/types'
 
 const EXCEL_MIME = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+const PDF_MIME = 'application/pdf'
 const IMAGE_MIMES = ['image/jpeg', 'image/png', 'image/webp']
 const MAX_FILE_SIZE = 10 * 1024 * 1024
 
@@ -34,8 +36,9 @@ export async function POST(request: NextRequest) {
     const mime = file.type
     const isExcel = mime === EXCEL_MIME
     const isImage = IMAGE_MIMES.includes(mime)
+    const isPdf = mime === PDF_MIME
 
-    if (!isExcel && !isImage) {
+    if (!isExcel && !isImage && !isPdf) {
       return NextResponse.json({ error: 'Tipo de arquivo não suportado' }, { status: 400 })
     }
 
@@ -48,6 +51,17 @@ export async function POST(request: NextRequest) {
 
     if (isExcel) {
       result = parseExcel(buffer, jogosIds)
+    } else if (isPdf) {
+      result = await parsePdf(buffer)
+      const mappedPalpites = result.palpites.map((p, i) => ({
+        jogoId: jogosIds[i] ?? '',
+        placarA: p.placarA,
+        placarB: p.placarB,
+      }))
+      if (mappedPalpites.some(p => !p.jogoId)) {
+        return NextResponse.json({ error: 'Número de palpites do PDF excede número de jogos' }, { status: 400 })
+      }
+      result = { ...result, palpites: mappedPalpites }
     } else {
       const fotoResult = await parseFoto(buffer, mime)
       const mappedPalpites = fotoResult.palpites.map((p, i) => ({
