@@ -56,7 +56,11 @@ export async function POST(request: NextRequest) {
     if (arquivoBase64 && arquivoNome) {
       const { uploadFile } = await import('@/lib/services/storage/supabase')
       const buffer = Buffer.from(arquivoBase64, 'base64')
-      const path = `uploads/${participanteId}/${Date.now()}-${arquivoNome}`
+      const sanitizedNome = arquivoNome
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^a-zA-Z0-9.-]/g, '-')
+      const path = `uploads/${participanteId}/${Date.now()}-${sanitizedNome}`
       finalArquivoUrl = await uploadFile('palpites', path, buffer, arquivoContentType || 'application/octet-stream')
     }
 
