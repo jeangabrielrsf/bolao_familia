@@ -168,9 +168,180 @@ Repaginar completamente o frontend do Bolão Copa 2026 seguindo o estilo do prot
 
 ---
 
-## 6. Regras de Desenvolvimento
+## 6. Elementos de UX e Feedback
 
-### 6.1 Skills Obrigatórias
+### 6.1 Toasts (Notificações)
+
+**Componente:** shadcn/ui Sonner (toast)
+
+**Casos de uso:**
+- Upload de planilha bem-sucedido: "Palpites de [nome] importados com sucesso!"
+- Erro ao salvar: "Erro ao salvar configurações. Tente novamente."
+- Ação confirmada: "Resultados atualizados!"
+- Validação: "Arquivo inválido. Use Excel, PDF ou imagem."
+
+**Comportamento:**
+- Posição: bottom-right (desktop), bottom-center (mobile)
+- Duração: 4 segundos (sucesso/info), 6 segundos (erro/warning)
+- Dismissível: botão X ou swipe
+- Tipos: success (verde), error (vermelho), warning (amarelo), info (azul)
+
+**Implementação:**
+```tsx
+import { toast } from "sonner"
+
+toast.success("Palpites importados!")
+toast.error("Erro ao salvar. Tente novamente.")
+```
+
+### 6.2 Loading States
+
+**Skeletons (shadcn/ui Skeleton)**
+- Cards de jogos, ranking, participantes: skeleton com formato do conteúdo
+- Tabelas: skeleton rows (5 linhas)
+- Stats: skeleton blocks
+
+**Spinners**
+- Botões em ação: spinner interno + texto "Salvando..."
+- Upload de arquivo: progress bar + porcentagem
+- Fetch de dados: spinner centralizado com texto "Carregando..."
+
+**Progress Bars**
+- Upload de arquivo: barra de progresso real (0-100%)
+- Sync de resultados: barra indeterminada (shimmer)
+
+### 6.3 Empty States
+
+**Quando exibir:**
+- Lista de jogos sem jogos agendados
+- Ranking sem dados (início do bolão)
+- Participantes sem participantes cadastrados
+- Busca sem resultados
+
+**Estrutura:**
+- Ícone ilustrativo (emoji ou SVG)
+- Título: "Nenhum jogo encontrado"
+- Descrição: "Os jogos da fase de grupos serão exibidos aqui."
+- Ação (opcional): botão "Ver regras" ou "Voltar ao início"
+
+**Exemplo:**
+```tsx
+<div className="flex flex-col items-center justify-center py-12">
+  <span className="text-6xl mb-4">⚽</span>
+  <h3 className="text-xl font-semibold mb-2">Nenhum jogo encontrado</h3>
+  <p className="text-muted-foreground text-center max-w-md">
+    Os jogos da fase de grupos serão exibidos aqui em breve.
+  </p>
+</div>
+```
+
+### 6.4 Error States
+
+**Error Boundary (global)**
+- Captura erros de React
+- Exibe tela de erro com mensagem amigável
+- Botão "Tentar novamente" ou "Voltar ao início"
+
+**Error em componentes:**
+- Falha ao carregar dados: card com ícone de erro + mensagem + botão retry
+- Formulário com erro: mensagens inline abaixo dos campos
+- API error: toast + fallback UI
+
+**Exemplo:**
+```tsx
+<div className="flex flex-col items-center justify-center py-12">
+  <span className="text-6xl mb-4">❌</span>
+  <h3 className="text-xl font-semibold mb-2">Erro ao carregar dados</h3>
+  <p className="text-muted-foreground text-center max-w-md mb-4">
+    Não foi possível carregar o ranking. Tente novamente.
+  </p>
+  <Button onClick={retry}>Tentar novamente</Button>
+</div>
+```
+
+### 6.5 Confirmation Dialogs
+
+**Quando usar:**
+- Ações destrutivas: "Excluir participante?"
+- Confirmações importantes: "Confirmar upload de palpites?"
+- Sync de resultados: "Sincronizar resultados ao vivo?"
+
+**Estrutura (shadcn/ui AlertDialog):**
+- Título: "Tem certeza?"
+- Descrição: "Esta ação não pode ser desfeita."
+- Botões: "Cancelar" (outline) + "Confirmar" (destructive/primary)
+
+**Exemplo:**
+```tsx
+<AlertDialog>
+  <AlertDialogContent>
+    <AlertDialogHeader>
+      <AlertDialogTitle>Excluir participante?</AlertDialogTitle>
+      <AlertDialogDescription>
+        Esta ação removerá todos os palpites de João Silva. Esta ação não pode ser desfeita.
+      </AlertDialogDescription>
+    </AlertDialogHeader>
+    <AlertDialogFooter>
+      <AlertDialogCancel>Cancelar</AlertDialogCancel>
+      <AlertDialogAction onClick={handleDelete}>Excluir</AlertDialogAction>
+    </AlertDialogFooter>
+  </AlertDialogContent>
+</AlertDialog>
+```
+
+### 6.6 Form Feedback
+
+**Validação inline:**
+- Erro abaixo do campo: texto vermelho + ícone
+- Campo inválido: borda vermelha
+- Campo válido: borda verde (opcional)
+
+**Submit states:**
+- Botão desabilitado durante submit
+- Spinner interno + texto "Salvando..."
+- Toast de sucesso/erro após conclusão
+
+**Exemplo:**
+```tsx
+<Button disabled={isSubmitting}>
+  {isSubmitting ? (
+    <>
+      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+      Salvando...
+    </>
+  ) : (
+    "Salvar"
+  )}
+</Button>
+```
+
+### 6.7 Tooltips
+
+**Quando usar:**
+- Ícones sem label: "Ver palpites", "Editar", "Excluir"
+- Informações adicionais: "Placar exato (10 pontos)"
+- Ações em tabelas: botões de ação com ícones
+
+**Implementação:** shadcn/ui Tooltip
+- Delay: 200ms antes de exibir
+- Posição: top (padrão), bottom se não houver espaço
+
+### 6.8 Transitions
+
+**Page transitions:**
+- Fade-in ao navegar entre rotas (0.3s)
+- Skeleton durante loading (não bloqueia interação)
+
+**Component transitions:**
+- Modal: fade + scale (0.2s)
+- Toast: slide-in from right (0.3s)
+- Accordion: smooth expand/collapse (0.3s)
+
+---
+
+## 7. Regras de Desenvolvimento
+
+### 7.1 Skills Obrigatórias
 
 **Durante toda a implementação, usar as seguintes skills:**
 
@@ -183,7 +354,7 @@ Repaginar completamente o frontend do Bolão Copa 2026 seguindo o estilo do prot
 - Code review deve verificar conformidade com as skills
 - Testes visuais em ambos os temas (claro/escuro)
 
-### 6.2 Padrões de Código
+### 7.2 Padrões de Código
 
 - Componentes funcionais com TypeScript
 - Server Components por padrão, Client Components apenas quando necessário (useState, useEffect, event handlers)
@@ -192,7 +363,7 @@ Repaginar completamente o frontend do Bolão Copa 2026 seguindo o estilo do prot
 - Props tipadas com interfaces TypeScript
 - Evitar barrel imports (importar direto do arquivo)
 
-### 6.3 Performance
+### 7.3 Performance
 
 - Lazy load de componentes pesados (next/dynamic)
 - Otimizar imagens com next/image
@@ -200,7 +371,7 @@ Repaginar completamente o frontend do Bolão Copa 2026 seguindo o estilo do prot
 - Evitar waterfalls de fetch (Promise.all, Suspense boundaries)
 - Minificar CSS/JS em produção
 
-### 6.4 Acessibilidade
+### 7.4 Acessibilidade
 
 - Contraste WCAG AA (4.5:1 para texto normal)
 - Foco visível em todos os elementos interativos
@@ -209,7 +380,7 @@ Repaginar completamente o frontend do Bolão Copa 2026 seguindo o estilo do prot
 - `prefers-reduced-motion` respeitado
 - Semantic HTML (nav, main, section, footer)
 
-### 6.5 Responsividade
+### 7.5 Responsividade
 
 - Mobile-first
 - Breakpoints: 640px (sm), 768px (md), 1024px (lg), 1280px (xl)
@@ -219,7 +390,7 @@ Repaginar completamente o frontend do Bolão Copa 2026 seguindo o estilo do prot
 
 ---
 
-## 7. Estrutura de Arquivos
+## 8. Estrutura de Arquivos
 
 ```
 src/
@@ -256,6 +427,11 @@ src/
       select.tsx
       input.tsx
       accordion.tsx
+      toast.tsx (Sonner)
+      skeleton.tsx
+      alert-dialog.tsx
+      tooltip.tsx
+      alert.tsx
     public/
       hero.tsx
       stats-card.tsx
@@ -275,7 +451,7 @@ src/
 
 ---
 
-## 8. Critérios de Aceite
+## 9. Critérios de Aceite
 
 - [ ] Tema claro/escuro funcionando com toggle manual
 - [ ] Detecção automática de `prefers-color-scheme`
@@ -289,10 +465,16 @@ src/
 - [ ] Performance otimizada (Lighthouse score > 90)
 - [ ] Funcionalidades existentes preservadas (upload, ranking, resultados)
 - [ ] Código revisado com as 3 skills (frontend-design, web-design-guidelines, vercel-react-best-practices)
+- [ ] Toasts implementados para feedback de ações (sucesso, erro, warning, info)
+- [ ] Loading states com skeletons e spinners
+- [ ] Empty states para listas vazias
+- [ ] Error states com retry
+- [ ] Confirmation dialogs para ações destrutivas
+- [ ] Tooltips em ícones e ações
 
 ---
 
-## 9. Riscos e Mitigações
+## 10. Riscos e Mitigações
 
 | Risco | Mitigação |
 |-------|-----------|
@@ -304,7 +486,7 @@ src/
 
 ---
 
-## 10. Próximos Passos
+## 11. Próximos Passos
 
 1. Criar branch `feature/frontend-revamp`
 2. Instalar shadcn/ui e configurar
