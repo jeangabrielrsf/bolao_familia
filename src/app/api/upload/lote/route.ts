@@ -32,9 +32,10 @@ export async function POST(request: NextRequest) {
     console.log(`[upload-lote] Arquivo recebido: ${file.name} (${(file.size / 1024).toFixed(1)} KB)`)
 
     const buffer = Buffer.from(await file.arrayBuffer())
-    const jogos = await getTodosJogos()
-    const jogosIds = jogos.map((j) => j.id)
-    const timesJogos = jogos.map((j) => ({ timeA: j.timeA, timeB: j.timeB }))
+    const todosJogos = await getTodosJogos()
+    const jogosFaseGrupos = todosJogos.filter((j) => j.fase === 'grupos')
+    const jogosIds = jogosFaseGrupos.map((j) => j.id)
+    const timesJogos = jogosFaseGrupos.map((j) => ({ timeA: j.timeA, timeB: j.timeB }))
 
     const grupos = parseExcelMultiSheet(buffer, jogosIds)
 
