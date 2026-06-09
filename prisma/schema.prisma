@@ -8,6 +8,7 @@ datasource db {
 
 enum Fase {
   grupos
+  dezesseis_avos
   oitavas
   quartas
   semifinal
@@ -64,6 +65,7 @@ model Jogo {
   resultadoA  Int?      @map("resultado_a")
   resultadoB  Int?      @map("resultado_b")
   status      StatusJogo @default(agendado)
+  isBolao     Boolean   @default(false) @map("is_bolao")
   sofascoreId String?   @map("sofascore_id")
   criadoEm    DateTime  @default(now()) @map("criado_em")
 

@@ -5,12 +5,49 @@ import { PONTUACAO_PADRAO, CONFIG_CHAVES } from '../src/lib/utils/constants'
 const adapter = new PrismaPg(process.env.DATABASE_URL!)
 const prisma = new PrismaClient({ adapter })
 
+const JOGOS_BOLAO = new Set([
+  'México|África do Sul',
+  'EUA|Paraguai',
+  'Brasil|Marrocos',
+  'Haiti|Escócia',
+  'Alemanha|Curaçao',
+  'Holanda|Japão',
+  'Espanha|Cabo Verde',
+  'Arábia Saudita|Uruguai',
+  'França|Senegal',
+  'Argentina|Argélia',
+  'Inglaterra|Croácia',
+  'Portugal|Congo',
+  'Canadá|Catar',
+  'Suíça|Bósnia',
+  'Escócia|Marrocos',
+  'Brasil|Haiti',
+  'Holanda|Suécia',
+  'Alemanha|Costa do Marfim',
+  'Uruguai|Cabo Verde',
+  'Bélgica|Irã',
+  'França|Iraque',
+  'Noruega|Senegal',
+  'Jordânia|Argélia',
+  'Portugal|Uzebequistão',
+  'Escócia|Brasil',
+  'República Checa|México',
+  'Tunísia|Holanda',
+  'Equador|Alemanha',
+  'Noruega|França',
+  'Uruguai|Espanha',
+  'Egito|Irã',
+  'Colômbia|Portugal',
+  'Jordânia|Argentina',
+])
+
 const jogosData: Array<{
   grupo: string
   timeA: string
   timeB: string
   dataHora: string
   sofascoreId: string
+  isBolao?: boolean
 }> = [
   { grupo: 'A', timeA: 'México', timeB: 'África do Sul', dataHora: '2026-06-11T19:00:00.000Z', sofascoreId: '15186710' },
   { grupo: 'A', timeA: 'Coreia do Sul', timeB: 'República Checa', dataHora: '2026-06-12T02:00:00.000Z', sofascoreId: '15186720' },
@@ -103,6 +140,7 @@ async function main() {
           timeB: jogo.timeB,
           sofascoreId: jogo.sofascoreId,
           status: 'agendado',
+          isBolao: JOGOS_BOLAO.has(`${jogo.timeA}|${jogo.timeB}`),
         },
       })
     )

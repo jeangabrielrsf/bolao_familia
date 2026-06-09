@@ -3,6 +3,7 @@ import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardFooter } from "@/components/ui/card"
 import { FASE_LABELS } from "@/lib/utils/constants"
 import { Calendar, ChevronRight } from "lucide-react"
+import { cn } from "@/lib/utils"
 
 interface GameCardProps {
   id?: string
@@ -14,18 +15,25 @@ interface GameCardProps {
   resultadoA: number | null
   resultadoB: number | null
   status: string
+  isBolao?: boolean
 }
 
-export function GameCard({ id, timeA, timeB, dataHora, grupo, fase, resultadoA, resultadoB, status }: GameCardProps) {
+export function GameCard({ id, timeA, timeB, dataHora, grupo, fase, resultadoA, resultadoB, status, isBolao }: GameCardProps) {
   const dataFormatada = dataHora.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" })
   const horaFormatada = dataHora.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })
   const finalizado = status === "finalizado"
 
   const content = (
-    <Card className="group cursor-pointer hover:-translate-y-1 hover:border-primary/50 hover:shadow-lg">
+    <Card className={cn(
+      "group cursor-pointer hover:-translate-y-1 hover:border-primary/50 hover:shadow-lg",
+      isBolao && "border-l-4 border-l-amber-500"
+    )}>
       <CardContent className="p-4 space-y-3">
         <div className="flex items-center justify-between">
-          {grupo ? <Badge variant="info">Grupo {grupo}</Badge> : <Badge>{FASE_LABELS[fase] ?? fase}</Badge>}
+          <div className="flex items-center gap-2">
+            {grupo ? <Badge variant="info">Grupo {grupo}</Badge> : <Badge>{FASE_LABELS[fase] ?? fase}</Badge>}
+            {isBolao && <Badge variant="warning">BOLÃO</Badge>}
+          </div>
           <div className="flex items-center gap-1 text-xs text-muted-foreground">
             <Calendar className="w-3 h-3" />
             {dataFormatada} · {horaFormatada}

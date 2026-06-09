@@ -1,0 +1,1 @@
+ALTER TABLE "jogos" ADD COLUMN "is_bolao" BOOLEAN NOT NULL DEFAULT false;
