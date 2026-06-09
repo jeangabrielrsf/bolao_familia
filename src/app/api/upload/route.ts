@@ -46,7 +46,7 @@ export async function POST(request: NextRequest) {
 
     const buffer = Buffer.from(await file.arrayBuffer())
     const jogos = await getTodosJogos()
-    const jogosIds = jogos.map((j) => j.id)
+    const jogosInfo = jogos.map((j) => ({ id: j.id, timeA: j.timeA, timeB: j.timeB }))
     const timesJogos = jogos.map((j) => ({ timeA: j.timeA, timeB: j.timeB }))
 
     let result: UploadResult
@@ -54,7 +54,7 @@ export async function POST(request: NextRequest) {
 
     if (isExcel) {
       console.log('[upload] Parseando Excel...')
-      result = parseExcel(buffer, jogosIds)
+      result = parseExcel(buffer, jogosInfo)
     } else if (isPdf) {
       console.log('[upload] Parseando PDF...')
       const pdfResult = await parsePdf(buffer)

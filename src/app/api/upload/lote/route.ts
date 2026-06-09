@@ -34,10 +34,10 @@ export async function POST(request: NextRequest) {
     const buffer = Buffer.from(await file.arrayBuffer())
     const todosJogos = await getTodosJogos()
     const jogosFaseGrupos = todosJogos.filter((j) => j.fase === 'grupos')
-    const jogosIds = jogosFaseGrupos.map((j) => j.id)
+    const jogosInfo = jogosFaseGrupos.map((j) => ({ id: j.id, timeA: j.timeA, timeB: j.timeB }))
     const timesJogos = jogosFaseGrupos.map((j) => ({ timeA: j.timeA, timeB: j.timeB }))
 
-    const grupos = parseExcelMultiSheet(buffer, jogosIds)
+    const grupos = parseExcelMultiSheet(buffer, jogosInfo)
 
     if (grupos.length === 0) {
       return NextResponse.json({ error: 'Nenhuma aba de participante encontrada na planilha' }, { status: 400 })

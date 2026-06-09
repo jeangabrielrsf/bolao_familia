@@ -23,7 +23,9 @@ function createMultiSheetExcel(
 
     for (let i = 0; i < gameRows.length; i++) {
       const row = gameRows[i]
+      data[row][1] = `Time ${i + 1}A`
       data[row][3] = 'x'
+      data[row][5] = `Time ${i + 1}B`
       if (sheet.jogos[i]) {
         data[row][2] = sheet.jogos[i].placarA
         data[row][4] = sheet.jogos[i].placarB
@@ -51,8 +53,12 @@ function createMultiSheetExcel(
   return Buffer.from(buf)
 }
 
-function makeJogosIds(count: number): string[] {
-  return Array.from({ length: count }, (_, i) => `jogo-id-${i + 1}`)
+function makeJogos(count: number): Array<{ id: string; timeA: string; timeB: string }> {
+  return Array.from({ length: count }, (_, i) => ({
+    id: `jogo-id-${i + 1}`,
+    timeA: `Time ${i + 1}A`,
+    timeB: `Time ${i + 1}B`,
+  }))
 }
 
 const defaultExtras = {
@@ -76,7 +82,7 @@ describe('parseExcelMultiSheet', () => {
       { name: 'Maria', jogos: defaultJogos, extras: defaultExtras },
     ])
 
-    const result = parseExcelMultiSheet(buffer, makeJogosIds(33))
+    const result = parseExcelMultiSheet(buffer, makeJogos(33))
 
     expect(result).toHaveLength(2)
     expect(result[0].nomeParticipante).toBe('Leo')
@@ -90,7 +96,7 @@ describe('parseExcelMultiSheet', () => {
       { name: 'Leo 1', jogos: defaultJogos, extras: defaultExtras },
     ])
 
-    const result = parseExcelMultiSheet(buffer, makeJogosIds(33))
+    const result = parseExcelMultiSheet(buffer, makeJogos(33))
 
     expect(result).toHaveLength(1)
     expect(result[0].nomeParticipante).toBe('Leo')
@@ -103,7 +109,7 @@ describe('parseExcelMultiSheet', () => {
       { name: 'Leo (2)', jogos: defaultJogos, extras: defaultExtras },
     ])
 
-    const result = parseExcelMultiSheet(buffer, makeJogosIds(33))
+    const result = parseExcelMultiSheet(buffer, makeJogos(33))
 
     expect(result).toHaveLength(1)
     expect(result[0].nomeParticipante).toBe('Leo')
@@ -116,7 +122,7 @@ describe('parseExcelMultiSheet', () => {
       { name: 'João - Palpite 3', jogos: defaultJogos, extras: defaultExtras },
     ])
 
-    const result = parseExcelMultiSheet(buffer, makeJogosIds(33))
+    const result = parseExcelMultiSheet(buffer, makeJogos(33))
 
     expect(result).toHaveLength(1)
     expect(result[0].nomeParticipante).toBe('João')
@@ -130,7 +136,7 @@ describe('parseExcelMultiSheet', () => {
       { name: 'Maria', jogos: defaultJogos, extras: defaultExtras },
     ])
 
-    const result = parseExcelMultiSheet(buffer, makeJogosIds(33))
+    const result = parseExcelMultiSheet(buffer, makeJogos(33))
 
     for (const grupo of result) {
       expect(grupo.palpites).toHaveLength(33)
@@ -145,7 +151,7 @@ describe('parseExcelMultiSheet', () => {
       { name: 'Maria', jogos: defaultJogos, extras: defaultExtras },
     ])
 
-    const result = parseExcelMultiSheet(buffer, makeJogosIds(33))
+    const result = parseExcelMultiSheet(buffer, makeJogos(33))
 
     expect(result).toHaveLength(1)
     expect(result[0].nomeParticipante).toBe('Maria')
@@ -158,7 +164,7 @@ describe('parseExcelMultiSheet', () => {
       { name: 'Modelo', jogos: defaultJogos, extras: defaultExtras },
     ])
 
-    const result = parseExcelMultiSheet(buffer, makeJogosIds(33))
+    const result = parseExcelMultiSheet(buffer, makeJogos(33))
 
     expect(result).toHaveLength(0)
   })
@@ -170,7 +176,7 @@ describe('parseExcelMultiSheet', () => {
       { name: 'Leo', jogos: defaultJogos, extras: defaultExtras },
     ])
 
-    const result = parseExcelMultiSheet(buffer, makeJogosIds(33))
+    const result = parseExcelMultiSheet(buffer, makeJogos(33))
 
     expect(result).toHaveLength(1)
     expect(result[0].nomeParticipante).toBe('Leo')

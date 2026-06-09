@@ -1,7 +1,13 @@
 import * as XLSX from 'xlsx'
 import type { UploadResult, PalpiteDTO, PalpiteExtraDTO, PalpiteGrupoParsed } from '@/lib/utils/types'
 
-export function parseExcel(buffer: Buffer, jogosIds: string[]): UploadResult {
+export interface JogoInfo {
+  id: string
+  timeA: string
+  timeB: string
+}
+
+export function parseExcel(buffer: Buffer, jogos: JogoInfo[]): UploadResult {
   const workbook = XLSX.read(buffer, { type: 'buffer' })
 
   if (!workbook.SheetNames.length) {
@@ -10,7 +16,7 @@ export function parseExcel(buffer: Buffer, jogosIds: string[]): UploadResult {
 
   const sheetName = workbook.SheetNames[0]
   const sheet = workbook.Sheets[sheetName]
-  const { palpites, extras } = parseSheet(sheet, jogosIds, sheetName)
+  const { palpites, extras } = parseSheet(sheet, jogos, sheetName)
 
   return { palpites, extras, fonte: 'excel' }
 }
@@ -38,9 +44,19 @@ function extrairNomeEApelido(nomeAba: string): { nomeParticipante: string; apeli
   }
 }
 
-function parseSheet(sheet: XLSX.WorkSheet, jogosIds: string[], sheetName: string): { palpites: PalpiteDTO[]; extras: PalpiteExtraDTO[] } {
+function normalizeTeamName(name: string): string {
+  return name.trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+}
+
+function parseSheet(sheet: XLSX.WorkSheet, jogos: JogoInfo[], sheetName: string): { palpites: PalpiteDTO[]; extras: PalpiteExtraDTO[] } {
   const range = XLSX.utils.decode_range(sheet['!ref'] || 'A1')
   const prefix = sheetName ? `[${sheetName}] ` : ''
+
+  const jogosMap = new Map<string, JogoInfo>()
+  for (const jogo of jogos) {
+    const key = `${normalizeTeamName(jogo.timeA)}|${normalizeTeamName(jogo.timeB)}`
+    jogosMap.set(key, jogo)
+  }
 
   const gameRows: number[] = []
   for (let r = 0; r <= range.e.r; r++) {
@@ -51,14 +67,24 @@ function parseSheet(sheet: XLSX.WorkSheet, jogosIds: string[], sheetName: string
   }
 
   const palpites: PalpiteDTO[] = []
-  const count = Math.min(gameRows.length, jogosIds.length)
-  for (let i = 0; i < count; i++) {
+  for (let i = 0; i < gameRows.length; i++) {
     const row = gameRows[i]
+    const timeACell = sheet[XLSX.utils.encode_cell({ r: row, c: 1 })]
+    const timeBCell = sheet[XLSX.utils.encode_cell({ r: row, c: 5 })]
     const placarACell = sheet[XLSX.utils.encode_cell({ r: row, c: 2 })]
     const placarBCell = sheet[XLSX.utils.encode_cell({ r: row, c: 4 })]
 
     if (placarACell?.v === undefined || placarBCell?.v === undefined) {
       throw new Error(`${prefix}Palpite em branco no jogo ${i + 1}`)
+    }
+
+    const timeA = timeACell?.v ? String(timeACell.v).trim() : ''
+    const timeB = timeBCell?.v ? String(timeBCell.v).trim() : ''
+    const key = `${normalizeTeamName(timeA)}|${normalizeTeamName(timeB)}`
+    const jogo = jogosMap.get(key)
+
+    if (!jogo) {
+      throw new Error(`${prefix}Jogo não encontrado: ${timeA} x ${timeB}`)
     }
 
     const placarA = Number(placarACell.v)
@@ -71,7 +97,7 @@ function parseSheet(sheet: XLSX.WorkSheet, jogosIds: string[], sheetName: string
       throw new Error(`${prefix}Placar inválido no jogo ${i + 1}`)
     }
 
-    palpites.push({ jogoId: jogosIds[i], placarA, placarB })
+    palpites.push({ jogoId: jogo.id, placarA, placarB })
   }
 
   const tiposExtra = ['artilheiro', 'quarto', 'terceiro', 'vice', 'campeao'] as const
@@ -90,7 +116,7 @@ function parseSheet(sheet: XLSX.WorkSheet, jogosIds: string[], sheetName: string
   return { palpites, extras }
 }
 
-export function parseExcelMultiSheet(buffer: Buffer, jogosIds: string[]): PalpiteGrupoParsed[] {
+export function parseExcelMultiSheet(buffer: Buffer, jogos: JogoInfo[]): PalpiteGrupoParsed[] {
   const workbook = XLSX.read(buffer, { type: 'buffer' })
 
   if (!workbook.SheetNames.length) {
@@ -106,7 +132,7 @@ export function parseExcelMultiSheet(buffer: Buffer, jogosIds: string[]): Palpit
     if (!sheet) continue
 
     const { nomeParticipante, apelido, nomeCompleto } = extrairNomeEApelido(sheetName)
-    const { palpites, extras } = parseSheet(sheet, jogosIds, sheetName)
+    const { palpites, extras } = parseSheet(sheet, jogos, sheetName)
 
     resultados.push({
       nomeParticipante,
