@@ -1,6 +1,6 @@
 import type { UploadResult } from '@/lib/utils/types'
 
-const PROMPT = `Analise esta imagem de uma planilha de bolão da Copa do Mundo 2026.
+const PROMPT_SINGLE = `Analise esta imagem de uma planilha de bolão da Copa do Mundo 2026.
 Extraia todos os palpites e retorne como JSON no seguinte formato:
 {
   "palpites": [{"jogo_numero": 1, "placar_a": 0, "placar_b": 0}, ...],
@@ -10,15 +10,39 @@ Os jogos estão numerados de 1 a 33. As colunas de placar são as que o particip
 Os palpites extras estão no final da planilha.
 Retorne APENAS o JSON, sem texto adicional.`
 
-export async function parseFoto(imageBuffer: Buffer, mimeType = 'image/jpeg'): Promise<UploadResult> {
+const PROMPT_MULTI = `Analise estas {N} imagens de uma planilha de bolão da Copa do Mundo 2026 escaneada em PDF.
+A planilha está distribuída em múltiplas páginas. Extraia todos os palpites de todas as páginas e consolide em um único JSON.
+Formato do JSON:
+{
+  "palpites": [{"jogo_numero": 1, "placar_a": 0, "placar_b": 0}, ...],
+  "extras": {"artilheiro": "", "quarto": "", "terceiro": "", "vice": "", "campeao": ""}
+}
+Os jogos estão numerados de 1 a 33. As colunas de placar são as que o participante preencheu.
+Os palpites extras estão no final da planilha.
+Retorne APENAS o JSON, sem texto adicional.`
+
+export async function parseFoto(
+  input: Buffer | Buffer[],
+  mimeType = 'image/jpeg'
+): Promise<UploadResult> {
   if (!process.env.OPENROUTER_API_KEY) {
     throw new Error('OPENROUTER_API_KEY não configurada')
   }
 
-  const base64 = imageBuffer.toString('base64')
+  const buffers = Array.isArray(input) ? input : [input]
+  const isMulti = buffers.length > 1
+
+  const prompt = isMulti
+    ? PROMPT_MULTI.replace('{N}', String(buffers.length))
+    : PROMPT_SINGLE
+
+  const imageContents = buffers.map((buf) => ({
+    type: 'image_url' as const,
+    image_url: { url: `data:${mimeType};base64,${buf.toString('base64')}` },
+  }))
 
   const controller = new AbortController()
-  const timeout = setTimeout(() => controller.abort(), 30_000)
+  const timeout = setTimeout(() => controller.abort(), 60_000)
 
   let response: Response
   try {
@@ -34,12 +58,12 @@ export async function parseFoto(imageBuffer: Buffer, mimeType = 'image/jpeg'): P
           {
             role: 'user',
             content: [
-              { type: 'text', text: PROMPT },
-              { type: 'image_url', image_url: { url: `data:${mimeType};base64,${base64}` } },
+              { type: 'text', text: prompt },
+              ...imageContents,
             ],
           },
         ],
-        max_tokens: 2000,
+        max_tokens: 3000,
       }),
       signal: controller.signal,
     })
@@ -106,6 +130,6 @@ export async function parseFoto(imageBuffer: Buffer, mimeType = 'image/jpeg'): P
         tipo,
         valor: String(parsed.extras![tipo]).trim(),
       })),
-    fonte: 'foto',
+    fonte: isMulti ? 'pdf' : 'foto',
   }
 }
