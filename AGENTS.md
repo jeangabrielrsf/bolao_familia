@@ -10,6 +10,21 @@ This version has breaking changes — APIs, conventions, and file structure may 
 
 Bolão familiar da Copa do Mundo FIFA 2026. Site **informativo** (somente leitura para participantes) onde o admin carrega planilhas Excel com os palpites de cada participante para 33 jogos da fase de grupos + 5 palpites extras (artilheiro, campeão, vice, 3º, 4º). Participantes **NÃO** fazem palpites pelo site — tudo é importado via upload de planilha pelo admin.
 
+### Formato da Copa 2026
+
+A Copa do Mundo 2026 terá **104 jogos** distribuídos em **13 fases**, com 48 seleções:
+
+| Fase | Jogos | Detalhe |
+|------|-------|---------|
+| Fase de Grupos | 72 | 12 grupos de 4 seleções |
+| 16 avos de final | 16 | 32 seleções (nova fase eliminatória) |
+| Oitavas de final | 8 | |
+| Quartas de final | 4 | |
+| Semifinais | 2 | |
+| Disputa do 3º lugar | 1 | |
+| Final | 1 | |
+| **Total** | **104** | |
+
 **Upload em Lote:** Suporta upload de planilhas multi-abas, onde cada aba contém os palpites de um participante (ou múltiplos palpites do mesmo participante). O sistema cria automaticamente grupos de palpites (`PalpiteGrupo`) para cada aba, permitindo que um participante tenha vários conjuntos de palpites.
 
 ## Stack
