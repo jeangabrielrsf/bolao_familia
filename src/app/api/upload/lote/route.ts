@@ -29,6 +29,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Upload em lote suporta apenas .xlsx' }, { status: 400 })
     }
 
+    console.log(`[upload-lote] Arquivo recebido: ${file.name} (${(file.size / 1024).toFixed(1)} KB)`)
+
     const buffer = Buffer.from(await file.arrayBuffer())
     const jogos = await getTodosJogos()
     const jogosIds = jogos.map((j) => j.id)
@@ -39,6 +41,8 @@ export async function POST(request: NextRequest) {
     if (grupos.length === 0) {
       return NextResponse.json({ error: 'Nenhuma aba de participante encontrada na planilha' }, { status: 400 })
     }
+
+    console.log(`[upload-lote] ${grupos.length} grupo(s) extraído(s) da planilha`)
 
     const participantesExistentes = await prisma.participante.findMany({ select: { id: true, nome: true } })
     const participantesMap = new Map(participantesExistentes.map(p => [p.nome.toLowerCase(), p.id]))
@@ -61,6 +65,12 @@ export async function POST(request: NextRequest) {
       todosAlertas.push(...validacao.alertas.map(a => `[${grupo.nomeCompleto}] ${a}`))
     }
 
+    if (todosErros.length > 0) {
+      console.log(`[upload-lote] Validação: ${todosErros.length} erro(s), ${todosAlertas.length} alerta(s)`)
+    } else {
+      console.log('[upload-lote] Validação OK')
+    }
+
     const novosParticipantes = new Set(
       preview.filter(g => g.participanteId === null).map(g => g.nomeParticipante)
     )
@@ -80,7 +90,6 @@ export async function POST(request: NextRequest) {
     })
   } catch (error) {
     console.error('[upload-lote] Erro:', error)
-    const message = error instanceof Error ? error.message : 'Erro interno do servidor'
-    return NextResponse.json({ error: message }, { status: 500 })
+    return NextResponse.json({ error: 'Erro interno do servidor' }, { status: 500 })
   }
 }
