@@ -1,13 +1,11 @@
-import * as pdfjsLib from 'pdfjs-dist'
 import { parseFoto } from './ocr-vision'
 import type { UploadResult } from '@/lib/utils/types'
 
 const MAX_PAGES = 10
 
-pdfjsLib.GlobalWorkerOptions.workerSrc = ''
-
 async function renderPageToPng(
-  page: pdfjsLib.PDFPageProxy,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  page: any,
   scale: number
 ): Promise<Buffer> {
   const viewport = page.getViewport({ scale })
@@ -31,6 +29,9 @@ async function renderPageToPng(
 }
 
 export async function parsePdf(buffer: Buffer): Promise<UploadResult> {
+  const pdfjsLib = await import('pdfjs-dist')
+  pdfjsLib.GlobalWorkerOptions.workerSrc = ''
+
   const loadingTask = pdfjsLib.getDocument({
     data: new Uint8Array(buffer),
     useSystemFonts: true,

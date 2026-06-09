@@ -1,4 +1,6 @@
 import { parsePdf } from '../pdf-parser'
+import { parseFoto } from '../ocr-vision'
+import * as pdfjsLib from 'pdfjs-dist'
 
 class MockOffscreenCanvas {
   width: number
@@ -37,7 +39,7 @@ jest.mock('../ocr-vision', () => ({
 }))
 
 jest.mock('pdfjs-dist', () => {
-  const mockPage = (pageNum: number) => ({
+  const mockPage = (_pageNum: number) => ({
     getViewport: jest.fn().mockReturnValue({ width: 612, height: 792 }),
     render: jest.fn().mockReturnValue({ promise: Promise.resolve() }),
   })
@@ -103,7 +105,6 @@ describe('parsePdf', () => {
   })
 
   it('calls parseFoto with array of page images', async () => {
-    const { parseFoto } = require('../ocr-vision')
     const pdfBuffer = Buffer.from('%PDF-1.4 fake pdf content here with enough bytes')
 
     await parsePdf(pdfBuffer)
@@ -115,8 +116,6 @@ describe('parsePdf', () => {
   })
 
   it('renders each page and passes buffers to parseFoto', async () => {
-    const { parseFoto } = require('../ocr-vision')
-    const pdfjsLib = require('pdfjs-dist')
     const pdfBuffer = Buffer.from('%PDF-1.4 fake pdf content here with enough bytes')
 
     await parsePdf(pdfBuffer)
