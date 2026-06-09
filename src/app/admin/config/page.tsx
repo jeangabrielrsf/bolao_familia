@@ -1,12 +1,13 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
+import Link from 'next/link'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
 import { toast } from 'sonner'
-import { Loader2 } from 'lucide-react'
+import { Loader2, ChevronLeft } from 'lucide-react'
 import type { ConfiguracaoPontuacao } from '@/lib/utils/types'
 
 interface Jogo { id: string }
@@ -69,6 +70,9 @@ export default function AdminConfigPage() {
   if (loading) {
     return (
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+        <Button variant="ghost" size="sm" asChild>
+          <Link href="/admin"><ChevronLeft className="w-4 h-4" /> Voltar ao Dashboard</Link>
+        </Button>
         <h1 className="text-3xl font-display tracking-wide">Configurações de Pontuação</h1>
         <Card><CardContent className="p-4 space-y-3"><Skeleton className="h-10 w-full" /><Skeleton className="h-10 w-full" /><Skeleton className="h-10 w-full" /></CardContent></Card>
       </div>
@@ -78,6 +82,9 @@ export default function AdminConfigPage() {
   if (!config) {
     return (
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+        <Button variant="ghost" size="sm" asChild>
+          <Link href="/admin"><ChevronLeft className="w-4 h-4" /> Voltar ao Dashboard</Link>
+        </Button>
         <h1 className="text-3xl font-display tracking-wide">Configurações de Pontuação</h1>
         <Card><CardContent className="flex flex-col items-center justify-center py-12"><p className="text-muted-foreground">Erro ao carregar configuração.</p></CardContent></Card>
       </div>
@@ -88,6 +95,9 @@ export default function AdminConfigPage() {
 
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8 animate-fade-in-up">
+      <Button variant="ghost" size="sm" asChild>
+        <Link href="/admin"><ChevronLeft className="w-4 h-4" /> Voltar ao Dashboard</Link>
+      </Button>
       <h1 className="text-3xl font-display tracking-wide">Configurações de Pontuação</h1>
 
       <form onSubmit={(e) => { e.preventDefault(); handleSalvar() }}>

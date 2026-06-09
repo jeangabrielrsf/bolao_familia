@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback, type FormEvent } from 'react'
+import Link from 'next/link'
 import Image from 'next/image'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -12,7 +13,7 @@ import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, A
 import { Skeleton } from '@/components/ui/skeleton'
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip'
 import { toast } from 'sonner'
-import { Loader2, Users } from 'lucide-react'
+import { Loader2, Users, ChevronLeft } from 'lucide-react'
 
 interface Participante { id: string; nome: string; fotoUrl: string | null }
 
@@ -95,6 +96,9 @@ export default function AdminParticipantesPage() {
   if (loading) {
     return (
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+        <Button variant="ghost" size="sm" asChild>
+          <Link href="/admin"><ChevronLeft className="w-4 h-4" /> Voltar ao Dashboard</Link>
+        </Button>
         <h1 className="text-3xl font-display tracking-wide">Participantes</h1>
         <Card><CardContent className="p-4 space-y-3">
           <Skeleton className="h-10 w-full" /><Skeleton className="h-10 w-full" /><Skeleton className="h-10 w-full" />
@@ -105,6 +109,9 @@ export default function AdminParticipantesPage() {
 
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6 animate-fade-in-up">
+      <Button variant="ghost" size="sm" asChild>
+        <Link href="/admin"><ChevronLeft className="w-4 h-4" /> Voltar ao Dashboard</Link>
+      </Button>
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-display tracking-wide">Participantes</h1>
         <Button onClick={openAddModal}>Novo Participante</Button>

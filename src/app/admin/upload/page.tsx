@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
+import Link from 'next/link'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Select } from '@/components/ui/select'
@@ -9,7 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { UploadForm } from '@/components/admin/UploadForm'
 import { PreviewTable } from '@/components/admin/PreviewTable'
 import { toast } from 'sonner'
-import { Loader2 } from 'lucide-react'
+import { Loader2, ChevronLeft } from 'lucide-react'
 import type { PalpiteDTO, PalpiteExtraDTO, ValidationResult } from '@/lib/utils/types'
 
 interface Participante { id: string; nome: string }
@@ -88,6 +89,9 @@ export default function AdminUploadPage() {
   if (step === 'success') {
     return (
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6 animate-fade-in-up">
+        <Button variant="ghost" size="sm" asChild>
+          <Link href="/admin"><ChevronLeft className="w-4 h-4" /> Voltar ao Dashboard</Link>
+        </Button>
         <h1 className="text-3xl font-display tracking-wide">Upload de Palpites</h1>
         <Card><CardContent className="flex flex-col items-center justify-center py-12 space-y-4">
           <Badge variant="success">Sucesso</Badge>
@@ -101,6 +105,9 @@ export default function AdminUploadPage() {
   if (step === 'error') {
     return (
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6 animate-fade-in-up">
+        <Button variant="ghost" size="sm" asChild>
+          <Link href="/admin"><ChevronLeft className="w-4 h-4" /> Voltar ao Dashboard</Link>
+        </Button>
         <h1 className="text-3xl font-display tracking-wide">Upload de Palpites</h1>
         <Card><CardContent className="flex flex-col items-center justify-center py-12 space-y-4">
           <Badge variant="destructive">Erro</Badge>
@@ -113,6 +120,9 @@ export default function AdminUploadPage() {
 
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6 animate-fade-in-up">
+      <Button variant="ghost" size="sm" asChild>
+        <Link href="/admin"><ChevronLeft className="w-4 h-4" /> Voltar ao Dashboard</Link>
+      </Button>
       <h1 className="text-3xl font-display tracking-wide">Upload de Palpites</h1>
 
       {fetchError && (
