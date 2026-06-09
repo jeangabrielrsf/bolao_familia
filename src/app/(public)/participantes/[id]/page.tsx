@@ -5,6 +5,7 @@ import { getRanking } from '@/lib/db/queries/ranking'
 import { getConfiguracao } from '@/lib/db/queries/config'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table'
 import { PalpitesTable } from '@/components/public/PalpitesTable'
 import { FASE_LABELS } from '@/lib/utils/constants'
@@ -34,26 +35,11 @@ export default async function ParticipanteProfilePage({
 
   if (!participante) notFound()
 
-  const rankingEntry = ranking.find((r) => r.participanteId === id)
-  const posicao = rankingEntry ? ranking.indexOf(rankingEntry) + 1 : null
-  const pontos = rankingEntry?.pontos ?? 0
-
-  const palpitesGrupos = participante.palpites.filter((p) => p.jogo.fase === 'grupos')
-  const palpitesEliminatorias = participante.palpites.filter((p) => p.jogo.fase !== 'grupos')
-
-  const gruposMap = new Map<string, typeof participante.palpites>()
-  for (const palpite of palpitesGrupos) {
-    const grupo = palpite.jogo.grupo ?? '?'
-    if (!gruposMap.has(grupo)) gruposMap.set(grupo, [])
-    gruposMap.get(grupo)!.push(palpite)
-  }
-
-  const fasesMap = new Map<string, typeof participante.palpites>()
-  for (const palpite of palpitesEliminatorias) {
-    const fase = palpite.jogo.fase
-    if (!fasesMap.has(fase)) fasesMap.set(fase, [])
-    fasesMap.get(fase)!.push(palpite)
-  }
+  const rankingEntries = ranking.filter((r) => r.participanteId === id)
+  const totalPontos = rankingEntries.reduce((sum, r) => sum + r.pontos, 0)
+  const melhorPosicao = rankingEntries.length > 0
+    ? Math.min(...rankingEntries.map(r => ranking.indexOf(r) + 1))
+    : null
 
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8 animate-fade-in-up">
@@ -69,55 +55,161 @@ export default async function ParticipanteProfilePage({
           <div className="text-center sm:text-left space-y-2">
             <h1 className="text-2xl font-display tracking-wide">{participante.nome}</h1>
             <div className="flex items-center gap-3 justify-center sm:justify-start">
-              <div className="flex items-center gap-1"><Trophy className="w-4 h-4 text-primary" /><Badge variant="success">{pontos} pts</Badge></div>
-              {posicao && <div className="flex items-center gap-1"><Award className="w-4 h-4 text-secondary" /><Badge variant="info">{posicao}º no ranking</Badge></div>}
+              <div className="flex items-center gap-1"><Trophy className="w-4 h-4 text-primary" /><Badge variant="success">{totalPontos} pts</Badge></div>
+              {melhorPosicao && <div className="flex items-center gap-1"><Award className="w-4 h-4 text-secondary" /><Badge variant="info">{melhorPosicao}º no ranking</Badge></div>}
             </div>
+            <p className="text-sm text-muted-foreground">{participante.grupos.length} palpite{participante.grupos.length !== 1 ? 's' : ''}</p>
           </div>
         </CardContent>
       </Card>
 
-      {gruposMap.size > 0 && (
-        <section className="space-y-4">
-          <h2 className="text-2xl font-display tracking-wide">Palpites - Fase de Grupos</h2>
-          {Array.from(gruposMap.entries())
-            .sort(([a], [b]) => a.localeCompare(b))
-            .map(([grupo, palpites]) => (
-              <PalpitesTable key={grupo} titulo={`Grupo ${grupo}`} palpites={palpites} config={config} />
+      {participante.grupos.length > 1 && (
+        <Tabs defaultValue={participante.grupos[0]?.nome ?? ''}>
+          <TabsList className="flex-wrap">
+            {participante.grupos.map(grupo => (
+              <TabsTrigger key={grupo.id} value={grupo.nome}>{grupo.apelido}</TabsTrigger>
             ))}
-        </section>
+          </TabsList>
+
+          {participante.grupos.map(grupo => {
+            const palpitesGrupos = grupo.palpites.filter((p) => p.jogo.fase === 'grupos')
+            const palpitesEliminatorias = grupo.palpites.filter((p) => p.jogo.fase !== 'grupos')
+
+            const gruposMap = new Map<string, typeof grupo.palpites>()
+            for (const palpite of palpitesGrupos) {
+              const grupoName = palpite.jogo.grupo ?? '?'
+              if (!gruposMap.has(grupoName)) gruposMap.set(grupoName, [])
+              gruposMap.get(grupoName)!.push(palpite)
+            }
+
+            const fasesMap = new Map<string, typeof grupo.palpites>()
+            for (const palpite of palpitesEliminatorias) {
+              const fase = palpite.jogo.fase
+              if (!fasesMap.has(fase)) fasesMap.set(fase, [])
+              fasesMap.get(fase)!.push(palpite)
+            }
+
+            return (
+              <TabsContent key={grupo.id} value={grupo.nome} className="space-y-6">
+                {gruposMap.size > 0 && (
+                  <section className="space-y-4">
+                    <h2 className="text-2xl font-display tracking-wide">Fase de Grupos</h2>
+                    {Array.from(gruposMap.entries())
+                      .sort(([a], [b]) => a.localeCompare(b))
+                      .map(([grupoNome, palpites]) => (
+                        <PalpitesTable key={grupoNome} titulo={`Grupo ${grupoNome}`} palpites={palpites} config={config} />
+                      ))}
+                  </section>
+                )}
+
+                {fasesMap.size > 0 && (
+                  <section className="space-y-4">
+                    <h2 className="text-2xl font-display tracking-wide">Eliminatórias</h2>
+                    {Array.from(fasesMap.entries()).map(([fase, palpites]) => (
+                      <PalpitesTable key={fase} titulo={FASE_LABELS[fase] ?? fase} palpites={palpites} config={config} />
+                    ))}
+                  </section>
+                )}
+
+                {grupo.extras.length > 0 && (
+                  <section className="space-y-4">
+                    <h2 className="text-2xl font-display tracking-wide">Extras</h2>
+                    <Card>
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Categoria</TableHead>
+                            <TableHead>Palpite</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {grupo.extras.map((extra) => (
+                            <TableRow key={extra.id}>
+                              <TableCell>{tipoExtraLabels[extra.tipo] ?? extra.tipo}</TableCell>
+                              <TableCell className="font-semibold">{extra.valor}</TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </Card>
+                  </section>
+                )}
+              </TabsContent>
+            )
+          })}
+        </Tabs>
       )}
 
-      {fasesMap.size > 0 && (
-        <section className="space-y-4">
-          <h2 className="text-2xl font-display tracking-wide">Palpites - Eliminatórias</h2>
-          {Array.from(fasesMap.entries()).map(([fase, palpites]) => (
-            <PalpitesTable key={fase} titulo={FASE_LABELS[fase] ?? fase} palpites={palpites} config={config} />
-          ))}
-        </section>
-      )}
+      {participante.grupos.length === 1 && (
+        <>
+          {(() => {
+            const grupo = participante.grupos[0]
+            const palpitesGrupos = grupo.palpites.filter((p) => p.jogo.fase === 'grupos')
+            const palpitesEliminatorias = grupo.palpites.filter((p) => p.jogo.fase !== 'grupos')
 
-      {participante.extras.length > 0 && (
-        <section className="space-y-4">
-          <h2 className="text-2xl font-display tracking-wide">Palpites Extras</h2>
-          <Card>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Categoria</TableHead>
-                  <TableHead>Palpite</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {participante.extras.map((extra) => (
-                  <TableRow key={extra.id}>
-                    <TableCell>{tipoExtraLabels[extra.tipo] ?? extra.tipo}</TableCell>
-                    <TableCell className="font-semibold">{extra.valor}</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </Card>
-        </section>
+            const gruposMap = new Map<string, typeof grupo.palpites>()
+            for (const palpite of palpitesGrupos) {
+              const grupoName = palpite.jogo.grupo ?? '?'
+              if (!gruposMap.has(grupoName)) gruposMap.set(grupoName, [])
+              gruposMap.get(grupoName)!.push(palpite)
+            }
+
+            const fasesMap = new Map<string, typeof grupo.palpites>()
+            for (const palpite of palpitesEliminatorias) {
+              const fase = palpite.jogo.fase
+              if (!fasesMap.has(fase)) fasesMap.set(fase, [])
+              fasesMap.get(fase)!.push(palpite)
+            }
+
+            return (
+              <>
+                {gruposMap.size > 0 && (
+                  <section className="space-y-4">
+                    <h2 className="text-2xl font-display tracking-wide">Palpites - Fase de Grupos</h2>
+                    {Array.from(gruposMap.entries())
+                      .sort(([a], [b]) => a.localeCompare(b))
+                      .map(([grupoNome, palpites]) => (
+                        <PalpitesTable key={grupoNome} titulo={`Grupo ${grupoNome}`} palpites={palpites} config={config} />
+                      ))}
+                  </section>
+                )}
+
+                {fasesMap.size > 0 && (
+                  <section className="space-y-4">
+                    <h2 className="text-2xl font-display tracking-wide">Palpites - Eliminatórias</h2>
+                    {Array.from(fasesMap.entries()).map(([fase, palpites]) => (
+                      <PalpitesTable key={fase} titulo={FASE_LABELS[fase] ?? fase} palpites={palpites} config={config} />
+                    ))}
+                  </section>
+                )}
+
+                {grupo.extras.length > 0 && (
+                  <section className="space-y-4">
+                    <h2 className="text-2xl font-display tracking-wide">Palpites Extras</h2>
+                    <Card>
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Categoria</TableHead>
+                            <TableHead>Palpite</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {grupo.extras.map((extra) => (
+                            <TableRow key={extra.id}>
+                              <TableCell>{tipoExtraLabels[extra.tipo] ?? extra.tipo}</TableCell>
+                              <TableCell className="font-semibold">{extra.valor}</TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </Card>
+                  </section>
+                )}
+              </>
+            )
+          })()}
+        </>
       )}
     </div>
   )

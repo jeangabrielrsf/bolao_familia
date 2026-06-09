@@ -26,7 +26,7 @@ export default async function ParticipantesPage() {
       ) : (
         <div className="grid gap-4 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
           {participantes.map((p) => (
-            <ParticipantCard key={p.id} id={p.id} nome={p.nome} fotoUrl={p.fotoUrl} />
+            <ParticipantCard key={p.id} id={p.id} nome={p.nome} fotoUrl={p.fotoUrl} totalPalpites={p.grupos.length} />
           ))}
         </div>
       )}

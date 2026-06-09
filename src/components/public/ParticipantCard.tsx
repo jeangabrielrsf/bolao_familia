@@ -6,9 +6,10 @@ interface ParticipantCardProps {
   id: string
   nome: string
   fotoUrl: string | null
+  totalPalpites: number
 }
 
-export function ParticipantCard({ id, nome, fotoUrl }: ParticipantCardProps) {
+export function ParticipantCard({ id, nome, fotoUrl, totalPalpites }: ParticipantCardProps) {
   return (
     <Link href={`/participantes/${id}`} className="rounded-lg focus:ring-2 focus:ring-ring focus:outline-none block">
       <Card className="group hover:-translate-y-1 hover:border-primary/50 hover:shadow-lg transition-all duration-300">
@@ -21,6 +22,7 @@ export function ParticipantCard({ id, nome, fotoUrl }: ParticipantCardProps) {
             )}
           </div>
           <span className="font-semibold text-sm text-center">{nome}</span>
+          <span className="text-xs text-muted-foreground">{totalPalpites} palpite{totalPalpites !== 1 ? 's' : ''}</span>
         </CardContent>
       </Card>
     </Link>
