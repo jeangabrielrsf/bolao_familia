@@ -269,6 +269,7 @@ MICROSERVICE_URL="http://localhost:8000"
 │   ├── lib/
 │   │   ├── auth/              # Autenticação (JWT, hash, sessão)
 │   │   ├── db/                # Prisma client + queries
+│   │   ├── services/          # Upload (Excel, OCR, PDF), Storage, Resultados
 │   │   └── utils/             # Constantes, helpers
 │   └── middleware.ts          # Proteção de rotas /admin
 ├── vercel.json                # Config Vercel (prisma generate + next build)
@@ -282,13 +283,33 @@ MICROSERVICE_URL="http://localhost:8000"
 | Modelo | Tabela | Descrição |
 |---|---|---|
 | `Participante` | `participantes` | Usuários do bolão |
+| `PalpiteGrupo` | `palpites_grupos` | Grupo de palpites (participante pode ter vários) |
 | `Jogo` | `jogos` | Partidas (fase de grupos, oitavas, quartas, etc.) |
-| `Palpite` | `palpites` | Palpites de placar por participante/jogo |
-| `PalpiteExtra` | `palpites_extras` | Palpites especiais (artilheiro, campeão, vice, etc.) |
+| `Palpite` | `palpites` | Palpites de placar por grupo/jogo |
+| `PalpiteExtra` | `palpites_extras` | Palpites especiais (artilheiro, campeão, vice, etc.) por grupo |
 | `ResultadoExtra` | `resultados_extras` | Resultados oficiais dos extras |
 | `Configuracao` | `configuracoes` | Configurações do sistema (pontuação, etc.) |
 | `AdminAuth` | `admin_auth` | Credenciais do admin |
 | `UploadLog` | `upload_logs` | Histórico de uploads |
+
+---
+
+## Upload de Palpites
+
+O sistema suporta dois modos de upload de palpites pelo painel admin:
+
+### Upload Individual
+1. Admin seleciona participante + arquivo (Excel, imagem ou PDF)
+2. Parse e validação → preview editável
+3. Confirmação → salva palpites no DB + arquiva arquivo no Supabase Storage
+
+### Upload em Lote (Multi-Abas)
+1. Admin seleciona arquivo Excel com múltiplas abas (cada aba = um grupo de palpites)
+2. Parser identifica automaticamente participante e apelido do grupo pelo nome da aba (ex: "Leo 1", "João - Palpite 2")
+3. Preview com tabs por grupo, badges indicando participante existente/novo
+4. Confirmação → busca/cria participantes, busca/cria PalpiteGrupos, salva palpites
+
+Cada participante pode ter múltiplos grupos de palpites (ex: "Palpite 1", "Palpite 2"), e cada grupo é uma entrada independente no ranking.
 
 ---
 
