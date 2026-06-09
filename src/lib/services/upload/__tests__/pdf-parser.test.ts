@@ -32,6 +32,7 @@ const mockGetDocument = jest.fn(() => ({
 
 jest.mock('pdfjs-dist/legacy/build/pdf.mjs', () => ({
   getDocument: (...args: unknown[]) => mockGetDocument(...args),
+  GlobalWorkerOptions: { workerSrc: '' },
 }))
 
 jest.mock('../ocr-vision', () => ({
