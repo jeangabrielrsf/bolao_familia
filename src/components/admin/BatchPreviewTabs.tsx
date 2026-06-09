@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState } from 'react'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { PreviewTable } from '@/components/admin/PreviewTable'
@@ -16,14 +16,12 @@ interface BatchPreviewTabsProps {
 export function BatchPreviewTabs({ grupos, validacao, jogos, onEdit }: BatchPreviewTabsProps) {
   const [editedGrupos, setEditedGrupos] = useState<BatchGrupoPreview[]>(grupos)
 
-  const handleGrupoEdit = useCallback((index: number, palpites: PalpiteDTO[], extras: PalpiteExtraDTO[]) => {
-    setEditedGrupos(prev => {
-      const next = [...prev]
-      next[index] = { ...next[index], palpites, extras }
-      onEdit(next)
-      return next
-    })
-  }, [onEdit])
+  function handleGrupoEdit(index: number, palpites: PalpiteDTO[], extras: PalpiteExtraDTO[]) {
+    const next = [...editedGrupos]
+    next[index] = { ...next[index], palpites, extras }
+    setEditedGrupos(next)
+    onEdit(next)
+  }
 
   if (editedGrupos.length === 0) return null
 

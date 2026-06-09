@@ -1,5 +1,4 @@
 import { notFound } from 'next/navigation'
-import Image from 'next/image'
 import { getParticipanteById } from '@/lib/db/queries/participantes'
 import { getRanking } from '@/lib/db/queries/ranking'
 import { getConfiguracao } from '@/lib/db/queries/config'
@@ -8,6 +7,7 @@ import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table'
 import { PalpitesTable } from '@/components/public/PalpitesTable'
+import { FotoPerfilModal } from '@/components/public/FotoPerfilModal'
 import { FASE_LABELS } from '@/lib/utils/constants'
 import { Trophy, Award } from 'lucide-react'
 
@@ -45,13 +45,13 @@ export default async function ParticipanteProfilePage({
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8 animate-fade-in-up">
       <Card>
         <CardContent className="p-6 flex flex-col sm:flex-row items-center gap-6">
-          <div className="w-28 h-28 rounded-full overflow-hidden bg-muted flex items-center justify-center shrink-0 ring-4 ring-border relative">
-            {participante.fotoUrl ? (
-              <Image src={participante.fotoUrl} alt={participante.nome} fill className="object-cover" />
-            ) : (
+          {participante.fotoUrl ? (
+            <FotoPerfilModal src={participante.fotoUrl} alt={participante.nome} />
+          ) : (
+            <div className="w-28 h-28 rounded-full bg-muted flex items-center justify-center shrink-0 ring-4 ring-border">
               <span className="text-4xl font-display font-bold text-primary">{participante.nome.charAt(0).toUpperCase()}</span>
-            )}
-          </div>
+            </div>
+          )}
           <div className="text-center sm:text-left space-y-2">
             <h1 className="text-2xl font-display tracking-wide">{participante.nome}</h1>
             <div className="flex items-center gap-3 justify-center sm:justify-start">
