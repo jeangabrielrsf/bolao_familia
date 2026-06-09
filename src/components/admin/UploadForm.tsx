@@ -7,7 +7,7 @@ import type { PalpiteDTO, PalpiteExtraDTO, ValidationResult } from '@/lib/utils/
 
 interface UploadFormProps {
   onUploadSuccess: (
-    preview: { palpites: PalpiteDTO[]; extras: PalpiteExtraDTO[]; fonte: 'excel' | 'foto' },
+    preview: { palpites: PalpiteDTO[]; extras: PalpiteExtraDTO[]; fonte: 'excel' | 'foto' | 'pdf' },
     validacao: ValidationResult
   ) => void
   onFileSelect?: (file: File | null) => void
@@ -26,11 +26,12 @@ export function UploadForm({ onUploadSuccess, onFileSelect, participanteId }: Up
     'image/jpeg',
     'image/png',
     'image/webp',
+    'application/pdf',
   ]
 
   function validateFile(f: File): string | null {
     if (!ACCEPTED_TYPES.includes(f.type)) {
-      return 'Formato não suportado. Use .xlsx, .jpg, .png ou .webp'
+      return 'Formato não suportado. Use .xlsx, .jpg, .png, .webp ou .pdf'
     }
     if (f.size > 10 * 1024 * 1024) {
       return 'Arquivo muito grande (máximo 10MB)'
@@ -120,7 +121,7 @@ export function UploadForm({ onUploadSuccess, onFileSelect, participanteId }: Up
         <input
           ref={fileInputRef}
           type="file"
-          accept=".xlsx,.jpg,.jpeg,.png,.webp"
+          accept=".xlsx,.jpg,.jpeg,.png,.webp,.pdf"
           onChange={handleInputChange}
           className="hidden"
         />
@@ -132,7 +133,7 @@ export function UploadForm({ onUploadSuccess, onFileSelect, participanteId }: Up
         ) : (
           <div className="space-y-2">
             <p className="text-muted">Arraste um arquivo aqui ou clique para selecionar</p>
-            <p className="text-sm text-muted">.xlsx, .jpg, .png ou .webp (máx. 10MB)</p>
+            <p className="text-sm text-muted">.xlsx, .jpg, .png, .webp ou .pdf (máx. 10MB)</p>
           </div>
         )}
       </div>

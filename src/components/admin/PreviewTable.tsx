@@ -9,7 +9,7 @@ interface PreviewTableProps {
   preview: {
     palpites: PalpiteDTO[]
     extras: PalpiteExtraDTO[]
-    fonte: 'excel' | 'foto'
+    fonte: 'excel' | 'foto' | 'pdf'
   }
   validacao: ValidationResult
   jogos: Array<{ id: string; timeA: string; timeB: string; grupo?: string | null; fase: string }>

@@ -33,7 +33,7 @@ export default function AdminUploadPage() {
   const [preview, setPreview] = useState<{
     palpites: PalpiteDTO[]
     extras: PalpiteExtraDTO[]
-    fonte: 'excel' | 'foto'
+    fonte: 'excel' | 'foto' | 'pdf'
   } | null>(null)
   const [validacao, setValidacao] = useState<ValidationResult | null>(null)
   const [editedPalpites, setEditedPalpites] = useState<PalpiteDTO[]>([])
@@ -58,7 +58,7 @@ export default function AdminUploadPage() {
 
   const handleUploadSuccess = useCallback(
     (
-      previewData: { palpites: PalpiteDTO[]; extras: PalpiteExtraDTO[]; fonte: 'excel' | 'foto' },
+      previewData: { palpites: PalpiteDTO[]; extras: PalpiteExtraDTO[]; fonte: 'excel' | 'foto' | 'pdf' },
       validacaoData: ValidationResult
     ) => {
       setPreview(previewData)
