@@ -40,7 +40,7 @@ export default async function JogoDetailPage({
 
   if (!jogo) notFound()
 
-  const rankingMap = new Map(ranking.map((r, idx) => [r.participanteId, { ...r, posicao: idx + 1 }]))
+  const rankingMap = new Map(ranking.map((r, idx) => [r.palpiteGrupoId, { ...r, posicao: idx + 1 }]))
 
   const palpitesComPontos = jogo.palpites.map((palpite) => {
     let pontos = 0
@@ -58,7 +58,7 @@ export default async function JogoDetailPage({
       tipo = resultado.tipo
     }
 
-    const rankingEntry = rankingMap.get(palpite.participanteId)
+    const rankingEntry = rankingMap.get(palpite.palpiteGrupoId)
     const posicaoRanking = rankingEntry?.posicao ?? null
 
     return { ...palpite, pontos, tipo, posicaoRanking }
@@ -66,7 +66,7 @@ export default async function JogoDetailPage({
 
   palpitesComPontos.sort((a, b) => {
     if (b.pontos !== a.pontos) return b.pontos - a.pontos
-    return a.participante.nome.localeCompare(b.participante.nome)
+    return a.palpiteGrupo.participante.nome.localeCompare(b.palpiteGrupo.participante.nome)
   })
 
   const dataFormatada = jogo.dataHora.toLocaleDateString('pt-BR', {
@@ -130,16 +130,16 @@ export default async function JogoDetailPage({
                 {palpitesComPontos.map((palpite) => (
                   <TableRow key={palpite.id}>
                     <TableCell>
-                      <Link href={`/participantes/${palpite.participanteId}`} className="flex items-center gap-3 hover:text-primary transition-colors">
+                      <Link href={`/participantes/${palpite.palpiteGrupo.participante.id}`} className="flex items-center gap-3 hover:text-primary transition-colors">
                         <div className="w-8 h-8 rounded-full overflow-hidden bg-muted flex items-center justify-center shrink-0">
-                          {palpite.participante.fotoUrl ? (
-                            <Image src={palpite.participante.fotoUrl} alt={palpite.participante.nome} width={32} height={32} className="w-full h-full object-cover" />
+                          {palpite.palpiteGrupo.participante.fotoUrl ? (
+                            <Image src={palpite.palpiteGrupo.participante.fotoUrl} alt={palpite.palpiteGrupo.participante.nome} width={32} height={32} className="w-full h-full object-cover" />
                           ) : (
-                            <span className="text-xs font-bold text-muted-foreground">{palpite.participante.nome.charAt(0).toUpperCase()}</span>
+                            <span className="text-xs font-bold text-muted-foreground">{palpite.palpiteGrupo.participante.nome.charAt(0).toUpperCase()}</span>
                           )}
                         </div>
                         <div className="flex flex-col">
-                          <span className="font-medium text-sm">{palpite.participante.nome}</span>
+                          <span className="font-medium text-sm">{palpite.palpiteGrupo.nome}</span>
                           {palpite.posicaoRanking && <span className="text-xs text-muted-foreground">{palpite.posicaoRanking}º no ranking</span>}
                         </div>
                       </Link>

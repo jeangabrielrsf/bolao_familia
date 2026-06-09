@@ -1,15 +1,62 @@
 import * as XLSX from 'xlsx'
-import type { UploadResult } from '@/lib/utils/types'
+import type { UploadResult, PalpiteDTO, PalpiteExtraDTO, PalpiteGrupoParsed } from '@/lib/utils/types'
 
-export function parseExcel(buffer: Buffer, jogosIds: string[]): UploadResult {
+export interface JogoInfo {
+  id: string
+  timeA: string
+  timeB: string
+}
+
+export function parseExcel(buffer: Buffer, jogos: JogoInfo[]): UploadResult {
   const workbook = XLSX.read(buffer, { type: 'buffer' })
 
   if (!workbook.SheetNames.length) {
     throw new Error('Planilha vazia')
   }
 
-  const sheet = workbook.Sheets[workbook.SheetNames[0]]
+  const sheetName = workbook.SheetNames[0]
+  const sheet = workbook.Sheets[sheetName]
+  const { palpites, extras } = parseSheet(sheet, jogos, sheetName)
+
+  return { palpites, extras, fonte: 'excel' }
+}
+
+const SUFIXO_REGEX = /^(.+?)\s*(?:[-–—]\s*(?:Palpite\s*)?\d+|\(\d+\)|\d+)$/i
+
+function extrairNomeEApelido(nomeAba: string): { nomeParticipante: string; apelido: string; nomeCompleto: string } {
+  const match = nomeAba.match(SUFIXO_REGEX)
+  if (match) {
+    const nomeBase = match[1].trim()
+    const sufixo = nomeAba.slice(match[1].length).trim()
+    let numero = sufixo.replace(/^[\s(–—-]+/, '').replace(/[\s)]+$/, '').replace(/^palpite\s*/i, '').trim()
+    if (!numero) numero = '1'
+    const apelido = `Palpite ${numero}`
+    return {
+      nomeParticipante: nomeBase,
+      apelido,
+      nomeCompleto: `${nomeBase} - ${apelido}`,
+    }
+  }
+  return {
+    nomeParticipante: nomeAba.trim(),
+    apelido: 'Palpite 1',
+    nomeCompleto: nomeAba.trim(),
+  }
+}
+
+function normalizeTeamName(name: string): string {
+  return name.trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+}
+
+function parseSheet(sheet: XLSX.WorkSheet, jogos: JogoInfo[], sheetName: string): { palpites: PalpiteDTO[]; extras: PalpiteExtraDTO[] } {
   const range = XLSX.utils.decode_range(sheet['!ref'] || 'A1')
+  const prefix = sheetName ? `[${sheetName}] ` : ''
+
+  const jogosMap = new Map<string, JogoInfo>()
+  for (const jogo of jogos) {
+    const key = `${normalizeTeamName(jogo.timeA)}|${normalizeTeamName(jogo.timeB)}`
+    jogosMap.set(key, jogo)
+  }
 
   const gameRows: number[] = []
   for (let r = 0; r <= range.e.r; r++) {
@@ -19,49 +66,82 @@ export function parseExcel(buffer: Buffer, jogosIds: string[]): UploadResult {
     }
   }
 
-  const palpites = []
-  const count = Math.min(gameRows.length, jogosIds.length)
-  for (let i = 0; i < count; i++) {
+  const palpites: PalpiteDTO[] = []
+  for (let i = 0; i < gameRows.length; i++) {
     const row = gameRows[i]
+    const timeACell = sheet[XLSX.utils.encode_cell({ r: row, c: 1 })]
+    const timeBCell = sheet[XLSX.utils.encode_cell({ r: row, c: 5 })]
     const placarACell = sheet[XLSX.utils.encode_cell({ r: row, c: 2 })]
     const placarBCell = sheet[XLSX.utils.encode_cell({ r: row, c: 4 })]
 
     if (placarACell?.v === undefined || placarBCell?.v === undefined) {
-      throw new Error(`Palpite em branco no jogo ${i + 1}`)
+      throw new Error(`${prefix}Palpite em branco no jogo ${i + 1}`)
+    }
+
+    const timeA = timeACell?.v ? String(timeACell.v).trim() : ''
+    const timeB = timeBCell?.v ? String(timeBCell.v).trim() : ''
+    const key = `${normalizeTeamName(timeA)}|${normalizeTeamName(timeB)}`
+    const jogo = jogosMap.get(key)
+
+    if (!jogo) {
+      throw new Error(`${prefix}Jogo não encontrado: ${timeA} x ${timeB}`)
     }
 
     const placarA = Number(placarACell.v)
     const placarB = Number(placarBCell.v)
 
     if (!Number.isInteger(placarA) || placarA < 0) {
-      throw new Error(`Placar inválido no jogo ${i + 1}`)
+      throw new Error(`${prefix}Placar inválido no jogo ${i + 1}`)
     }
     if (!Number.isInteger(placarB) || placarB < 0) {
-      throw new Error(`Placar inválido no jogo ${i + 1}`)
+      throw new Error(`${prefix}Placar inválido no jogo ${i + 1}`)
     }
 
-    palpites.push({
-      jogoId: jogosIds[i],
-      placarA,
-      placarB,
-    })
+    palpites.push({ jogoId: jogo.id, placarA, placarB })
   }
 
   const tiposExtra = ['artilheiro', 'quarto', 'terceiro', 'vice', 'campeao'] as const
-  const extras = []
+  const extras: PalpiteExtraDTO[] = []
   for (let i = 0; i < 5; i++) {
     const row = 42 + i
-    const cell = sheet[XLSX.utils.encode_cell({ r: row, c: 2 })]
+    const cell = sheet[XLSX.utils.encode_cell({ r: row, c: 1 })]
 
     if (cell?.v == null || cell.v === '') {
-      throw new Error(`Extra '${tiposExtra[i]}' em branco`)
+      throw new Error(`${prefix}Extra '${tiposExtra[i]}' em branco`)
     }
 
-    extras.push({
-      tipo: tiposExtra[i],
-      valor: String(cell.v).trim(),
+    extras.push({ tipo: tiposExtra[i], valor: String(cell.v).trim() })
+  }
+
+  return { palpites, extras }
+}
+
+export function parseExcelMultiSheet(buffer: Buffer, jogos: JogoInfo[]): PalpiteGrupoParsed[] {
+  const workbook = XLSX.read(buffer, { type: 'buffer' })
+
+  if (!workbook.SheetNames.length) {
+    throw new Error('Planilha vazia')
+  }
+
+  const resultados: PalpiteGrupoParsed[] = []
+
+  for (const sheetName of workbook.SheetNames) {
+    if (sheetName.trim().toLowerCase() === 'modelo') continue
+
+    const sheet = workbook.Sheets[sheetName]
+    if (!sheet) continue
+
+    const { nomeParticipante, apelido, nomeCompleto } = extrairNomeEApelido(sheetName)
+    const { palpites, extras } = parseSheet(sheet, jogos, sheetName)
+
+    resultados.push({
+      nomeParticipante,
+      apelido,
+      nomeCompleto,
+      palpites,
+      extras,
     })
   }
 
-  return { palpites, extras, fonte: 'excel' }
+  return resultados
 }

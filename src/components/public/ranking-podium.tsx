@@ -18,16 +18,16 @@ export function RankingPodium({ ranking }: RankingPodiumProps) {
       {top3.map((entry, index) => {
         const style = podiumStyles[index]
         return (
-          <div key={entry.participanteId} className={`rounded-lg border border-border ${style.border} ${style.bg} p-6 flex flex-col items-center gap-3 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg`}>
+          <div key={entry.palpiteGrupoId} className={`rounded-lg border border-border ${style.border} ${style.bg} p-6 flex flex-col items-center gap-3 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg`}>
             <span className="text-sm font-medium text-muted-foreground">{style.label}</span>
             <div className={`${style.size} rounded-full overflow-hidden bg-background flex items-center justify-center ring-2 ring-border relative`}>
               {entry.fotoUrl ? (
-                <Image src={entry.fotoUrl} alt={entry.nome} fill className="object-cover" />
+                <Image src={entry.fotoUrl} alt={entry.nomeGrupo} fill className="object-cover" />
               ) : (
-                <span className="text-2xl font-display font-bold text-primary">{entry.nome.charAt(0).toUpperCase()}</span>
+                <span className="text-2xl font-display font-bold text-primary">{entry.nomeParticipante.charAt(0).toUpperCase()}</span>
               )}
             </div>
-            <span className="font-semibold text-center">{entry.nome}</span>
+            <span className="font-semibold text-center">{entry.nomeGrupo}</span>
             <span className="text-2xl font-display font-bold text-primary">{entry.pontos} pts</span>
           </div>
         )

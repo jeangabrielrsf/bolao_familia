@@ -74,10 +74,10 @@ export default async function AdminDashboardPage() {
               const posicao = index + 1
               const badge = posicaoBadges[posicao]
               return (
-                <Card key={entry.participanteId}>
+                <Card key={entry.palpiteGrupoId}>
                   <CardContent className="p-4 flex items-center gap-3">
                     <Badge variant={badge.variant}>{badge.label}</Badge>
-                    <div className="flex-1 min-w-0"><p className="font-medium truncate">{entry.nome}</p></div>
+                    <div className="flex-1 min-w-0"><p className="font-medium truncate">{entry.nomeGrupo}</p></div>
                     <span className="text-lg font-display text-primary">{entry.pontos} pts</span>
                   </CardContent>
                 </Card>

@@ -10,12 +10,11 @@ export function validateUpload(
 ): ValidationResult {
   const erros: string[] = []
   const alertas: string[] = []
-  const totalJogos = timesJogos.length
 
-  console.log(`[validator] Validando ${result.palpites.length} palpites contra ${totalJogos} jogos, ${result.extras.length} extras`)
+  console.log(`[validator] Validando ${result.palpites.length} palpites, ${result.extras.length} extras`)
 
-  if (result.palpites.length !== totalJogos) {
-    erros.push(`Esperados ${totalJogos} palpites, recebidos ${result.palpites.length}`)
+  if (result.palpites.length === 0) {
+    erros.push('Nenhum palpite encontrado')
   }
 
   const jogoIdsVistos = new Set<string>()

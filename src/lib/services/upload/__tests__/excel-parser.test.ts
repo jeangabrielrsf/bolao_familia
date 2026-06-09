@@ -58,7 +58,7 @@ function createTestExcelBuffer(overrides?: {
     const [row, tipo] = extraRows[i]
     data[row][0] = extraLabels[i]
     if (extras[tipo]) {
-      data[row][2] = extras[tipo]
+      data[row][1] = extras[tipo]
     }
   }
 
@@ -68,8 +68,12 @@ function createTestExcelBuffer(overrides?: {
   return Buffer.from(buf)
 }
 
-function makeJogosIds(count: number): string[] {
-  return Array.from({ length: count }, (_, i) => `jogo-id-${i + 1}`)
+function makeJogos(count: number): Array<{ id: string; timeA: string; timeB: string }> {
+  return Array.from({ length: count }, (_, i) => ({
+    id: `jogo-id-${i + 1}`,
+    timeA: `Time ${i + 1}A`,
+    timeB: `Time ${i + 1}B`,
+  }))
 }
 
 describe('parseExcel', () => {
@@ -88,7 +92,7 @@ describe('parseExcel', () => {
     }
 
     const buffer = createTestExcelBuffer({ nome: 'João', jogos, extras })
-    const ids = makeJogosIds(33)
+    const ids = makeJogos(33)
 
     const result = parseExcel(buffer, ids)
 
@@ -120,7 +124,7 @@ describe('parseExcel', () => {
     }
 
     const buffer = createTestExcelBuffer({ jogos, extras })
-    const ids = makeJogosIds(33)
+    const ids = makeJogos(33)
 
     const result = parseExcel(buffer, ids)
 
@@ -149,7 +153,7 @@ describe('parseExcel', () => {
       },
     })
 
-    expect(() => parseExcel(buffer, makeJogosIds(33))).toThrow('jogo 6')
+    expect(() => parseExcel(buffer, makeJogos(33))).toThrow('jogo 6')
   })
 
   it('throws when an extra is blank', () => {
@@ -164,10 +168,10 @@ describe('parseExcel', () => {
       },
     })
 
-    expect(() => parseExcel(buffer, makeJogosIds(33))).toThrow('campeao')
+    expect(() => parseExcel(buffer, makeJogos(33))).toThrow('campeao')
   })
 
-  it('only parses as many games as there are IDs', () => {
+  it('throws when spreadsheet has a game not in the database', () => {
     const jogos = Array.from({ length: 33 }, (_, i) => ({
       placarA: i,
       placarB: i,
@@ -182,11 +186,9 @@ describe('parseExcel', () => {
     }
 
     const buffer = createTestExcelBuffer({ jogos, extras })
-    const ids = makeJogosIds(10)
+    const jogosDB = makeJogos(10)
 
-    const result = parseExcel(buffer, ids)
-
-    expect(result.palpites).toHaveLength(10)
+    expect(() => parseExcel(buffer, jogosDB)).toThrow('Jogo não encontrado')
   })
 
   it('converts string numbers to numeric scores', () => {
@@ -205,7 +207,7 @@ describe('parseExcel', () => {
 
     const buffer = createTestExcelBuffer({ jogos, extras })
 
-    const result = parseExcel(buffer, makeJogosIds(33))
+    const result = parseExcel(buffer, makeJogos(33))
 
     expect(result.palpites[0].placarA).toBe(3)
     expect(result.palpites[0].placarB).toBe(2)
@@ -229,7 +231,7 @@ describe('parseExcel', () => {
 
     const buffer = createTestExcelBuffer({ jogos, extras })
 
-    expect(() => parseExcel(buffer, makeJogosIds(33))).toThrow('Placar inválido no jogo 1')
+    expect(() => parseExcel(buffer, makeJogos(33))).toThrow('Placar inválido no jogo 1')
   })
 
   it('throws when workbook has no sheets', () => {
@@ -240,7 +242,7 @@ describe('parseExcel', () => {
 
       // eslint-disable-next-line @typescript-eslint/no-require-imports
       const { parseExcel: isolatedParse } = require('../excel-parser')
-      expect(() => isolatedParse(Buffer.from([]), makeJogosIds(1))).toThrow('Planilha vazia')
+      expect(() => isolatedParse(Buffer.from([]), makeJogos(1))).toThrow('Planilha vazia')
     })
   })
 
@@ -260,7 +262,7 @@ describe('parseExcel', () => {
 
     const buffer = createTestExcelBuffer({ jogos, extras, uppercaseX: true })
 
-    const result = parseExcel(buffer, makeJogosIds(33))
+    const result = parseExcel(buffer, makeJogos(33))
 
     expect(result.palpites).toHaveLength(33)
     expect(result.palpites[0]).toEqual({ jogoId: 'jogo-id-1', placarA: 2, placarB: 1 })

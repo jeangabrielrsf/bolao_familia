@@ -6,8 +6,9 @@ import type { RankingEntry } from '@/lib/utils/types'
 export async function getRanking(): Promise<RankingEntry[]> {
   const config = await getConfiguracao()
 
-  const participantes = await prisma.participante.findMany({
+  const grupos = await prisma.palpiteGrupo.findMany({
     include: {
+      participante: true,
       palpites: {
         include: { jogo: true },
       },
@@ -18,12 +19,12 @@ export async function getRanking(): Promise<RankingEntry[]> {
   const resultadosExtras = await prisma.resultadoExtra.findMany()
   const extrasMap = Object.fromEntries(resultadosExtras.map(r => [r.tipo, r.valor]))
 
-  const ranking = participantes.map(p => {
+  const ranking = grupos.map(g => {
     let pontos = 0
     let placaresExatos = 0
     let vencedoresCorretos = 0
 
-    for (const palpite of p.palpites) {
+    for (const palpite of g.palpites) {
       if (palpite.jogo.status !== 'finalizado') continue
       if (palpite.jogo.resultadoA === null || palpite.jogo.resultadoB === null) continue
 
@@ -38,7 +39,7 @@ export async function getRanking(): Promise<RankingEntry[]> {
       if (resultado.tipo === 'vencedor' || resultado.tipo === 'exato') vencedoresCorretos++
     }
 
-    for (const extra of p.extras) {
+    for (const extra of g.extras) {
       const valorReal = extrasMap[extra.tipo]
       if (valorReal) {
         pontos += calcularPontosExtra(extra.valor, valorReal, config, extra.tipo)
@@ -46,9 +47,12 @@ export async function getRanking(): Promise<RankingEntry[]> {
     }
 
     return {
-      participanteId: p.id,
-      nome: p.nome,
-      fotoUrl: p.fotoUrl,
+      palpiteGrupoId: g.id,
+      participanteId: g.participanteId,
+      nomeParticipante: g.participante.nome,
+      nomeGrupo: g.nome,
+      apelido: g.apelido,
+      fotoUrl: g.participante.fotoUrl,
       pontos,
       placaresExatos,
       vencedoresCorretos,

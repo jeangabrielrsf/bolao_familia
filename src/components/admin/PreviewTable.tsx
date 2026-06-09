@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
@@ -24,15 +24,21 @@ export function PreviewTable({ preview, validacao, jogos, onEdit }: PreviewTable
   const [extras, setExtras] = useState<PalpiteExtraDTO[]>(preview.extras)
   const jogosComPalpite = jogos.filter((jogo) => palpites.some((p) => p.jogoId === jogo.id))
 
-  useEffect(() => { onEdit(palpites, extras) }, [palpites, extras, onEdit])
-
   function handlePlacarChange(jogoId: string, field: 'placarA' | 'placarB', value: string) {
     const num = Math.max(0, parseInt(value) || 0)
-    setPalpites((prev) => prev.map((p) => (p.jogoId === jogoId ? { ...p, [field]: num } : p)))
+    setPalpites((prev) => {
+      const next = prev.map((p) => (p.jogoId === jogoId ? { ...p, [field]: num } : p))
+      onEdit(next, extras)
+      return next
+    })
   }
 
   function handleExtraChange(tipo: string, value: string) {
-    setExtras((prev) => prev.map((e) => (e.tipo === tipo ? { ...e, valor: value } : e)))
+    setExtras((prev) => {
+      const next = prev.map((e) => (e.tipo === tipo ? { ...e, valor: value } : e))
+      onEdit(palpites, next)
+      return next
+    })
   }
 
   return (

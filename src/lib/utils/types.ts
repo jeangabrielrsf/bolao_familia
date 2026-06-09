@@ -35,8 +35,11 @@ export interface ValidationResult {
 }
 
 export interface RankingEntry {
+  palpiteGrupoId: string
   participanteId: string
-  nome: string
+  nomeParticipante: string
+  nomeGrupo: string
+  apelido: string
   fotoUrl: string | null
   pontos: number
   placaresExatos: number
@@ -57,4 +60,21 @@ export interface ConfiguracaoPontuacao {
   terceiro: number
   quarto: number
   artilheiro: number
+}
+
+export interface PalpiteGrupoParsed {
+  nomeParticipante: string
+  apelido: string
+  nomeCompleto: string
+  palpites: PalpiteDTO[]
+  extras: PalpiteExtraDTO[]
+}
+
+export interface BatchGrupoPreview {
+  nomeParticipante: string
+  apelido: string
+  nomeCompleto: string
+  participanteId: string | null
+  palpites: PalpiteDTO[]
+  extras: PalpiteExtraDTO[]
 }

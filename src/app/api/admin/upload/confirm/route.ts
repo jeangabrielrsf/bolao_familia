@@ -64,13 +64,35 @@ export async function POST(request: NextRequest) {
       finalArquivoUrl = await uploadFile('palpites', path, buffer, arquivoContentType || 'application/octet-stream')
     }
 
+    const nomeGrupo = participante.nome
+
     await prisma.$transaction(async (tx) => {
-      await tx.palpite.deleteMany({ where: { participanteId } })
-      await tx.palpiteExtra.deleteMany({ where: { participanteId } })
+      let palpiteGrupo = await tx.palpiteGrupo.findUnique({
+        where: {
+          participanteId_nome: {
+            participanteId,
+            nome: nomeGrupo,
+          },
+        },
+      })
+
+      if (palpiteGrupo) {
+        await tx.palpite.deleteMany({ where: { palpiteGrupoId: palpiteGrupo.id } })
+        await tx.palpiteExtra.deleteMany({ where: { palpiteGrupoId: palpiteGrupo.id } })
+      } else {
+        palpiteGrupo = await tx.palpiteGrupo.create({
+          data: {
+            participanteId,
+            nome: nomeGrupo,
+            apelido: 'Palpite 1',
+            fonte,
+          },
+        })
+      }
 
       await tx.palpite.createMany({
         data: palpites.map((p: { jogoId: string; placarA: number; placarB: number }) => ({
-          participanteId,
+          palpiteGrupoId: palpiteGrupo!.id,
           jogoId: p.jogoId,
           placarA: p.placarA,
           placarB: p.placarB,
@@ -80,7 +102,7 @@ export async function POST(request: NextRequest) {
 
       await tx.palpiteExtra.createMany({
         data: extras.map((e: { tipo: string; valor: string }) => ({
-          participanteId,
+          palpiteGrupoId: palpiteGrupo!.id,
           tipo: e.tipo as 'artilheiro' | 'campeao' | 'vice' | 'terceiro' | 'quarto',
           valor: e.valor,
           fonte,
