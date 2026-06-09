@@ -36,7 +36,7 @@ export function BatchPreviewTabs({ grupos, validacao, jogos, onEdit }: BatchPrev
       )}
 
       <Tabs defaultValue={editedGrupos[0].nomeCompleto}>
-        <TabsList className="flex-wrap">
+        <TabsList className="flex-nowrap overflow-x-auto">
           {editedGrupos.map((grupo, index) => (
             <TabsTrigger key={index} value={grupo.nomeCompleto} className="gap-2">
               {grupo.nomeCompleto}

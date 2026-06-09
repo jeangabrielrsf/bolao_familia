@@ -80,77 +80,80 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    let gruposCriados = 0
+    const nomesParticipantes = [...new Set(grupos.map(g => g.nomeParticipante.toLowerCase()))]
+    const participantesExistentes = await prisma.participante.findMany({
+      where: { nome: { in: nomesParticipantes.map(n => n.charAt(0).toUpperCase() + n.slice(1)) } },
+    })
+    const participantesMap = new Map<string, string>()
+    for (const p of participantesExistentes) {
+      participantesMap.set(p.nome.toLowerCase(), p.id)
+    }
+
+    const novosNomes = nomesParticipantes.filter(n => !participantesMap.has(n))
     let participantesCriados = 0
+    for (const nome of novosNomes) {
+      const p = await prisma.participante.create({ data: { nome: nome.charAt(0).toUpperCase() + nome.slice(1) } })
+      participantesMap.set(nome, p.id)
+      participantesCriados++
+    }
+
+    const nomesCompletos = grupos.map(g => g.nomeCompleto)
+    const gruposExistentes = await prisma.palpiteGrupo.findMany({
+      where: { nome: { in: nomesCompletos } },
+      select: { id: true, nome: true, participanteId: true },
+    })
+    const gruposMap = new Map<string, string>()
+    for (const g of gruposExistentes) {
+      gruposMap.set(g.nome, g.id)
+    }
+
+    let gruposCriados = 0
+    const gruposParaCriar = grupos.filter(g => !gruposMap.has(g.nomeCompleto))
+    for (const grupo of gruposParaCriar) {
+      const pg = await prisma.palpiteGrupo.create({
+        data: {
+          participanteId: participantesMap.get(grupo.nomeParticipante.toLowerCase())!,
+          nome: grupo.nomeCompleto,
+          apelido: grupo.apelido,
+          fonte: 'excel',
+        },
+      })
+      gruposMap.set(grupo.nomeCompleto, pg.id)
+      gruposCriados++
+    }
+
+    const palpitesData: Array<{ palpiteGrupoId: string; jogoId: string; placarA: number; placarB: number; fonte: 'excel' }> = []
+    const extrasData: Array<{ palpiteGrupoId: string; tipo: 'artilheiro' | 'campeao' | 'vice' | 'terceiro' | 'quarto'; valor: string; fonte: 'excel' }> = []
+    const uploadLogData: Array<{ participanteId: string; tipoArquivo: string; arquivoUrl: string; status: 'sucesso' }> = []
+    const gruposParaLimpar: string[] = []
+
+    for (const grupo of grupos) {
+      const grupoId = gruposMap.get(grupo.nomeCompleto)!
+      const participanteId = participantesMap.get(grupo.nomeParticipante.toLowerCase())!
+
+      if (gruposExistentes.some(g => g.nome === grupo.nomeCompleto)) {
+        gruposParaLimpar.push(grupoId)
+      }
+
+      for (const p of grupo.palpites) {
+        palpitesData.push({ palpiteGrupoId: grupoId, jogoId: p.jogoId, placarA: p.placarA, placarB: p.placarB, fonte: 'excel' })
+      }
+      for (const e of grupo.extras) {
+        extrasData.push({ palpiteGrupoId: grupoId, tipo: e.tipo as 'artilheiro' | 'campeao' | 'vice' | 'terceiro' | 'quarto', valor: e.valor, fonte: 'excel' })
+      }
+      uploadLogData.push({ participanteId, tipoArquivo: 'excel', arquivoUrl: '', status: 'sucesso' })
+    }
 
     await prisma.$transaction(async (tx) => {
-      for (const grupo of grupos) {
-        let participante = await tx.participante.findFirst({
-          where: { nome: { equals: grupo.nomeParticipante, mode: 'insensitive' } },
-        })
-
-        if (!participante) {
-          participante = await tx.participante.create({
-            data: { nome: grupo.nomeParticipante },
-          })
-          participantesCriados++
-        }
-
-        let palpiteGrupo = await tx.palpiteGrupo.findUnique({
-          where: {
-            participanteId_nome: {
-              participanteId: participante.id,
-              nome: grupo.nomeCompleto,
-            },
-          },
-        })
-
-        if (palpiteGrupo) {
-          await tx.palpite.deleteMany({ where: { palpiteGrupoId: palpiteGrupo.id } })
-          await tx.palpiteExtra.deleteMany({ where: { palpiteGrupoId: palpiteGrupo.id } })
-        } else {
-          palpiteGrupo = await tx.palpiteGrupo.create({
-            data: {
-              participanteId: participante.id,
-              nome: grupo.nomeCompleto,
-              apelido: grupo.apelido,
-              fonte: 'excel',
-            },
-          })
-          gruposCriados++
-        }
-
-        const grupoId = palpiteGrupo.id
-
-        await tx.palpite.createMany({
-          data: grupo.palpites.map(p => ({
-            palpiteGrupoId: grupoId,
-            jogoId: p.jogoId,
-            placarA: p.placarA,
-            placarB: p.placarB,
-            fonte: 'excel' as const,
-          })),
-        })
-
-        await tx.palpiteExtra.createMany({
-          data: grupo.extras.map(e => ({
-            palpiteGrupoId: grupoId,
-            tipo: e.tipo as 'artilheiro' | 'campeao' | 'vice' | 'terceiro' | 'quarto',
-            valor: e.valor,
-            fonte: 'excel' as const,
-          })),
-        })
-
-        await tx.uploadLog.create({
-          data: {
-            participanteId: participante.id,
-            tipoArquivo: 'excel',
-            arquivoUrl: '',
-            status: 'sucesso',
-          },
-        })
+      if (gruposParaLimpar.length > 0) {
+        await tx.palpite.deleteMany({ where: { palpiteGrupoId: { in: gruposParaLimpar } } })
+        await tx.palpiteExtra.deleteMany({ where: { palpiteGrupoId: { in: gruposParaLimpar } } })
       }
-    })
+
+      await tx.palpite.createMany({ data: palpitesData })
+      await tx.palpiteExtra.createMany({ data: extrasData })
+      await tx.uploadLog.createMany({ data: uploadLogData })
+    }, { timeout: 15000 })
 
     console.log(`[confirm-lote] Sucesso: ${gruposCriados} grupo(s) criado(s), ${participantesCriados} participante(s) novo(s)`)
     return NextResponse.json({ success: true, gruposCriados, participantesCriados })
