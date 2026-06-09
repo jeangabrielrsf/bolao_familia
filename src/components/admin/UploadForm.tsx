@@ -89,7 +89,12 @@ export function UploadForm({ onUploadSuccess, onFileSelect, participanteId }: Up
       const data = await res.json()
 
       if (!res.ok) {
-        setError(data.error || 'Erro ao processar arquivo')
+        const errorDetails = data.detalhes || data.validacao?.erros
+        if (Array.isArray(errorDetails) && errorDetails.length > 0) {
+          setError(`${data.error || 'Erros de validação'}:\n• ${errorDetails.join('\n• ')}`)
+        } else {
+          setError(data.error || 'Erro ao processar arquivo')
+        }
         return
       }
 

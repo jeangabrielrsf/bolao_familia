@@ -14,6 +14,11 @@ interface ModalProps {
 export function Modal({ open, onClose, title, children, footer }: ModalProps) {
   const overlayRef = useRef<HTMLDivElement>(null)
   const modalRef = useRef<HTMLDivElement>(null)
+  const onCloseRef = useRef(onClose)
+
+  useEffect(() => {
+    onCloseRef.current = onClose
+  })
 
   const trapFocus = useCallback((e: KeyboardEvent) => {
     if (e.key !== 'Tab' || !modalRef.current) return
@@ -35,18 +40,23 @@ export function Modal({ open, onClose, title, children, footer }: ModalProps) {
   useEffect(() => {
     if (!open) return
     const handleEsc = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose()
+      if (e.key === 'Escape') onCloseRef.current()
     }
     document.addEventListener('keydown', handleEsc)
     document.addEventListener('keydown', trapFocus)
     document.body.style.overflow = 'hidden'
-    modalRef.current?.focus()
     return () => {
       document.removeEventListener('keydown', handleEsc)
       document.removeEventListener('keydown', trapFocus)
       document.body.style.overflow = ''
     }
-  }, [open, onClose, trapFocus])
+  }, [open, trapFocus])
+
+  useEffect(() => {
+    if (open) {
+      modalRef.current?.focus()
+    }
+  }, [open])
 
   if (!open) return null
 

@@ -1,61 +1,73 @@
+import { execFile } from 'child_process'
+import { readFile, mkdtemp, rm } from 'fs/promises'
+import { tmpdir } from 'os'
+import { join } from 'path'
+import { promisify } from 'util'
 import { parseFoto } from './ocr-vision'
-import type { UploadResult } from '@/lib/utils/types'
+import type { UploadResultOCR } from '@/lib/utils/types'
 
+const execFileAsync = promisify(execFile)
 const MAX_PAGES = 10
 
-async function renderPageToPng(
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  page: any,
-  scale: number
-): Promise<Buffer> {
-  const viewport = page.getViewport({ scale })
+async function pdfToImages(buffer: Buffer): Promise<Buffer[]> {
+  const tmpDir = await mkdtemp(join(tmpdir(), 'pdf-upload-'))
+  const pdfPath = join(tmpDir, 'input.pdf')
 
-  const canvas = new OffscreenCanvas(viewport.width, viewport.height)
-  const context = canvas.getContext('2d')
+  try {
+    await import('fs').then((fs) => fs.writeFileSync(pdfPath, buffer))
 
-  if (!context) {
-    throw new Error('Falha ao criar canvas para renderização do PDF')
+    const startTime = Date.now()
+    console.log('[pdf-parser] Convertendo PDF para imagens com pdftoppm...')
+
+    await execFileAsync('pdftoppm', [
+      '-png',
+      '-r', '200',
+      pdfPath,
+      join(tmpDir, 'page'),
+    ])
+
+    const files = await import('fs').then((fs) =>
+      fs.readdirSync(tmpDir)
+        .filter((f) => f.startsWith('page') && f.endsWith('.png'))
+        .sort()
+    )
+
+    const elapsed = Date.now() - startTime
+    console.log(`[pdf-parser] Conversão concluída em ${elapsed}ms — ${files.length} página(s) extraída(s)`)
+
+    if (files.length > MAX_PAGES) {
+      throw new Error(`PDF com muitas páginas (máximo ${MAX_PAGES})`)
+    }
+
+    const images: Buffer[] = []
+    for (const file of files) {
+      const data = await readFile(join(tmpDir, file))
+      console.log(`[pdf-parser] Página ${file}: ${(data.length / 1024).toFixed(1)} KB`)
+      images.push(data)
+    }
+
+    return images
+  } finally {
+    await rm(tmpDir, { recursive: true, force: true })
   }
-
-  await page.render({
-    canvas: null,
-    canvasContext: context as unknown as CanvasRenderingContext2D,
-    viewport,
-  }).promise
-
-  const blob = await canvas.convertToBlob({ type: 'image/png' })
-  const arrayBuffer = await blob.arrayBuffer()
-  return Buffer.from(arrayBuffer)
 }
 
-export async function parsePdf(buffer: Buffer): Promise<UploadResult> {
-  const pdfjsLib = await import('pdfjs-dist')
-  pdfjsLib.GlobalWorkerOptions.workerSrc = ''
+export async function parsePdf(buffer: Buffer): Promise<UploadResultOCR> {
+  console.log(`[pdf-parser] Iniciando parse de PDF — buffer: ${(buffer.length / 1024).toFixed(1)} KB`)
 
-  const loadingTask = pdfjsLib.getDocument({
-    data: new Uint8Array(buffer),
-    useSystemFonts: true,
-  })
-
-  const pdf = await loadingTask.promise
-
-  if (pdf.numPages === 0) {
-    throw new Error('PDF não contém páginas')
+  if (buffer.length === 0) {
+    throw new Error('PDF vazio')
   }
 
-  if (pdf.numPages > MAX_PAGES) {
-    throw new Error(`PDF com muitas páginas (máximo ${MAX_PAGES})`)
+  const pageImages = await pdfToImages(buffer)
+
+  if (pageImages.length === 0) {
+    throw new Error('Nenhuma página encontrada no PDF')
   }
 
-  const pageImages: Buffer[] = []
-
-  for (let i = 1; i <= pdf.numPages; i++) {
-    const page = await pdf.getPage(i)
-    const imageBuffer = await renderPageToPng(page, 2.0)
-    pageImages.push(imageBuffer)
-  }
-
+  console.log(`[pdf-parser] Enviando ${pageImages.length} página(s) para OCR...`)
   const result = await parseFoto(pageImages, 'image/png')
+  console.log(`[pdf-parser] OCR concluído — ${result.palpites.length} palpites, ${result.extras.length} extras`)
 
-  return { ...result, fonte: 'pdf' }
+  return result
 }

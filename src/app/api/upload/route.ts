@@ -25,6 +25,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Arquivo ausente' }, { status: 400 })
     }
 
+    console.log(`[upload] Arquivo recebido: ${file.name} (${(file.size / 1024).toFixed(1)} KB, ${file.type}) | participante: ${participanteId}`)
+
     if (file.size > MAX_FILE_SIZE) {
       return NextResponse.json({ error: 'Arquivo muito grande (máximo 10MB)' }, { status: 413 })
     }
@@ -48,38 +50,77 @@ export async function POST(request: NextRequest) {
     const timesJogos = jogos.map((j) => ({ timeA: j.timeA, timeB: j.timeB }))
 
     let result: UploadResult
+    let timesJogosValidacao = timesJogos
 
     if (isExcel) {
+      console.log('[upload] Parseando Excel...')
       result = parseExcel(buffer, jogosIds)
     } else if (isPdf) {
+      console.log('[upload] Parseando PDF...')
       result = await parsePdf(buffer)
-      const mappedPalpites = result.palpites.map((p, i) => ({
-        jogoId: jogosIds[i] ?? '',
-        placarA: p.placarA,
-        placarB: p.placarB,
-      }))
+      const mappedPalpites = result.palpites.map((p) => {
+        const jogo = jogos.find(j =>
+          j.timeA.toLowerCase() === p.timeA.toLowerCase() &&
+          j.timeB.toLowerCase() === p.timeB.toLowerCase()
+        )
+        return {
+          jogoId: jogo?.id ?? '',
+          placarA: p.placarA,
+          placarB: p.placarB,
+        }
+      })
       if (mappedPalpites.some(p => !p.jogoId)) {
-        return NextResponse.json({ error: 'Número de palpites do PDF excede número de jogos' }, { status: 400 })
+        const naoEncontrados = mappedPalpites
+          .filter(p => !p.jogoId)
+          .map(p => `${result.palpites[mappedPalpites.indexOf(p)].timeA} x ${result.palpites[mappedPalpites.indexOf(p)].timeB}`)
+        return NextResponse.json({
+          error: 'Jogos não encontrados no banco',
+          detalhes: naoEncontrados,
+        }, { status: 400 })
       }
       result = { ...result, palpites: mappedPalpites }
+      timesJogosValidacao = timesJogos.slice(0, mappedPalpites.length)
     } else {
+      console.log('[upload] Parseando imagem...')
       const fotoResult = await parseFoto(buffer, mime)
-      const mappedPalpites = fotoResult.palpites.map((p, i) => ({
-        jogoId: jogosIds[i] ?? '',
-        placarA: p.placarA,
-        placarB: p.placarB,
-      }))
+      const mappedPalpites = fotoResult.palpites.map((p) => {
+        const jogo = jogos.find(j =>
+          j.timeA.toLowerCase() === p.timeA.toLowerCase() &&
+          j.timeB.toLowerCase() === p.timeB.toLowerCase()
+        )
+        return {
+          jogoId: jogo?.id ?? '',
+          placarA: p.placarA,
+          placarB: p.placarB,
+        }
+      })
       if (mappedPalpites.some(p => !p.jogoId)) {
-        return NextResponse.json({ error: 'Número de palpites da foto excede número de jogos' }, { status: 400 })
+        const naoEncontrados = mappedPalpites
+          .filter(p => !p.jogoId)
+          .map(p => `${fotoResult.palpites[mappedPalpites.indexOf(p)].timeA} x ${fotoResult.palpites[mappedPalpites.indexOf(p)].timeB}`)
+        return NextResponse.json({
+          error: 'Jogos não encontrados no banco',
+          detalhes: naoEncontrados,
+        }, { status: 400 })
       }
       result = { ...fotoResult, palpites: mappedPalpites }
+      timesJogosValidacao = timesJogos.slice(0, mappedPalpites.length)
     }
 
-    const validacao = validateUpload(result, timesJogos)
+    console.log(`[upload] Parse concluído — ${result.palpites.length} palpites, ${result.extras.length} extras, fonte: ${result.fonte}`)
+
+    const validacao = validateUpload(result, timesJogosValidacao)
 
     if (!validacao.valido) {
-      return NextResponse.json({ error: 'Erros de validação', validacao }, { status: 400 })
+      console.log(`[upload] ❌ Validação falhou: ${validacao.erros.length} erro(s)`)
+      return NextResponse.json({
+        error: 'Erros de validação',
+        validacao,
+        detalhes: validacao.erros,
+      }, { status: 400 })
     }
+
+    console.log('[upload] ✅ Upload processado com sucesso')
 
     return NextResponse.json({
       preview: {
@@ -91,7 +132,7 @@ export async function POST(request: NextRequest) {
       validacao,
     })
   } catch (error) {
-    console.error('Upload error:', error)
+    console.error('[upload] Erro:', error)
     return NextResponse.json({ error: 'Erro interno do servidor' }, { status: 500 })
   }
 }

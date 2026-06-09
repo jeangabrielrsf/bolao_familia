@@ -15,8 +15,8 @@ Bolão familiar da Copa do Mundo FIFA 2026. Site **informativo** (somente leitur
 - **Frontend/API:** Next.js 16.2.7, React 19, TypeScript 5, Tailwind CSS 4
 - **ORM/DB:** Prisma 7.8 com `@prisma/adapter-pg`, PostgreSQL
 - **Auth:** JWT customizado (`jose`) + `bcryptjs`, cookie `admin_session`, middleware protege `/admin/*`
-- **Storage:** Supabase (buckets `planilhas` e `fotos`)
-- **Parsing:** `xlsx` (Excel), `sharp` (imagens), OpenRouter/GPT-4o (OCR)
+- **Storage:** Supabase (buckets `fotos` e `palpites`)
+- **Parsing:** `xlsx` (Excel), `sharp` (imagens), OpenCode Go/Qwen3.7 Plus (OCR)
 - **Microserviço:** Python FastAPI (`microservice/`) — scraping SofaScore, deploy Fly.io (região `gru`)
 - **Testes:** Jest 30 + React Testing Library
 
@@ -60,7 +60,7 @@ Lógica em `src/lib/utils/helpers.ts` (`calcularPontosJogo`, `calcularPontosExtr
 |--------|--------|-----------|
 | `Participante` | `participantes` | nome (unique), fotoUrl opcional |
 | `Jogo` | `jogos` | fase (enum: grupos→final), grupo, times, resultado, status, sofascoreId |
-| `Palpite` | `palpites` | placarA/placarB por participante+jogo (unique pair), fonte (excel/foto) |
+| `Palpite` | `palpites` | placarA/placarB por participante+jogo (unique pair), fonte (excel/foto/pdf) |
 | `PalpiteExtra` | `palpites_extras` | tipo (artilheiro/campeao/vice/terceiro/quarto), valor string |
 | `ResultadoExtra` | `resultados_extras` | resultado oficial dos extras |
 | `Configuracao` | `configuracoes` | chave/valor (pontuação) |
@@ -107,11 +107,24 @@ Microserviço Python em `microservice/` faz scraping do SofaScore via `curl_cffi
 
 ## Variáveis de Ambiente
 
-Ver `.env.example`. Obrigatórias: `DATABASE_URL`, `SUPABASE_URL`, `SUPABASE_SERVICE_KEY`, `ADMIN_PASSWORD`, `SESSION_SECRET`. Condicionais: `OPENROUTER_API_KEY` (OCR), `MICROSERVICE_URL` (resultados ao vivo).
+Ver `.env.example`. Obrigatórias: `DATABASE_URL`, `SUPABASE_URL`, `SUPABASE_SERVICE_KEY`, `ADMIN_PASSWORD`, `SESSION_SECRET`. Condicionais: `OPENCODE_GO_API_KEY` (OCR), `MICROSERVICE_URL` (resultados ao vivo).
 
 ## Trabalho Pendente
 
-- **Upload de PDF:** spec em `docs/superpowers/specs/2026-06-09-pdf-upload-design.md`, plan em `docs/superpowers/plans/2026-06-09-pdf-upload.md`. Usar `pdfjs-dist` para renderizar páginas como imagens e enviar ao OCR.
+- **Upload de PDF:** Implementado com `pdftoppm` (poppler-utils) para converter PDF em imagens PNG, depois OCR via OpenCode Go/Qwen3.7 Plus.
+
+## Operações no Supabase
+
+Use o MCP do Supabase para todas as operações diretas no banco e storage:
+
+- **Queries SQL:** `supabase_execute_sql` — para SELECT, INSERT, UPDATE, DELETE, criar buckets, etc.
+- **Migrations:** `supabase_apply_migration` — para DDL (CREATE TABLE, ALTER TABLE, etc.)
+- **Buckets Storage:** criar via SQL (`INSERT INTO storage.buckets`) ou usar `supabase_execute_sql`
+- **Edge Functions:** `supabase_deploy_edge_function`, `supabase_list_edge_functions`
+- **Logs:** `supabase_get_logs`
+- **Advisors:** `supabase_get_advisors` (security/performance)
+
+**NÃO use** `curl` direto para o Supabase — use as ferramentas MCP.
 
 ## Convenções
 

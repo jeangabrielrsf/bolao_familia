@@ -4,6 +4,13 @@ export interface PalpiteDTO {
   placarB: number
 }
 
+export interface PalpiteOCR {
+  timeA: string
+  timeB: string
+  placarA: number
+  placarB: number
+}
+
 export interface PalpiteExtraDTO {
   tipo: 'artilheiro' | 'campeao' | 'vice' | 'terceiro' | 'quarto'
   valor: string
@@ -13,6 +20,12 @@ export interface UploadResult {
   palpites: PalpiteDTO[]
   extras: PalpiteExtraDTO[]
   fonte: 'excel' | 'foto' | 'pdf'
+}
+
+export interface UploadResultOCR {
+  palpites: PalpiteOCR[]
+  extras: PalpiteExtraDTO[]
+  fonte: 'foto' | 'pdf'
 }
 
 export interface ValidationResult {
