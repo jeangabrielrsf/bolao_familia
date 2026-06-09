@@ -152,8 +152,6 @@ export async function DELETE(request: NextRequest) {
     const existente = await prisma.participante.findUnique({ where: { id }, select: { fotoUrl: true } })
 
     await prisma.$transaction(async (tx) => {
-      await tx.palpite.deleteMany({ where: { participanteId: id } })
-      await tx.palpiteExtra.deleteMany({ where: { participanteId: id } })
       await tx.uploadLog.deleteMany({ where: { participanteId: id } })
       await deleteParticipante(id)
     })
