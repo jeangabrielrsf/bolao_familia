@@ -39,7 +39,7 @@ function createMultiSheetExcel(
     ]
     for (const [row, tipo] of extraRows) {
       if (sheet.extras[tipo]) {
-        data[row][2] = sheet.extras[tipo]
+        data[row][1] = sheet.extras[tipo]
       }
     }
 

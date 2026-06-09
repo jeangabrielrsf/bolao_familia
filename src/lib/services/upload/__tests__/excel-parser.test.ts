@@ -58,7 +58,7 @@ function createTestExcelBuffer(overrides?: {
     const [row, tipo] = extraRows[i]
     data[row][0] = extraLabels[i]
     if (extras[tipo]) {
-      data[row][2] = extras[tipo]
+      data[row][1] = extras[tipo]
     }
   }
 
