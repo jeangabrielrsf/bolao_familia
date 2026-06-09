@@ -12,6 +12,8 @@ export function validateUpload(
   const alertas: string[] = []
   const totalJogos = timesJogos.length
 
+  console.log(`[validator] Validando ${result.palpites.length} palpites contra ${totalJogos} jogos, ${result.extras.length} extras`)
+
   if (result.palpites.length !== totalJogos) {
     erros.push(`Esperados ${totalJogos} palpites, recebidos ${result.palpites.length}`)
   }
@@ -58,9 +60,21 @@ export function validateUpload(
     }
   }
 
-  return {
+  const resultado: ValidationResult = {
     valido: erros.length === 0,
     erros,
     alertas,
   }
+
+  if (erros.length > 0) {
+    console.log(`[validator] ❌ ${erros.length} erro(s): ${erros.join('; ')}`)
+  }
+  if (alertas.length > 0) {
+    console.log(`[validator] ⚠️ ${alertas.length} alerta(s): ${alertas.join('; ')}`)
+  }
+  if (erros.length === 0 && alertas.length === 0) {
+    console.log('[validator] ✅ Validação OK')
+  }
+
+  return resultado
 }

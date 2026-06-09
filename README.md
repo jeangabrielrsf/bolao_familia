@@ -1,6 +1,6 @@
 # Bolão Copa 2026
 
-Sistema de bolão para a Copa do Mundo FIFA 2026. Permite que participantes registrem palpites para todos os jogos da fase de grupos, acompanhem o ranking e resultados em tempo real. Painel admin para gestão de jogos, participantes, resultados e uploads de planilhas/fotos.
+Sistema de bolão para a Copa do Mundo FIFA 2026. Permite que participantes registrem palpites para todos os jogos da fase de grupos, acompanhem o ranking e resultados em tempo real. Painel admin para gestão de jogos, participantes, resultados e uploads de planilhas, fotos e PDFs.
 
 ## Stack
 
@@ -18,7 +18,7 @@ Sistema de bolão para a Copa do Mundo FIFA 2026. Permite que participantes regi
 - **Middleware** (`src/middleware.ts`) protege rotas `/admin/*`
 
 ### Armazenamento de arquivos
-- **Supabase** (storage para uploads de planilhas e fotos)
+- **Supabase** (storage para uploads de fotos e arquivos de palpites)
 - **xlsx** para parsing de planilhas Excel
 - **sharp** para processamento de imagens
 
@@ -28,7 +28,7 @@ Sistema de bolão para a Copa do Mundo FIFA 2026. Permite que participantes regi
 - Deploy no **Fly.io** (`fly.toml` configurado para região `gru`)
 
 ### IA / Visão computacional
-- **OpenRouter API** para extração de dados via modelos de visão (ex: `gpt-4o`)
+- **OpenCode Go** para extração de dados via modelos de visão (ex: `qwen3.7-plus`)
 
 ### Testes
 - **Jest 30** + **React Testing Library**
@@ -52,8 +52,8 @@ cp .env.example .env
 | `SUPABASE_SERVICE_KEY` | Sim | Chave service role do Supabase (bypass RLS) | Upload server-side com permissões totais |
 | `ADMIN_PASSWORD` | Sim | Senha do painel administrativo | Script `seed-admin.ts` para criar hash inicial |
 | `SESSION_SECRET` | Sim | Segredo para assinatura JWT (mínimo 32 caracteres) | `src/lib/auth/session.ts` - gera e valida tokens de sessão |
-| `OPENROUTER_API_KEY` | Condicional | Chave da API OpenRouter | OCR de fotos (`src/lib/services/upload/ocr-vision.ts`) - só needed se usar upload de fotos |
-| `VISION_MODEL` | Não | Modelo de visão para OCR. Padrão: `openai/gpt-4o` | Mesmo arquivo acima |
+| `OPENCODE_GO_API_KEY` | Condicional | Chave da API OpenCode Go | OCR de fotos/PDFs (`src/lib/services/upload/ocr-vision.ts`) - necessário se usar upload de fotos ou PDFs |
+| `VISION_MODEL` | Não | Modelo de visão para OCR. Padrão: `qwen3.7-plus` | Mesmo arquivo acima |
 | `MICROSERVICE_URL` | Condicional | URL do microserviço de resultados | Sync de resultados ao vivo (`src/lib/services/resultados/client.ts`) - só needed se usar resultados automáticos |
 
 ### Gerar SESSION_SECRET
@@ -160,8 +160,8 @@ SUPABASE_SERVICE_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
 1. No painel, vá em **Storage** (sidebar)
 2. Clique em **New bucket**
 3. Crie os buckets necessários:
-   - `planilhas` - para uploads de planilhas Excel
-   - `fotos` - para uploads de fotos de palpites
+   - `fotos` - para fotos de perfil dos participantes
+   - `palpites` - para arquivar arquivos de upload (Excel, PDF, imagens)
 4. Configure como **Public** (para que as URLs sejam acessíveis)
 
 #### Testar Supabase localmente
@@ -327,7 +327,7 @@ DATABASE_URL="postgresql://postgres:SUA_SENHA@db.xxx.supabase.co:5432/postgres" 
 DATABASE_URL="postgresql://postgres:SUA_SENHA@db.xxx.supabase.co:5432/postgres" ADMIN_PASSWORD="sua-senha-forte" npx tsx --env-file=.env scripts/seed-admin.ts
 ```
 
-Não esqueça de criar os buckets `planilhas` e `fotos` no Storage.
+Não esqueça de criar os buckets `fotos` e `palpites` no Storage.
 
 ### 2. Fly.io (microserviço Python)
 
@@ -391,8 +391,8 @@ fly status
 | `SUPABASE_SERVICE_KEY` | Service role key do Supabase |
 | `ADMIN_PASSWORD` | Senha do admin |
 | `SESSION_SECRET` | Gerado com `openssl rand -base64 32` |
-| `OPENROUTER_API_KEY` | Chave do OpenRouter (para OCR de fotos) |
-| `VISION_MODEL` | `openai/gpt-4o` |
+| `OPENCODE_GO_API_KEY` | Chave do OpenCode Go (para OCR de fotos/PDFs) |
+| `VISION_MODEL` | `qwen3.7-plus` |
 | `MICROSERVICE_URL` | URL do Fly.io: `https://bolao-copa-microservice.fly.dev` |
 
 4. O `vercel.json` já configura o build: `prisma generate && next build`
@@ -419,7 +419,7 @@ vercel env add SUPABASE_URL
 vercel env add SUPABASE_SERVICE_KEY
 vercel env add ADMIN_PASSWORD
 vercel env add SESSION_SECRET
-vercel env add OPENROUTER_API_KEY
+vercel env add OPENCODE_GO_API_KEY
 vercel env add VISION_MODEL
 vercel env add MICROSERVICE_URL
 ```
@@ -459,7 +459,7 @@ No Vercel: vá em **Settings > Environment Variables** e adicione ambas.
 
 ### Erro de upload no Supabase
 
-1. Verifique se os buckets `planilhas` e `fotos` existem
+1. Verifique se os buckets `fotos` e `palpites` existem
 2. Confirme que estão configurados como **Public**
 3. Verifique se `SUPABASE_SERVICE_KEY` é a **service_role key** (não a anon key)
 
@@ -478,7 +478,7 @@ cd microservice && fly status
 - [ ] `DATABASE_URL` configurado
 - [ ] Migrações rodadas no Supabase
 - [ ] Seeds executados (jogos + admin)
-- [ ] Buckets `planilhas` e `fotos` criados no Supabase Storage
+- [ ] Buckets `fotos` e `palpites` criados no Supabase Storage
 - [ ] `SUPABASE_URL` e `SUPABASE_SERVICE_KEY` anotados
 - [ ] Microserviço deployado no Fly.io
 - [ ] Variáveis de ambiente configuradas na Vercel

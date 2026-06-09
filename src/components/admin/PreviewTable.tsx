@@ -9,7 +9,7 @@ interface PreviewTableProps {
   preview: {
     palpites: PalpiteDTO[]
     extras: PalpiteExtraDTO[]
-    fonte: 'excel' | 'foto'
+    fonte: 'excel' | 'foto' | 'pdf'
   }
   validacao: ValidationResult
   jogos: Array<{ id: string; timeA: string; timeB: string; grupo?: string | null; fase: string }>
@@ -29,6 +29,10 @@ const EXTRA_ORDER = ['artilheiro', 'campeao', 'vice', 'terceiro', 'quarto'] as c
 export function PreviewTable({ preview, validacao, jogos, onEdit }: PreviewTableProps) {
   const [palpites, setPalpites] = useState<PalpiteDTO[]>(preview.palpites)
   const [extras, setExtras] = useState<PalpiteExtraDTO[]>(preview.extras)
+
+  const jogosComPalpite = jogos.filter((jogo) =>
+    palpites.some((p) => p.jogoId === jogo.id)
+  )
 
   useEffect(() => {
     onEdit(palpites, extras)
@@ -71,7 +75,7 @@ export function PreviewTable({ preview, validacao, jogos, onEdit }: PreviewTable
               </tr>
             </thead>
             <tbody>
-              {jogos.map((jogo, index) => {
+              {jogosComPalpite.map((jogo, index) => {
                 const palpite = palpites.find((p) => p.jogoId === jogo.id)
                 return (
                   <tr key={jogo.id} className="border-b border-border hover:bg-gray-50 transition-colors">

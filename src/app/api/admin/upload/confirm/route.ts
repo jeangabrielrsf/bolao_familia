@@ -42,8 +42,8 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    if (fonte !== 'excel' && fonte !== 'foto') {
-      return NextResponse.json({ error: 'fonte deve ser "excel" ou "foto"' }, { status: 400 })
+    if (fonte !== 'excel' && fonte !== 'foto' && fonte !== 'pdf') {
+      return NextResponse.json({ error: 'fonte deve ser "excel", "foto" ou "pdf"' }, { status: 400 })
     }
 
     const participante = await prisma.participante.findUnique({ where: { id: participanteId } })
