@@ -4,7 +4,7 @@ import { getDocument, GlobalWorkerOptions } from 'pdfjs-dist/legacy/build/pdf.mj
 import { parseFoto } from './ocr-vision'
 import type { UploadResultOCR } from '@/lib/utils/types'
 
-GlobalWorkerOptions.workerSrc = ''
+GlobalWorkerOptions.workerSrc = 'pdfjs-dist/legacy/build/pdf.worker.mjs'
 
 const MAX_PAGES = 10
 const SCALE = 2.0
