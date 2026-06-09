@@ -15,7 +15,7 @@ export function Hero({ totalParticipantes, totalJogos }: HeroProps) {
           <Trophy className="w-4 h-4 text-secondary" />
           <span className="text-sm font-medium text-secondary-foreground">Copa do Mundo 2026</span>
         </div>
-        <h1 className="text-4xl sm:text-5xl lg:text-6xl font-display tracking-wide text-foreground">BOLÃO DA FAMÍLIA</h1>
+        <h1 className="text-4xl sm:text-5xl lg:text-6xl font-display tracking-wide text-foreground">BOLÃO DA “FAMÍLIA”</h1>
         <p className="text-lg text-muted-foreground max-w-2xl mx-auto">Faça seus palpites e dispute o ranking com a família!</p>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 max-w-lg mx-auto pt-4">
           <StatsCard label="Participantes" value={totalParticipantes} icon={Users} />
