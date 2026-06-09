@@ -1,18 +1,30 @@
 import { prisma } from '../client'
 
 export async function getTodosParticipantes() {
-  return prisma.participante.findMany({ orderBy: { nome: 'asc' } })
+  return prisma.participante.findMany({
+    orderBy: { nome: 'asc' },
+    include: {
+      grupos: {
+        select: { id: true },
+      },
+    },
+  })
 }
 
 export async function getParticipanteById(id: string) {
   return prisma.participante.findUnique({
     where: { id },
     include: {
-      palpites: {
-        include: { jogo: true },
-        orderBy: { jogo: { dataHora: 'asc' } },
+      grupos: {
+        include: {
+          palpites: {
+            include: { jogo: true },
+            orderBy: { jogo: { dataHora: 'asc' } },
+          },
+          extras: true,
+        },
+        orderBy: { apelido: 'asc' },
       },
-      extras: true,
     },
   })
 }

@@ -23,7 +23,11 @@ export async function getJogoById(id: string) {
     where: { id },
     include: {
       palpites: {
-        include: { participante: true },
+        include: {
+          palpiteGrupo: {
+            include: { participante: true },
+          },
+        },
       },
     },
   })
