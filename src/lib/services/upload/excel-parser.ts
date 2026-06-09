@@ -98,7 +98,7 @@ export function parseExcelMultiSheet(buffer: Buffer, jogosIds: string[]): Palpit
   const resultados: PalpiteGrupoParsed[] = []
 
   for (const sheetName of workbook.SheetNames) {
-    if (sheetName.toLowerCase() === 'modelo') continue
+    if (sheetName.trim().toLowerCase() === 'modelo') continue
 
     const sheet = workbook.Sheets[sheetName]
     if (!sheet) continue
