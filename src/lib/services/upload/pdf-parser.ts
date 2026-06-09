@@ -1,13 +1,11 @@
-import { createCanvas, DOMMatrix, ImageData } from 'canvas'
+import './pdf-polyfills'
+import { createCanvas } from 'canvas'
 import { getDocument } from 'pdfjs-dist/legacy/build/pdf.mjs'
 import { parseFoto } from './ocr-vision'
 import type { UploadResultOCR } from '@/lib/utils/types'
 
 const MAX_PAGES = 10
 const SCALE = 2.0
-
-if (!globalThis.DOMMatrix) globalThis.DOMMatrix = DOMMatrix as unknown as typeof globalThis.DOMMatrix
-if (!globalThis.ImageData) globalThis.ImageData = ImageData as unknown as typeof globalThis.ImageData
 
 class NodeCanvasFactory {
   create(width: number, height: number) {

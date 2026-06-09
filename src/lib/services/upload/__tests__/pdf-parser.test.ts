@@ -10,10 +10,10 @@ const mockCreateCanvas = jest.fn().mockReturnValue({
   height: 0,
 })
 
+jest.mock('../pdf-polyfills', () => ({}))
+
 jest.mock('canvas', () => ({
   createCanvas: (...args: unknown[]) => mockCreateCanvas(...args),
-  DOMMatrix: class DOMMatrix {},
-  ImageData: class ImageData {},
 }))
 
 const mockRender = jest.fn().mockReturnValue({ promise: Promise.resolve() })
