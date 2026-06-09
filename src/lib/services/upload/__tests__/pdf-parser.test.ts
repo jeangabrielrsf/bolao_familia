@@ -2,19 +2,27 @@ import { parsePdf } from '../pdf-parser'
 import { parseFoto } from '../ocr-vision'
 
 const mockToBuffer = jest.fn().mockReturnValue(Buffer.from([137, 80, 78, 71]))
+const mockGetContext = jest.fn().mockReturnValue({})
+const mockCreateCanvas = jest.fn().mockReturnValue({
+  getContext: mockGetContext,
+  toBuffer: mockToBuffer,
+  width: 0,
+  height: 0,
+})
+
+jest.mock('canvas', () => ({
+  createCanvas: (...args: unknown[]) => mockCreateCanvas(...args),
+  DOMMatrix: class DOMMatrix {},
+  ImageData: class ImageData {},
+}))
+
 const mockRender = jest.fn().mockReturnValue({ promise: Promise.resolve() })
 const mockCleanup = jest.fn()
 const mockGetViewport = jest.fn().mockReturnValue({ width: 800, height: 600 })
 const mockGetPage = jest.fn()
-const mockCanvasFactoryCreate = jest.fn()
-const mockCanvasFactoryDestroy = jest.fn()
 
 const mockPdfDocument = {
   numPages: 2,
-  canvasFactory: {
-    create: mockCanvasFactoryCreate,
-    destroy: mockCanvasFactoryDestroy,
-  },
   getPage: mockGetPage,
 }
 
@@ -48,9 +56,11 @@ jest.mock('../ocr-vision', () => ({
 describe('parsePdf', () => {
   beforeEach(() => {
     jest.clearAllMocks()
-    mockCanvasFactoryCreate.mockReturnValue({
-      canvas: { toBuffer: mockToBuffer },
-      context: {},
+    mockCreateCanvas.mockReturnValue({
+      getContext: mockGetContext,
+      toBuffer: mockToBuffer,
+      width: 0,
+      height: 0,
     })
     mockGetPage.mockResolvedValue({
       getViewport: mockGetViewport,
@@ -76,10 +86,11 @@ describe('parsePdf', () => {
     expect(result.extras).toHaveLength(5)
   })
 
-  it('renders each page to PNG via pdfjs-dist canvas', async () => {
+  it('renders each page to PNG via canvas', async () => {
     const pdfBuffer = Buffer.from('%PDF-1.4 fake pdf content')
     await parsePdf(pdfBuffer)
 
+    expect(mockCreateCanvas).toHaveBeenCalledTimes(2)
     expect(mockGetPage).toHaveBeenCalledTimes(2)
     expect(mockGetViewport).toHaveBeenCalledTimes(2)
     expect(mockRender).toHaveBeenCalledTimes(2)

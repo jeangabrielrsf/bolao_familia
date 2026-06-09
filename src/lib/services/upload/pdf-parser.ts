@@ -1,3 +1,4 @@
+import { createCanvas, DOMMatrix, ImageData } from 'canvas'
 import { getDocument } from 'pdfjs-dist/legacy/build/pdf.mjs'
 import { parseFoto } from './ocr-vision'
 import type { UploadResultOCR } from '@/lib/utils/types'
@@ -5,9 +6,22 @@ import type { UploadResultOCR } from '@/lib/utils/types'
 const MAX_PAGES = 10
 const SCALE = 2.0
 
-interface CanvasFactory {
-  create(width: number, height: number): { canvas: { toBuffer(format: string): Buffer }; context: CanvasRenderingContext2D }
-  destroy(canvasAndContext: unknown): void
+if (!globalThis.DOMMatrix) globalThis.DOMMatrix = DOMMatrix as unknown as typeof globalThis.DOMMatrix
+if (!globalThis.ImageData) globalThis.ImageData = ImageData as unknown as typeof globalThis.ImageData
+
+class NodeCanvasFactory {
+  create(width: number, height: number) {
+    const canvas = createCanvas(width, height)
+    const context = canvas.getContext('2d')
+    return { canvas, context }
+  }
+
+  reset(canvasAndContext: { canvas: ReturnType<typeof createCanvas> }, width: number, height: number) {
+    canvasAndContext.canvas.width = width
+    canvasAndContext.canvas.height = height
+  }
+
+  destroy() {}
 }
 
 async function pdfToImages(buffer: Buffer): Promise<Buffer[]> {
@@ -18,6 +32,7 @@ async function pdfToImages(buffer: Buffer): Promise<Buffer[]> {
     data: new Uint8Array(buffer),
     useWorkerFetch: false,
     useSystemFonts: true,
+    CanvasFactory: NodeCanvasFactory,
   }).promise
 
   const numPages = pdfDocument.numPages
@@ -28,7 +43,7 @@ async function pdfToImages(buffer: Buffer): Promise<Buffer[]> {
   }
 
   const images: Buffer[] = []
-  const canvasFactory = pdfDocument.canvasFactory as CanvasFactory
+  const canvasFactory = new NodeCanvasFactory()
 
   for (let pageNum = 1; pageNum <= numPages; pageNum++) {
     const page = await pdfDocument.getPage(pageNum)
@@ -37,7 +52,7 @@ async function pdfToImages(buffer: Buffer): Promise<Buffer[]> {
 
     await page.render({
       canvas: null,
-      canvasContext: canvasAndContext.context,
+      canvasContext: canvasAndContext.context as unknown as CanvasRenderingContext2D,
       viewport,
     }).promise
 
@@ -45,7 +60,6 @@ async function pdfToImages(buffer: Buffer): Promise<Buffer[]> {
     images.push(imageBuffer)
     console.log(`[pdf-parser] Página ${pageNum}: ${(imageBuffer.length / 1024).toFixed(1)} KB`)
 
-    canvasFactory.destroy(canvasAndContext)
     page.cleanup()
   }
 
