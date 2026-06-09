@@ -40,7 +40,7 @@ describe('validateUpload', () => {
     expect(result.alertas).toHaveLength(0)
   })
 
-  it('returns erro when palpites count is not 33', () => {
+  it('accepts any number of palpites (not fixed to 33)', () => {
     const upload = makeValidUpload({
       palpites: Array.from({ length: 30 }, (_, i) => ({
         jogoId: `jogo-${i + 1}`,
@@ -51,9 +51,8 @@ describe('validateUpload', () => {
 
     const result = validateUpload(upload, makeTimesJogos(33))
 
-    expect(result.valido).toBe(false)
-    expect(result.erros).toHaveLength(1)
-    expect(result.erros[0]).toMatch(/33/)
+    expect(result.valido).toBe(true)
+    expect(result.erros).toHaveLength(0)
   })
 
   it('returns erro when any placar is negative', () => {
