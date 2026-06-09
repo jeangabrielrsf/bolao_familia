@@ -111,7 +111,7 @@ Ver `.env.example`. Obrigatórias: `DATABASE_URL`, `SUPABASE_URL`, `SUPABASE_SER
 
 ## Trabalho Pendente
 
-- **Upload de PDF:** Implementado com `pdftoppm` (poppler-utils) para converter PDF em imagens PNG, depois OCR via OpenCode Go/Qwen3.7 Plus.
+- **Upload de PDF:** Implementado com `pdfjs-dist` + `@napi-rs/canvas` para converter PDF em imagens PNG, depois OCR via OpenCode Go/Qwen3.7 Plus.
 
 ## Operações no Supabase
 
