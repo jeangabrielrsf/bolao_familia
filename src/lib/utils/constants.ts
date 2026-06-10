@@ -12,6 +12,8 @@ export const PONTUACAO_PADRAO: ConfiguracaoPontuacao = {
 
 export const CONFIG_CHAVES = {
   PONTUACAO: 'pontuacao',
+  PRAZO_COMPLETAR_BOLAO: 'prazo_completar_bolao',
+  COMPLETAR_BOLAO_HABILITADO: 'completar_bolao_habilitado',
 } as const
 
 export const TIMES_VALIDOS = [

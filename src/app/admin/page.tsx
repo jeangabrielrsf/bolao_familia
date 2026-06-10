@@ -26,6 +26,7 @@ const posicaoBadges: Record<number, { variant: 'secondary' | 'default' | 'destru
 
 const adminLinks = [
   { href: '/admin/upload', label: 'Upload de Palpites' },
+  { href: '/admin/completar-bolao', label: 'Completar Bolão' },
   { href: '/admin/participantes', label: 'Participantes' },
   { href: '/admin/jogos', label: 'Jogos' },
   { href: '/admin/resultados', label: 'Resultados' },

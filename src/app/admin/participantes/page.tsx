@@ -13,9 +13,9 @@ import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, A
 import { Skeleton } from '@/components/ui/skeleton'
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip'
 import { toast } from 'sonner'
-import { Loader2, Users, ChevronLeft } from 'lucide-react'
+import { Loader2, Users, ChevronLeft, Copy } from 'lucide-react'
 
-interface Participante { id: string; nome: string; fotoUrl: string | null }
+interface Participante { id: string; nome: string; fotoUrl: string | null; token: string | null }
 
 export default function AdminParticipantesPage() {
   const [participantes, setParticipantes] = useState<Participante[]>([])
@@ -49,6 +49,17 @@ export default function AdminParticipantesPage() {
   function openAddModal() { setFormNome(''); setFormFoto(null); setFormError(''); setShowAddDialog(true) }
   function openEditModal(p: Participante) { setSelected(p); setFormNome(p.nome); setFormFoto(null); setFormError(''); setShowEditDialog(true) }
   function openDeleteModal(p: Participante) { setSelected(p); setShowDeleteDialog(true) }
+
+  async function copiarLink(p: Participante) {
+    if (!p.token) { toast.error('Participante sem token'); return }
+    const url = `${window.location.origin}/completar/${p.token}`
+    try {
+      await navigator.clipboard.writeText(url)
+      toast.success(`Link copiado para ${p.nome}!`)
+    } catch {
+      toast.error('Erro ao copiar link')
+    }
+  }
 
   async function handleAdd(e: FormEvent) {
     e.preventDefault()
@@ -149,6 +160,16 @@ export default function AdminParticipantesPage() {
                   <TableCell>{p.nome}</TableCell>
                   <TableCell className="text-right">
                     <div className="flex gap-2 justify-end">
+                      {p.token && (
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button variant="ghost" size="sm" onClick={() => copiarLink(p)}>
+                              <Copy className="w-3 h-3" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>Copiar link de completar bolão</TooltipContent>
+                        </Tooltip>
+                      )}
                       <Tooltip>
                         <TooltipTrigger asChild>
                           <Button variant="secondary" size="sm" onClick={() => openEditModal(p)}>Editar</Button>
