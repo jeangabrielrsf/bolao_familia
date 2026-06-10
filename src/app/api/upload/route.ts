@@ -47,10 +47,8 @@ export async function POST(request: NextRequest) {
     const buffer = Buffer.from(await file.arrayBuffer())
     const jogos = await getTodosJogos()
     const jogosInfo = jogos.map((j) => ({ id: j.id, timeA: j.timeA, timeB: j.timeB }))
-    const timesJogos = jogos.map((j) => ({ timeA: j.timeA, timeB: j.timeB }))
 
     let result: UploadResult
-    let timesJogosValidacao = timesJogos
 
     if (isExcel) {
       console.log('[upload] Parseando Excel...')
@@ -79,7 +77,6 @@ export async function POST(request: NextRequest) {
         }, { status: 400 })
       }
       result = { ...pdfResult, palpites: mappedPalpites }
-      timesJogosValidacao = timesJogos.slice(0, mappedPalpites.length)
     } else {
       console.log('[upload] Parseando imagem...')
       const fotoResult = await parseFoto(buffer, mime)
@@ -104,12 +101,11 @@ export async function POST(request: NextRequest) {
         }, { status: 400 })
       }
       result = { ...fotoResult, palpites: mappedPalpites }
-      timesJogosValidacao = timesJogos.slice(0, mappedPalpites.length)
     }
 
     console.log(`[upload] Parse concluído — ${result.palpites.length} palpites, ${result.extras.length} extras, fonte: ${result.fonte}`)
 
-    const validacao = validateUpload(result, timesJogosValidacao)
+    const validacao = validateUpload(result)
 
     if (!validacao.valido) {
       console.log(`[upload] ❌ Validação falhou: ${validacao.erros.length} erro(s)`)

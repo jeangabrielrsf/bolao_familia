@@ -6,7 +6,6 @@ const EXTRAS_OBRIGATORIOS = ['artilheiro', 'campeao', 'vice', 'terceiro', 'quart
 
 export function validateUpload(
   result: UploadResult,
-  timesJogos: Array<{ timeA: string; timeB: string }>
 ): ValidationResult {
   const erros: string[] = []
   const alertas: string[] = []

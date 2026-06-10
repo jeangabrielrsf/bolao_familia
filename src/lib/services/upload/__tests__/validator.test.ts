@@ -24,16 +24,9 @@ function makeValidUpload(overrides?: Partial<UploadResult>): UploadResult {
   }
 }
 
-function makeTimesJogos(count: number): Array<{ timeA: string; timeB: string }> {
-  return Array.from({ length: count }, (_, i) => ({
-    timeA: `Time A${i + 1}`,
-    timeB: `Time B${i + 1}`,
-  }))
-}
-
 describe('validateUpload', () => {
   it('returns valido=true for a valid upload with 33 games and 5 extras', () => {
-    const result = validateUpload(makeValidUpload(), makeTimesJogos(33))
+    const result = validateUpload(makeValidUpload())
 
     expect(result.valido).toBe(true)
     expect(result.erros).toHaveLength(0)
@@ -49,7 +42,7 @@ describe('validateUpload', () => {
       })),
     })
 
-    const result = validateUpload(upload, makeTimesJogos(33))
+    const result = validateUpload(upload)
 
     expect(result.valido).toBe(true)
     expect(result.erros).toHaveLength(0)
@@ -63,7 +56,7 @@ describe('validateUpload', () => {
     }))
 
     const upload = makeValidUpload({ palpites })
-    const result = validateUpload(upload, makeTimesJogos(33))
+    const result = validateUpload(upload)
 
     expect(result.valido).toBe(false)
     expect(result.erros.some((e) => e.toLowerCase().includes('negativo'))).toBe(true)
@@ -78,7 +71,7 @@ describe('validateUpload', () => {
     ]
 
     const upload = makeValidUpload({ extras })
-    const result = validateUpload(upload, makeTimesJogos(33))
+    const result = validateUpload(upload)
 
     expect(result.valido).toBe(false)
     expect(result.erros.some((e) => e.toLowerCase().includes('quarto'))).toBe(true)
@@ -94,7 +87,7 @@ describe('validateUpload', () => {
     ]
 
     const upload = makeValidUpload({ extras })
-    const result = validateUpload(upload, makeTimesJogos(33))
+    const result = validateUpload(upload)
 
     expect(result.valido).toBe(false)
     expect(result.erros.some((e) => e.toLowerCase().includes('quarto'))).toBe(true)
@@ -108,7 +101,7 @@ describe('validateUpload', () => {
     }))
 
     const upload = makeValidUpload({ palpites })
-    const result = validateUpload(upload, makeTimesJogos(33))
+    const result = validateUpload(upload)
 
     expect(result.valido).toBe(true)
     expect(result.alertas.some((a) => a.toLowerCase().includes('alto'))).toBe(true)
@@ -124,7 +117,7 @@ describe('validateUpload', () => {
     ]
 
     const upload = makeValidUpload({ extras })
-    const result = validateUpload(upload, makeTimesJogos(33))
+    const result = validateUpload(upload)
 
     expect(result.valido).toBe(true)
     expect(result.alertas.some((a) => a.toLowerCase().includes('atlantida'))).toBe(true)
@@ -143,7 +136,7 @@ describe('validateUpload', () => {
     ]
 
     const upload = makeValidUpload({ palpites, extras })
-    const result = validateUpload(upload, makeTimesJogos(33))
+    const result = validateUpload(upload)
 
     expect(result.valido).toBe(false)
     expect(result.erros.length).toBeGreaterThanOrEqual(2)
@@ -158,7 +151,7 @@ describe('validateUpload', () => {
     }))
 
     const upload = makeValidUpload({ palpites })
-    const result = validateUpload(upload, makeTimesJogos(33))
+    const result = validateUpload(upload)
 
     expect(result.valido).toBe(false)
     expect(result.erros.some((e) => e.includes('não inteiro') && e.includes('jogo-3'))).toBe(true)
@@ -172,7 +165,7 @@ describe('validateUpload', () => {
     }))
 
     const upload = makeValidUpload({ palpites })
-    const result = validateUpload(upload, makeTimesJogos(33))
+    const result = validateUpload(upload)
 
     expect(result.valido).toBe(false)
     expect(result.erros.some((e) => e.includes('duplicado') && e.includes('jogo-1'))).toBe(true)
@@ -189,7 +182,7 @@ describe('validateUpload', () => {
     ]
 
     const upload = makeValidUpload({ extras })
-    const result = validateUpload(upload, makeTimesJogos(33))
+    const result = validateUpload(upload)
 
     expect(result.valido).toBe(false)
     expect(result.erros.some((e) => e.includes('duplicado') && e.includes('artilheiro'))).toBe(true)
@@ -205,7 +198,7 @@ describe('validateUpload', () => {
     ]
 
     const upload = makeValidUpload({ extras })
-    const result = validateUpload(upload, makeTimesJogos(33))
+    const result = validateUpload(upload)
 
     expect(result.valido).toBe(true)
     expect(result.alertas.length).toBeGreaterThan(0)

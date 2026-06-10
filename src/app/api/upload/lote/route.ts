@@ -35,7 +35,6 @@ export async function POST(request: NextRequest) {
     const todosJogos = await getTodosJogos()
     const jogosFaseGrupos = todosJogos.filter((j) => j.fase === 'grupos')
     const jogosInfo = jogosFaseGrupos.map((j) => ({ id: j.id, timeA: j.timeA, timeB: j.timeB }))
-    const timesJogos = jogosFaseGrupos.map((j) => ({ timeA: j.timeA, timeB: j.timeB }))
 
     const grupos = parseExcelMultiSheet(buffer, jogosInfo)
 
@@ -61,7 +60,7 @@ export async function POST(request: NextRequest) {
     const todosAlertas: string[] = []
     for (const grupo of grupos) {
       const uploadResult = { palpites: grupo.palpites, extras: grupo.extras, fonte: 'excel' as const }
-      const validacao = validateUpload(uploadResult, timesJogos)
+      const validacao = validateUpload(uploadResult)
       todosErros.push(...validacao.erros.map(e => `[${grupo.nomeCompleto}] ${e}`))
       todosAlertas.push(...validacao.alertas.map(a => `[${grupo.nomeCompleto}] ${a}`))
     }
