@@ -2,6 +2,7 @@ import Link from "next/link"
 import { getJogosDoDia, getTodosJogos } from "@/lib/db/queries/jogos"
 import { getRanking } from "@/lib/db/queries/ranking"
 import { getTodosParticipantes } from "@/lib/db/queries/participantes"
+import { getConfiguracao } from "@/lib/db/queries/config"
 import { GameCard } from "@/components/public/GameCard"
 import { RankingCard } from "@/components/public/ranking-card"
 import { Hero } from "@/components/public/hero"
@@ -12,13 +13,16 @@ import { ChevronRight } from "lucide-react"
 export const dynamic = "force-dynamic"
 
 export default async function HomePage() {
-  const [jogosDoDia, ranking, todosJogos, participantes] = await Promise.all([
-    getJogosDoDia(), getRanking(), getTodosJogos(), getTodosParticipantes(),
+  const [jogosDoDia, ranking, todosJogos, participantes, config] = await Promise.all([
+    getJogosDoDia(), getRanking(), getTodosJogos(), getTodosParticipantes(), getConfiguracao(),
   ])
+
+  const pontosMaximos = todosJogos.length * config.placarExato + 
+    config.campeao + config.vice + config.terceiro + config.quarto + config.artilheiro
 
   return (
     <div className="space-y-10">
-      <Hero totalParticipantes={participantes.length} totalJogos={todosJogos.length} />
+      <Hero totalParticipantes={participantes.length} totalJogos={todosJogos.length} pontosMaximos={pontosMaximos} />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-10">
         <section className="space-y-4">
           <div className="flex items-center justify-between">

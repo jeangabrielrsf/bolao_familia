@@ -34,7 +34,7 @@ export default function RegrasPage() {
               <TableFooter>
                 <TableRow>
                   <TableCell className="font-bold">Total máximo</TableCell>
-                  <TableCell className="text-right font-display text-xl text-primary">380</TableCell>
+                  <TableCell className="text-right font-display text-xl text-primary">770</TableCell>
                 </TableRow>
               </TableFooter>
             </Table>

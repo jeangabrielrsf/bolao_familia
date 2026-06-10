@@ -4,9 +4,10 @@ import { StatsCard } from "@/components/public/stats-card"
 interface HeroProps {
   totalParticipantes: number
   totalJogos: number
+  pontosMaximos: number
 }
 
-export function Hero({ totalParticipantes, totalJogos }: HeroProps) {
+export function Hero({ totalParticipantes, totalJogos, pontosMaximos }: HeroProps) {
   return (
     <section className="relative overflow-hidden py-12 sm:py-16">
       <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-secondary/5" />
@@ -20,7 +21,7 @@ export function Hero({ totalParticipantes, totalJogos }: HeroProps) {
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-2xl mx-auto pt-4">
           <StatsCard label="Participantes" value={totalParticipantes} icon={Users} href="/participantes" />
           <StatsCard label="Jogos" value={totalJogos} icon={Calendar} href="/jogos" />
-          <StatsCard label="Pts Máx" value={380} icon={Trophy} iconColor="text-secondary" iconBg="bg-secondary/10" href="/regras" />
+          <StatsCard label="Pts Máx" value={pontosMaximos} icon={Trophy} iconColor="text-secondary" iconBg="bg-secondary/10" href="/regras" />
         </div>
       </div>
     </section>
