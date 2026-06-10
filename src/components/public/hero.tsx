@@ -17,10 +17,10 @@ export function Hero({ totalParticipantes, totalJogos }: HeroProps) {
         </div>
         <h1 className="text-4xl sm:text-5xl lg:text-6xl font-display tracking-wide text-foreground">BOLÃO DA “FAMÍLIA”</h1>
         <p className="text-lg text-muted-foreground max-w-2xl mx-auto">Faça seus palpites e dispute o ranking com a família!</p>
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 max-w-lg mx-auto pt-4">
-          <StatsCard label="Participantes" value={totalParticipantes} icon={Users} />
-          <StatsCard label="Jogos" value={totalJogos} icon={Calendar} />
-          <StatsCard label="Pts Máx" value={380} icon={Trophy} iconColor="text-secondary" iconBg="bg-secondary/10" />
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-2xl mx-auto pt-4">
+          <StatsCard label="Participantes" value={totalParticipantes} icon={Users} href="/participantes" />
+          <StatsCard label="Jogos" value={totalJogos} icon={Calendar} href="/jogos" />
+          <StatsCard label="Pts Máx" value={380} icon={Trophy} iconColor="text-secondary" iconBg="bg-secondary/10" href="/regras" />
         </div>
       </div>
     </section>
