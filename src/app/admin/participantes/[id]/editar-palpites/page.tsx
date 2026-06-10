@@ -368,6 +368,19 @@ export default function EditarPalpitesPage() {
         </div>
       </div>
 
+      {temAlteracoes && (
+        <div className="flex justify-end">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={descartarAlteracoes}
+          >
+            <RotateCcw className="w-4 h-4 mr-2" />
+            Descartar alterações
+          </Button>
+        </div>
+      )}
+
       {grupos.length > 1 && (
         <Tabs value={grupoAtivo ?? ''} onValueChange={trocarGrupo}>
           <TabsList className="w-full flex-wrap h-auto">
@@ -404,17 +417,7 @@ export default function EditarPalpitesPage() {
         />
       )}
 
-      <div className="sticky bottom-4 space-y-2">
-        {temAlteracoes && (
-          <Button
-            variant="outline"
-            onClick={descartarAlteracoes}
-            className="w-full"
-          >
-            <RotateCcw className="w-4 h-4 mr-2" />
-            Descartar alterações
-          </Button>
-        )}
+      <div className="sticky bottom-4">
         <Button
           onClick={salvar}
           disabled={salvando || totalPreenchidos !== totalJogos}
