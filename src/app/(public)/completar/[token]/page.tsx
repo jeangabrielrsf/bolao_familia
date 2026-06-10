@@ -11,7 +11,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { getTimeFlag } from '@/lib/utils/flags'
 import { toast } from 'sonner'
-import { Save, XCircle, Calendar, Lock, AlertCircle, RotateCcw } from 'lucide-react'
+import { Save, XCircle, Calendar, Lock, AlertCircle, RotateCcw, CheckCircle } from 'lucide-react'
 
 interface TokenInfo {
   valido: boolean
@@ -383,6 +383,7 @@ export default function CompletarBolaoPage() {
   const totalPreenchidos = countFilled(inputsAtuais)
   const totalJogos = jogos.length
   const temAlteracoes = hasUnsavedChanges(inputsAtuais, inputsOriginais)
+  const estaCompleto = totalPreenchidos === totalJogos && !temAlteracoes
 
   const grupoAtualNome = grupos.find((g) => g.id === grupoAtivo)?.apelido ?? ''
 
@@ -407,8 +408,32 @@ export default function CompletarBolaoPage() {
               Não salvo
             </Badge>
           )}
+          {estaCompleto && (
+            <Badge variant="success">
+              <CheckCircle className="w-3 h-3 mr-1" />
+              Palpites computados
+            </Badge>
+          )}
         </div>
       </div>
+
+      {estaCompleto && (
+        <Card className="border-green-500/50 bg-green-50 dark:bg-green-950/20">
+          <CardContent className="p-4">
+            <div className="flex items-start gap-3">
+              <CheckCircle className="w-5 h-5 text-green-600 dark:text-green-500 mt-0.5 shrink-0" />
+              <div className="space-y-1">
+                <p className="font-medium text-green-900 dark:text-green-100">
+                  Seus palpites foram computados com sucesso!
+                </p>
+                <p className="text-sm text-green-700 dark:text-green-300">
+                  Caso precise alterar, entre em contato com o administrador do bolão.
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {temAlteracoes && (
         <div className="flex justify-end">
@@ -443,6 +468,7 @@ export default function CompletarBolaoPage() {
                 gruposOrdenados={gruposOrdenados}
                 inputs={todasAbas.get(g.id) ?? new Map()}
                 atualizarPalpite={atualizarPalpite}
+                desabilitado={estaCompleto}
               />
             </TabsContent>
           ))}
@@ -456,26 +482,42 @@ export default function CompletarBolaoPage() {
           gruposOrdenados={gruposOrdenados}
           inputs={inputsAtuais}
           atualizarPalpite={atualizarPalpite}
+          desabilitado={estaCompleto}
         />
       )}
 
-      <div className="sticky bottom-4">
-        <Button
-          onClick={salvar}
-          disabled={salvando || totalPreenchidos !== totalJogos}
-          size="lg"
-          className="w-full shadow-lg"
-        >
-          {salvando ? (
-            'Salvando...'
-          ) : (
-            <>
-              <Save className="w-4 h-4" />
-              Salvar{grupoAtualNome ? ` ${grupoAtualNome}` : ''} ({totalPreenchidos}/{totalJogos})
-            </>
-          )}
-        </Button>
-      </div>
+      {temAlteracoes && (
+        <div className="flex justify-end">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={descartarAlteracoes}
+          >
+            <RotateCcw className="w-4 h-4 mr-2" />
+            Descartar alterações
+          </Button>
+        </div>
+      )}
+
+      {!estaCompleto && (
+        <div className="sticky bottom-4">
+          <Button
+            onClick={salvar}
+            disabled={salvando || totalPreenchidos !== totalJogos}
+            size="lg"
+            className="w-full shadow-lg"
+          >
+            {salvando ? (
+              'Salvando...'
+            ) : (
+              <>
+                <Save className="w-4 h-4" />
+                Salvar{grupoAtualNome ? ` ${grupoAtualNome}` : ''} ({totalPreenchidos}/{totalJogos})
+              </>
+            )}
+          </Button>
+        </div>
+      )}
     </div>
   )
 }
@@ -486,12 +528,14 @@ function JogosLista({
   gruposOrdenados,
   inputs,
   atualizarPalpite,
+  desabilitado = false,
 }: {
   jogos: JogoComPalpite[]
   jogosComGrupo: Map<string, JogoComPalpite[]>
   gruposOrdenados: string[]
   inputs: Map<string, PalpiteInput>
   atualizarPalpite: (jogoId: string, campo: 'placarA' | 'placarB', valor: string) => void
+  desabilitado?: boolean
 }) {
   if (jogos.length === 0) {
     return (
@@ -538,6 +582,7 @@ function JogosLista({
                             pattern="[0-9]*"
                             value={palpiteAtual?.placarA ?? ''}
                             onChange={(e) => atualizarPalpite(jogo.id, 'placarA', e.target.value)}
+                            disabled={desabilitado}
                             className="w-14 h-10 text-center text-lg font-bold"
                             placeholder="-"
                           />
@@ -548,6 +593,7 @@ function JogosLista({
                             pattern="[0-9]*"
                             value={palpiteAtual?.placarB ?? ''}
                             onChange={(e) => atualizarPalpite(jogo.id, 'placarB', e.target.value)}
+                            disabled={desabilitado}
                             className="w-14 h-10 text-center text-lg font-bold"
                             placeholder="-"
                           />

@@ -12,7 +12,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { getTimeFlag } from '@/lib/utils/flags'
 import { toast } from 'sonner'
-import { Save, ChevronLeft, Calendar, Loader2, AlertCircle, RotateCcw } from 'lucide-react'
+import { Save, ChevronLeft, Calendar, Loader2, AlertCircle, RotateCcw, CheckCircle } from 'lucide-react'
 
 interface PalpiteGrupo {
   id: string
@@ -337,6 +337,7 @@ export default function EditarPalpitesPage() {
   const totalPreenchidos = countFilled(inputsAtuais)
   const totalJogos = jogos.length
   const temAlteracoes = hasUnsavedChanges(inputsAtuais, inputsOriginais)
+  const estaCompleto = totalPreenchidos === totalJogos && !temAlteracoes
 
   const grupoAtualNome = grupos.find((g) => g.id === grupoAtivo)?.apelido ?? ''
 
@@ -365,8 +366,32 @@ export default function EditarPalpitesPage() {
               Não salvo
             </Badge>
           )}
+          {estaCompleto && (
+            <Badge variant="success">
+              <CheckCircle className="w-3 h-3 mr-1" />
+              Palpites computados
+            </Badge>
+          )}
         </div>
       </div>
+
+      {estaCompleto && (
+        <Card className="border-green-500/50 bg-green-50 dark:bg-green-950/20">
+          <CardContent className="p-4">
+            <div className="flex items-start gap-3">
+              <CheckCircle className="w-5 h-5 text-green-600 dark:text-green-500 mt-0.5 shrink-0" />
+              <div className="space-y-1">
+                <p className="font-medium text-green-900 dark:text-green-100">
+                  Palpites computados com sucesso!
+                </p>
+                <p className="text-sm text-green-700 dark:text-green-300">
+                  Caso precise alterar, use os controles abaixo.
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {temAlteracoes && (
         <div className="flex justify-end">
@@ -415,6 +440,19 @@ export default function EditarPalpitesPage() {
           inputs={inputsAtuais}
           atualizarPalpite={atualizarPalpite}
         />
+      )}
+
+      {temAlteracoes && (
+        <div className="flex justify-end">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={descartarAlteracoes}
+          >
+            <RotateCcw className="w-4 h-4 mr-2" />
+            Descartar alterações
+          </Button>
+        </div>
       )}
 
       <div className="sticky bottom-4">
