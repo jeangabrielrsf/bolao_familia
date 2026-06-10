@@ -1,6 +1,6 @@
 # Bolão Copa 2026
 
-Sistema de bolão para a Copa do Mundo FIFA 2026. Permite que participantes registrem palpites para todos os jogos da fase de grupos, acompanhem o ranking e resultados em tempo real. Painel admin para gestão de jogos, participantes, resultados e uploads de planilhas, fotos e PDFs.
+Sistema de bolão para a Copa do Mundo FIFA 2026. Permite que participantes registrem palpites para todos os 72 jogos da fase de grupos, acompanhem o ranking e resultados em tempo real. Admin pode importar palpites via upload de planilhas (Excel, fotos, PDFs) e participantes podem completar seus palpites restantes via link personalizado com token.
 
 ## Stack
 
@@ -263,12 +263,17 @@ MICROSERVICE_URL="http://localhost:8000"
 ├── src/
 │   ├── app/
 │   │   ├── (public)/          # Rotas públicas (ranking, jogos)
+│   │   │   └── completar/[token]/  # Página do participante para completar palpites
 │   │   ├── admin/             # Painel administrativo
-│   │   └── api/               # API routes (admin, jogos, participantes, ranking, resultados, upload)
+│   │   │   ├── completar-bolao/    # Dashboard de completar bolão
+│   │   │   └── participantes/[id]/editar-palpites/  # Editar palpites individuais
+│   │   └── api/               # API routes (admin, jogos, participantes, ranking, resultados, upload, completar)
 │   ├── components/            # Componentes React
 │   ├── lib/
 │   │   ├── auth/              # Autenticação (JWT, hash, sessão)
 │   │   ├── db/                # Prisma client + queries
+│   │   │   └── queries/
+│   │   │       └── completar-bolao.ts  # Queries para sistema de completar bolão
 │   │   ├── services/          # Upload (Excel, OCR, PDF), Storage, Resultados
 │   │   └── utils/             # Constantes, helpers
 │   └── middleware.ts          # Proteção de rotas /admin
@@ -310,6 +315,52 @@ O sistema suporta dois modos de upload de palpites pelo painel admin:
 4. Confirmação → busca/cria participantes, busca/cria PalpiteGrupos, salva palpites
 
 Cada participante pode ter múltiplos grupos de palpites (ex: "Palpite 1", "Palpite 2"), e cada grupo é uma entrada independente no ranking.
+
+---
+
+## Completar Bolão (Participantes)
+
+Sistema que permite aos participantes preencherem os 39 jogos restantes da fase de grupos diretamente no site, via link personalizado com token.
+
+### Fluxo
+
+1. **Admin gera tokens**: Cada participante recebe um token único (UUID) automaticamente ao ser criado
+2. **Admin envia link**: Link no formato `/completar/{token}` enviado via WhatsApp
+3. **Participante acessa**: Valida token, verifica prazo e status
+4. **Preenche palpites**: Interface mobile-first com inputs para placar de cada jogo
+5. **Persistência automática**: Rascunhos salvos no localStorage (não perde dados ao atualizar página)
+6. **Salva**: Após preencher todos os 39 jogos, salva no banco de dados
+7. **Bloqueio**: Após salvar, página fica em modo somente leitura
+
+### Funcionalidades
+
+- **Múltiplos palpites**: Se participante tem vários grupos, mostra abas para cada um
+- **Persistência**: Auto-save no localStorage a cada alteração
+- **Indicadores visuais**: Badge "Não salvo" e ponto laranja nas abas com alterações
+- **Descartar alterações**: Botão para voltar aos dados salvos
+- **Prazo configurável**: Admin define prazo em `/admin/config/completar-bolao`
+- **Toggle global**: Admin pode habilitar/desabilitar a coleta
+- **Sorteio aleatório**: Admin pode sortear palpites para participantes incompletos
+
+### Dashboard Admin (`/admin/completar-bolao`)
+
+- Lista todos participantes com status (Completo/Incompleto)
+- Botão para copiar link de cada participante
+- Botão "Sortear" individual ou em lote
+- Configurações: prazo e toggle de habilitação
+- Contador de jogos faltando por participante
+
+### APIs
+
+| Endpoint | Método | Descrição |
+|----------|--------|-----------|
+| `/api/token/[token]` | GET | Valida token e retorna info do participante |
+| `/api/completar/[token]/jogos` | GET | Lista 39 jogos restantes com palpites |
+| `/api/completar/[token]` | POST | Salva palpites do participante |
+| `/api/admin/completar-bolao/status` | GET | Status de todos participantes (admin) |
+| `/api/admin/completar-bolao/sortear` | POST | Sorteia palpites aleatórios (admin) |
+| `/api/admin/config/completar-bolao` | PUT | Atualiza prazo e toggle (admin) |
+| `/api/admin/participantes/[id]/palpites` | PUT | Admin edita palpites de participante |
 
 ---
 

@@ -8,7 +8,7 @@ This version has breaking changes — APIs, conventions, and file structure may 
 
 ## O que é
 
-Bolão familiar da Copa do Mundo FIFA 2026. Site **informativo** (somente leitura para participantes) onde o admin carrega planilhas Excel com os palpites de cada participante para 33 jogos da fase de grupos + 5 palpites extras (artilheiro, campeão, vice, 3º, 4º). Participantes **NÃO** fazem palpites pelo site — tudo é importado via upload de planilha pelo admin.
+Bolão familiar da Copa do Mundo FIFA 2026. Sistema onde o admin carrega planilhas Excel com os palpites de cada participante para 33 jogos da fase de grupos + 5 palpites extras (artilheiro, campeão, vice, 3º, 4º). Participantes podem **completar os 39 jogos restantes** via link personalizado com token (`/completar/{token}`), acessível pelo WhatsApp.
 
 ### Formato da Copa 2026
 
@@ -65,7 +65,7 @@ Formato da planilha que cada participante preenche:
 | Placar exato | 10 |
 | Vencedor correto (sem placar exato) | 6 |
 | Campeão/Vice/3º/4º/Artilheiro | 10 cada |
-| **Máximo teórico** | **380** |
+| **Máximo teórico** | **770** |
 
 **Desempate:** 1) mais placares exatos → 2) mais vencedores corretos
 
@@ -75,13 +75,13 @@ Lógica em `src/lib/utils/helpers.ts` (`calcularPontosJogo`, `calcularPontosExtr
 
 | Modelo | Tabela | Descrição |
 |--------|--------|-----------|
-| `Participante` | `participantes` | nome (unique), fotoUrl opcional |
+| `Participante` | `participantes` | nome (unique), fotoUrl opcional, token (UUID único para link de completar) |
 | `PalpiteGrupo` | `palpites_grupos` | Grupo de palpites (participante pode ter vários), unique(participanteId, nome) |
-| `Jogo` | `jogos` | fase (enum: grupos→final), grupo, times, resultado, status, sofascoreId |
+| `Jogo` | `jogos` | fase (enum: grupos→final), grupo, times, resultado, status, isBolao, sofascoreId |
 | `Palpite` | `palpites` | placarA/placarB por grupo+jogo (unique pair), fonte (excel/foto/pdf) |
 | `PalpiteExtra` | `palpites_extras` | tipo (artilheiro/campeao/vice/terceiro/quarto), valor string, por grupo |
 | `ResultadoExtra` | `resultados_extras` | resultado oficial dos extras |
-| `Configuracao` | `configuracoes` | chave/valor (pontuação) |
+| `Configuracao` | `configuracoes` | chave/valor (pontuação, prazo_completar_bolao, completar_bolao_habilitado) |
 | `AdminAuth` | `admin_auth` | senhaHash |
 | `UploadLog` | `upload_logs` | histórico de uploads |
 
@@ -90,16 +90,24 @@ Lógica em `src/lib/utils/helpers.ts` (`calcularPontosJogo`, `calcularPontosExtr
 ```
 src/app/
   (public)/          → rotas públicas: home, participantes, jogos, ranking, regras
+    completar/[token]/ → página do participante para completar palpites restantes
   admin/             → painel admin: login, dashboard, upload, participantes, jogos, resultados, config
+    completar-bolao/   → dashboard de completar bolão (status, sortear, configs)
+    participantes/[id]/editar-palpites/ → admin edita palpites de participante
   api/               → API routes: jogos, participantes, ranking, resultados, upload, admin/*
+    token/[token]/     → valida token do participante
+    completar/[token]/ → listar jogos e salvar palpites do participante
+    admin/completar-bolao/ → status, sortear palpites
+    admin/config/completar-bolao/ → atualizar prazo e toggle
+    admin/participantes/[id]/palpites/ → admin edita palpites
 src/components/
   ui/                → primitivos: Button, Card, Input, Modal, Table, Badge, Select, Tabs
   layout/            → Header, Footer, Navigation
-  public/            → GameCard, RankingTable, ParticipantCard
+  public/            → GameCard, RankingTable, ParticipantCard, Hero
   admin/             → UploadForm, PreviewTable, StatsCard, UploadModeSelector, BatchPreviewTabs
 src/lib/
   auth/              → session.ts (JWT), password.ts (bcrypt), middleware.ts
-  db/                → client.ts (Prisma singleton), queries/ (config, jogos, participantes, ranking, resultados)
+  db/                → client.ts (Prisma singleton), queries/ (config, jogos, participantes, ranking, resultados, completar-bolao)
   services/
     upload/          → excel-parser.ts, ocr-vision.ts, validator.ts
     storage/         → supabase.ts
@@ -131,6 +139,41 @@ docs/superpowers/    → specs e plans (superpowers workflow)
 - Extrai nome do participante e apelido do grupo do nome da aba (regex sufixo: "Leo 1", "João - Palpite 2", etc.)
 - Retorna `PalpiteGrupoParsed[]` com palpites e extras de cada aba
 
+## Completar Bolão (Participantes)
+
+Sistema que permite aos participantes preencherem os 39 jogos restantes da fase de grupos (`isBolao=false`) diretamente no site.
+
+### Fluxo
+
+1. Admin envia link `/completar/{token}` via WhatsApp
+2. Participante acessa, valida token, verifica prazo
+3. Preenche placares dos 39 jogos restantes
+4. Rascunhos salvos automaticamente no localStorage
+5. Após salvar todos os 39 jogos, página fica em modo somente leitura
+6. Se precisar alterar, deve contatar o admin
+
+### Funcionalidades
+
+- **Múltiplos palpites**: Abas para cada `PalpiteGrupo` do participante
+- **Persistência**: Auto-save no localStorage (`bolao_draft_{token}_{grupoId}`)
+- **Indicadores**: Badge "Não salvo", ponto laranja nas abas com alterações
+- **Descartar**: Botão para reverter alterações não salvas
+- **Prazo**: Configurável pelo admin (`prazo_completar_bolao` na tabela `configuracoes`)
+- **Toggle**: Admin pode habilitar/desabilitar coleta (`completar_bolao_habilitado`)
+- **Sorteio**: Admin pode sortear palpites aleatórios para participantes incompletos
+
+### Queries (`src/lib/db/queries/completar-bolao.ts`)
+
+- `getParticipanteByToken(token)` - busca participante com grupos e palpites
+- `getJogosRestantes()` - 39 jogos com `isBolao=false` e `fase=grupos`
+- `getConfigCompletarBolao()` - prazo e toggle
+- `getPalpitesPorGrupo(grupoId)` - palpites de um grupo específico
+- `getGruposParticipante(participanteId)` - lista grupos do participante
+- `salvarPalpitesCompletar(participanteId, palpites, grupoId?)` - salva palpites
+- `getStatusCompletarBolao()` - status de todos participantes (admin)
+- `sortearPalpites(participanteIds)` - sorteia palpites aleatórios (admin)
+- `getJogosRestantesComPalpites(participanteId, grupoId?)` - jogos + palpites existentes
+
 ## Resultados ao Vivo
 
 Microserviço Python em `microservice/` faz scraping do SofaScore via `curl_cffi`. Admin dispara sync em `/admin/resultados`. Cliente HTTP em `src/lib/services/resultados/client.ts` chama `POST /resultados/lote`.
@@ -144,6 +187,8 @@ Ver `.env.example`. Obrigatórias: `DATABASE_URL`, `SUPABASE_URL`, `SUPABASE_SER
 - **Upload de PDF:** Implementado com `pdfjs-dist` + `@napi-rs/canvas` para converter PDF em imagens PNG, depois OCR via OpenCode Go/Qwen3.7 Plus.
 
 ## Operações no Supabase
+
+Use o MCP do Supabase para todas as operações diretas no banco e storage:
 
 Use o MCP do Supabase para todas as operações diretas no banco e storage:
 
