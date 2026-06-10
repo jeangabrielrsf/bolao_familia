@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useParams } from 'next/navigation'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { Flag } from '@/components/ui/flag'
 import { Skeleton } from '@/components/ui/skeleton'
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { getTimeFlag } from '@/lib/utils/flags'
 import { toast } from 'sonner'
 import { Save, CheckCircle, XCircle, Calendar, Lock } from 'lucide-react'
@@ -20,6 +21,12 @@ interface TokenInfo {
   prazo?: string
   habilitado?: boolean
   erro?: string
+}
+
+interface PalpiteGrupo {
+  id: string
+  nome: string
+  apelido: string
 }
 
 interface JogoComPalpite {
@@ -39,10 +46,42 @@ export default function CompletarBolaoPage() {
 
   const [status, setStatus] = useState<Status>('loading')
   const [tokenInfo, setTokenInfo] = useState<TokenInfo | null>(null)
+  const [grupos, setGrupos] = useState<PalpiteGrupo[]>([])
+  const [grupoAtivo, setGrupoAtivo] = useState<string | null>(null)
   const [jogos, setJogos] = useState<JogoComPalpite[]>([])
   const [inputs, setInputs] = useState<Map<string, { placarA: string; placarB: string }>>(new Map())
   const [salvando, setSalvando] = useState(false)
   const [salvo, setSalvo] = useState(false)
+
+  const carregarJogos = useCallback(async (palpiteGrupoId?: string) => {
+    try {
+      const url = palpiteGrupoId
+        ? `/api/completar/${token}/jogos?grupoId=${palpiteGrupoId}`
+        : `/api/completar/${token}/jogos`
+
+      const res = await fetch(url)
+      const data = await res.json()
+
+      if (data.grupos) {
+        setGrupos(data.grupos)
+        if (data.grupos.length > 0 && !palpiteGrupoId) {
+          setGrupoAtivo(data.grupos[0].id)
+        }
+      }
+
+      setJogos(data.jogos)
+      const map = new Map<string, { placarA: string; placarB: string }>()
+      for (const j of data.jogos) {
+        if (j.palpite) {
+          map.set(j.id, { placarA: String(j.palpite.placarA), placarB: String(j.palpite.placarB) })
+        }
+      }
+      setInputs(map)
+      setSalvo(false)
+    } catch {
+      toast.error('Erro ao carregar jogos')
+    }
+  }, [token])
 
   useEffect(() => {
     if (!token) return
@@ -68,25 +107,17 @@ export default function CompletarBolaoPage() {
         }
 
         setStatus('pronto')
-
-        fetch(`/api/completar/${token}/jogos`)
-          .then((r) => r.json())
-          .then((data: { jogos: JogoComPalpite[] }) => {
-            setJogos(data.jogos)
-            const map = new Map<string, { placarA: string; placarB: string }>()
-            for (const j of data.jogos) {
-              if (j.palpite) {
-                map.set(j.id, { placarA: String(j.palpite.placarA), placarB: String(j.palpite.placarB) })
-              }
-            }
-            setInputs(map)
-          })
-          .catch(() => toast.error('Erro ao carregar jogos'))
+        carregarJogos()
       })
       .catch(() => {
         setStatus('invalido')
       })
-  }, [token])
+  }, [token, carregarJogos])
+
+  const trocarGrupo = (palpiteGrupoId: string) => {
+    setGrupoAtivo(palpiteGrupoId)
+    carregarJogos(palpiteGrupoId)
+  }
 
   const atualizarPalpite = (jogoId: string, campo: 'placarA' | 'placarB', valor: string) => {
     const cleaned = valor.replace(/[^0-9]/g, '')
@@ -125,7 +156,10 @@ export default function CompletarBolaoPage() {
       const res = await fetch(`/api/completar/${token}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ palpites: palpitesArray }),
+        body: JSON.stringify({
+          palpites: palpitesArray,
+          palpiteGrupoId: grupoAtivo,
+        }),
       })
 
       const data = await res.json()
@@ -219,6 +253,8 @@ export default function CompletarBolaoPage() {
   ).length
   const totalJogos = jogos.length
 
+  const grupoAtualNome = grupos.find((g) => g.id === grupoAtivo)?.apelido ?? ''
+
   return (
     <div className="max-w-2xl mx-auto px-4 py-8 space-y-6">
       <div className="space-y-2">
@@ -232,6 +268,85 @@ export default function CompletarBolaoPage() {
         </div>
       </div>
 
+      {grupos.length > 1 && (
+        <Tabs value={grupoAtivo ?? ''} onValueChange={trocarGrupo}>
+          <TabsList className="w-full flex-wrap h-auto">
+            {grupos.map((g) => (
+              <TabsTrigger key={g.id} value={g.id}>
+                {g.apelido}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+          {grupos.map((g) => (
+            <TabsContent key={g.id} value={g.id}>
+              <JogosLista
+                jogos={jogos}
+                jogosComGrupo={jogosComGrupo}
+                gruposOrdenados={gruposOrdenados}
+                inputs={inputs}
+                atualizarPalpite={atualizarPalpite}
+              />
+            </TabsContent>
+          ))}
+        </Tabs>
+      )}
+
+      {grupos.length <= 1 && (
+        <JogosLista
+          jogos={jogos}
+          jogosComGrupo={jogosComGrupo}
+          gruposOrdenados={gruposOrdenados}
+          inputs={inputs}
+          atualizarPalpite={atualizarPalpite}
+        />
+      )}
+
+      <div className="sticky bottom-4">
+        <Button
+          onClick={salvar}
+          disabled={salvando || totalPreenchidos !== totalJogos}
+          size="lg"
+          className="w-full shadow-lg"
+        >
+          {salvando ? (
+            'Salvando...'
+          ) : (
+            <>
+              <Save className="w-4 h-4" />
+              Salvar{grupoAtualNome ? ` ${grupoAtualNome}` : ''} ({totalPreenchidos}/{totalJogos})
+            </>
+          )}
+        </Button>
+      </div>
+    </div>
+  )
+}
+
+function JogosLista({
+  jogos,
+  jogosComGrupo,
+  gruposOrdenados,
+  inputs,
+  atualizarPalpite,
+}: {
+  jogos: JogoComPalpite[]
+  jogosComGrupo: Map<string, JogoComPalpite[]>
+  gruposOrdenados: string[]
+  inputs: Map<string, { placarA: string; placarB: string }>
+  atualizarPalpite: (jogoId: string, campo: 'placarA' | 'placarB', valor: string) => void
+}) {
+  if (jogos.length === 0) {
+    return (
+      <Card>
+        <CardContent className="flex flex-col items-center justify-center py-8">
+          <p className="text-muted-foreground">Nenhum jogo encontrado.</p>
+        </CardContent>
+      </Card>
+    )
+  }
+
+  return (
+    <div className="space-y-4">
       {gruposOrdenados.map((grupo) => {
         const jogosDoGrupo = jogosComGrupo.get(grupo)!
         return (
@@ -292,24 +407,6 @@ export default function CompletarBolaoPage() {
           </section>
         )
       })}
-
-      <div className="sticky bottom-4">
-        <Button
-          onClick={salvar}
-          disabled={salvando || totalPreenchidos !== totalJogos}
-          size="lg"
-          className="w-full shadow-lg"
-        >
-          {salvando ? (
-            'Salvando...'
-          ) : (
-            <>
-              <Save className="w-4 h-4" />
-              Salvar Palpites ({totalPreenchidos}/{totalJogos})
-            </>
-          )}
-        </Button>
-      </div>
     </div>
   )
 }

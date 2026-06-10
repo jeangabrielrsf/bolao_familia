@@ -79,14 +79,49 @@ export async function getPalpitesParticipante(participanteId: string) {
   return palpitesMap
 }
 
-export async function salvarPalpitesCompletar(
-  participanteId: string,
-  palpites: { jogoId: string; placarA: number; placarB: number }[]
-) {
-  let grupo = await prisma.palpiteGrupo.findFirst({
+export async function getPalpitesPorGrupo(palpiteGrupoId: string) {
+  const grupo = await prisma.palpiteGrupo.findUnique({
+    where: { id: palpiteGrupoId },
+    include: { palpites: true },
+  })
+
+  const palpitesMap = new Map<string, { placarA: number; placarB: number }>()
+  if (grupo) {
+    for (const palpite of grupo.palpites) {
+      palpitesMap.set(palpite.jogoId, { placarA: palpite.placarA, placarB: palpite.placarB })
+    }
+  }
+
+  return palpitesMap
+}
+
+export async function getGruposParticipante(participanteId: string) {
+  return prisma.palpiteGrupo.findMany({
     where: { participanteId },
     orderBy: { criadoEm: 'asc' },
+    select: { id: true, nome: true, apelido: true },
   })
+}
+
+export async function salvarPalpitesCompletar(
+  participanteId: string,
+  palpites: { jogoId: string; placarA: number; placarB: number }[],
+  palpiteGrupoId?: string
+) {
+  let grupo: { id: string; nome: string; apelido: string } | null
+
+  if (palpiteGrupoId) {
+    grupo = await prisma.palpiteGrupo.findFirst({
+      where: { id: palpiteGrupoId, participanteId },
+      select: { id: true, nome: true, apelido: true },
+    })
+  } else {
+    grupo = await prisma.palpiteGrupo.findFirst({
+      where: { participanteId },
+      orderBy: { criadoEm: 'asc' },
+      select: { id: true, nome: true, apelido: true },
+    })
+  }
 
   if (!grupo) {
     const participante = await prisma.participante.findUnique({
@@ -101,6 +136,7 @@ export async function salvarPalpitesCompletar(
         apelido: 'Palpite 1',
         fonte: 'excel',
       },
+      select: { id: true, nome: true, apelido: true },
     })
   }
 
@@ -123,7 +159,7 @@ export async function salvarPalpitesCompletar(
     })),
   })
 
-  return { totalSalvos: palpites.length }
+  return { totalSalvos: palpites.length, palpiteGrupoId: grupo.id }
 }
 
 export async function getStatusCompletarBolao() {
@@ -207,9 +243,11 @@ export async function sortearPalpites(participanteIds: string[]) {
   return resultados
 }
 
-export async function getJogosRestantesComPalpites(participanteId: string) {
+export async function getJogosRestantesComPalpites(participanteId: string, palpiteGrupoId?: string) {
   const jogos = await getJogosRestantes()
-  const palpitesMap = await getPalpitesParticipante(participanteId)
+  const palpitesMap = palpiteGrupoId
+    ? await getPalpitesPorGrupo(palpiteGrupoId)
+    : await getPalpitesParticipante(participanteId)
 
   return jogos.map((j) => ({
     id: j.id,

@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getParticipanteByToken, getJogosRestantesComPalpites } from '@/lib/db/queries/completar-bolao'
+import { getParticipanteByToken, getJogosRestantesComPalpites, getGruposParticipante } from '@/lib/db/queries/completar-bolao'
 
 export async function GET(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: Promise<{ token: string }> }
 ) {
   try {
@@ -18,9 +18,15 @@ export async function GET(
       return NextResponse.json({ error: 'Token inválido' }, { status: 404 })
     }
 
-    const jogos = await getJogosRestantesComPalpites(participante.id)
+    const { searchParams } = new URL(request.url)
+    const palpiteGrupoId = searchParams.get('grupoId') ?? undefined
 
-    return NextResponse.json({ jogos })
+    const [grupos, jogos] = await Promise.all([
+      getGruposParticipante(participante.id),
+      getJogosRestantesComPalpites(participante.id, palpiteGrupoId),
+    ])
+
+    return NextResponse.json({ grupos, jogos })
   } catch {
     return NextResponse.json({ error: 'Erro interno do servidor' }, { status: 500 })
   }

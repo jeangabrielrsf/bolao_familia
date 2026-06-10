@@ -17,7 +17,10 @@ export async function PUT(
     }
 
     const body = await request.json()
-    const { palpites } = body as { palpites: { jogoId: string; placarA: number; placarB: number }[] }
+    const { palpites, palpiteGrupoId } = body as {
+      palpites: { jogoId: string; placarA: number; placarB: number }[]
+      palpiteGrupoId?: string
+    }
 
     if (!Array.isArray(palpites) || palpites.length === 0) {
       return NextResponse.json({ error: 'Palpites inválidos' }, { status: 400 })
@@ -44,7 +47,7 @@ export async function PUT(
       }
     }
 
-    const resultado = await salvarPalpitesCompletar(id, palpites)
+    const resultado = await salvarPalpitesCompletar(id, palpites, palpiteGrupoId)
 
     return NextResponse.json({ success: true, ...resultado })
   } catch {
