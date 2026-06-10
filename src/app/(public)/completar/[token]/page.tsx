@@ -296,7 +296,7 @@ export default function CompletarBolaoPage() {
       <div className="sticky bottom-4">
         <Button
           onClick={salvar}
-          disabled={salvando || totalPreenchidos === 0}
+          disabled={salvando || totalPreenchidos !== totalJogos}
           size="lg"
           className="w-full shadow-lg"
         >
