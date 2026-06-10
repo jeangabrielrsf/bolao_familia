@@ -34,7 +34,7 @@ export default function EditarPalpitesPage() {
 
   const [participante, setParticipante] = useState<Participante | null>(null)
   const [jogos, setJogos] = useState<JogoComPalpite[]>([])
-  const [palpites, setPalpites] = useState<Map<string, { placarA: number; placarB: number }>>(new Map())
+  const [inputs, setInputs] = useState<Map<string, { placarA: string; placarB: string }>>(new Map())
   const [loading, setLoading] = useState(true)
   const [salvando, setSalvando] = useState(false)
 
@@ -59,11 +59,11 @@ export default function EditarPalpitesPage() {
           const jogosData = await jogosRes.json()
           setJogos(jogosData.jogos)
 
-          const map = new Map<string, { placarA: number; placarB: number }>()
+          const map = new Map<string, { placarA: string; placarB: string }>()
           for (const j of jogosData.jogos) {
-            if (j.palpite) map.set(j.id, j.palpite)
+            if (j.palpite) map.set(j.id, { placarA: String(j.palpite.placarA), placarB: String(j.palpite.placarB) })
           }
-          setPalpites(map)
+          setInputs(map)
         }
       } catch {
         toast.error('Erro ao carregar dados')
@@ -83,37 +83,42 @@ export default function EditarPalpitesPage() {
       .then((data) => {
         if (data?.jogos) {
           setJogos(data.jogos)
-          const map = new Map<string, { placarA: number; placarB: number }>()
+          const map = new Map<string, { placarA: string; placarB: string }>()
           for (const j of data.jogos) {
-            if (j.palpite) map.set(j.id, j.palpite)
+            if (j.palpite) map.set(j.id, { placarA: String(j.palpite.placarA), placarB: String(j.palpite.placarB) })
           }
-          setPalpites(map)
+          setInputs(map)
         }
       })
       .catch(() => {})
   }, [participanteId])
 
   const atualizarPalpite = (jogoId: string, campo: 'placarA' | 'placarB', valor: string) => {
-    const num = parseInt(valor) || 0
-    const clamped = Math.max(0, Math.min(99, num))
+    const cleaned = valor.replace(/[^0-9]/g, '')
+    const limited = cleaned.length > 2 ? cleaned.slice(0, 2) : cleaned
 
-    setPalpites((prev) => {
+    setInputs((prev) => {
       const novo = new Map(prev)
-      const atual = novo.get(jogoId) ?? { placarA: 0, placarB: 0 }
-      novo.set(jogoId, { ...atual, [campo]: clamped })
+      const atual = novo.get(jogoId) ?? { placarA: '', placarB: '' }
+      novo.set(jogoId, { ...atual, [campo]: limited })
       return novo
     })
   }
 
   const salvar = async () => {
-    const palpitesArray = Array.from(palpites.entries()).map(([jogoId, placar]) => ({
-      jogoId,
-      placarA: placar.placarA,
-      placarB: placar.placarB,
-    }))
+    const palpitesArray: { jogoId: string; placarA: number; placarB: number }[] = []
+    for (const [jogoId, placar] of inputs.entries()) {
+      if (placar.placarA !== '' && placar.placarB !== '') {
+        palpitesArray.push({
+          jogoId,
+          placarA: parseInt(placar.placarA),
+          placarB: parseInt(placar.placarB),
+        })
+      }
+    }
 
     if (palpitesArray.length === 0) {
-      toast.error('Preencha pelo menos um palpite')
+      toast.error('Preencha pelo menos um palpite completo (ambos os times)')
       return
     }
 
@@ -162,7 +167,9 @@ export default function EditarPalpitesPage() {
   }
   const gruposOrdenados = Array.from(jogosComGrupo.keys()).sort()
 
-  const totalPreenchidos = palpites.size
+  const totalPreenchidos = Array.from(inputs.values()).filter(
+    (v) => v.placarA !== '' && v.placarB !== ''
+  ).length
   const totalJogos = jogos.length
 
   return (
@@ -189,7 +196,7 @@ export default function EditarPalpitesPage() {
                 const dataHora = new Date(jogo.dataHora)
                 const dataFormatada = dataHora.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })
                 const horaFormatada = dataHora.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
-                const palpiteAtual = palpites.get(jogo.id)
+                const palpiteAtual = inputs.get(jogo.id)
 
                 return (
                   <Card key={jogo.id} className="overflow-hidden">
@@ -207,9 +214,9 @@ export default function EditarPalpitesPage() {
                         </div>
                         <div className="flex items-center gap-1">
                           <Input
-                            type="number"
-                            min={0}
-                            max={99}
+                            type="text"
+                            inputMode="numeric"
+                            pattern="[0-9]*"
                             value={palpiteAtual?.placarA ?? ''}
                             onChange={(e) => atualizarPalpite(jogo.id, 'placarA', e.target.value)}
                             className="w-14 h-10 text-center text-lg font-bold"
@@ -217,9 +224,9 @@ export default function EditarPalpitesPage() {
                           />
                           <span className="text-muted-foreground font-bold">×</span>
                           <Input
-                            type="number"
-                            min={0}
-                            max={99}
+                            type="text"
+                            inputMode="numeric"
+                            pattern="[0-9]*"
                             value={palpiteAtual?.placarB ?? ''}
                             onChange={(e) => atualizarPalpite(jogo.id, 'placarB', e.target.value)}
                             className="w-14 h-10 text-center text-lg font-bold"
