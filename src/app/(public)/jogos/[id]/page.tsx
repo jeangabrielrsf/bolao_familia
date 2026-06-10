@@ -5,10 +5,12 @@ import { getJogoById } from '@/lib/db/queries/jogos'
 import { getConfiguracao } from '@/lib/db/queries/config'
 import { getRanking } from '@/lib/db/queries/ranking'
 import { calcularPontosJogo } from '@/lib/utils/helpers'
+import { getTimeFlag } from '@/lib/utils/flags'
 import { FASE_LABELS } from '@/lib/utils/constants'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { Flag } from '@/components/ui/flag'
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table'
 import { Calendar, ChevronLeft } from 'lucide-react'
 
@@ -96,7 +98,8 @@ export default async function JogoDetailPage({
           </div>
 
           <div className="flex items-center justify-center gap-6 py-4">
-            <div className="flex-1 text-right">
+            <div className="flex-1 text-right flex items-center justify-end gap-3">
+              {getTimeFlag(jogo.timeA) && <Flag codigoIso={getTimeFlag(jogo.timeA)!} size={28} />}
               <span className="text-xl sm:text-2xl font-display tracking-wide">{jogo.timeA}</span>
             </div>
             <div className="shrink-0">
@@ -106,8 +109,9 @@ export default async function JogoDetailPage({
                 <span className="text-lg font-medium text-muted-foreground">vs</span>
               )}
             </div>
-            <div className="flex-1 text-left">
+            <div className="flex-1 text-left flex items-center gap-3">
               <span className="text-xl sm:text-2xl font-display tracking-wide">{jogo.timeB}</span>
+              {getTimeFlag(jogo.timeB) && <Flag codigoIso={getTimeFlag(jogo.timeB)!} size={28} />}
             </div>
           </div>
         </CardContent>
