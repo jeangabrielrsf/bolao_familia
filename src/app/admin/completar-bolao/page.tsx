@@ -20,6 +20,9 @@ interface ParticipanteStatus {
   jogosCompletos: number
   jogosFaltando: number
   completo: boolean
+  modo: 'completo' | 'restante'
+  extrasCompletos: number
+  totalExtras: number
 }
 
 interface Config {
@@ -44,6 +47,11 @@ export default function AdminCompletarBolaoPage() {
   const [editandoPrazo, setEditandoPrazo] = useState(false)
   const [prazoInput, setPrazoInput] = useState('')
   const [salvandoConfig, setSalvandoConfig] = useState(false)
+  const [modalAberto, setModalAberto] = useState(false)
+  const [elegiveis, setElegiveis] = useState<{ id: string; nome: string }[]>([])
+  const [participanteSelecionado, setParticipanteSelecionado] = useState('')
+  const [apelidoInput, setApelidoInput] = useState('')
+  const [criando, setCriando] = useState(false)
 
   const fetchData = useCallback(async () => {
     try {
@@ -158,6 +166,47 @@ export default function AdminCompletarBolaoPage() {
     }
   }
 
+  async function abrirModalNovoPalpite() {
+    try {
+      const res = await fetch('/api/admin/completar-bolao/participantes-elegiveis')
+      if (!res.ok) throw new Error('Erro ao carregar')
+      const data = await res.json()
+      setElegiveis(data.participantes)
+      setParticipanteSelecionado('')
+      setApelidoInput('')
+      setModalAberto(true)
+    } catch {
+      toast.error('Erro ao carregar participantes elegíveis')
+    }
+  }
+
+  async function criarPalpite() {
+    if (!participanteSelecionado) return
+    setCriando(true)
+    try {
+      const res = await fetch('/api/admin/completar-bolao/novo-palpite', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          participanteId: participanteSelecionado,
+          apelido: apelidoInput || undefined,
+        }),
+      })
+      if (!res.ok) {
+        const data = await res.json()
+        throw new Error(data.error || 'Erro ao criar')
+      }
+      const nome = elegiveis.find((p) => p.id === participanteSelecionado)?.nome ?? ''
+      toast.success(`Palpite criado para ${nome}!`)
+      setModalAberto(false)
+      fetchData()
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Erro ao criar palpite')
+    } finally {
+      setCriando(false)
+    }
+  }
+
   if (loading) {
     return (
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
@@ -184,11 +233,16 @@ export default function AdminCompletarBolaoPage() {
 
       <div className="flex items-center justify-between flex-wrap gap-4">
         <h1 className="text-3xl font-display tracking-wide">Completar Bolão</h1>
-        {resumo && resumo.participantesIncompletos > 0 && (
-          <Button onClick={sortearTodos} disabled={sorteandoTodos} variant="secondary">
-            {sorteandoTodos ? <><Loader2 className="w-4 h-4 animate-spin" /> Sorteando...</> : <><Dice5 className="w-4 h-4" /> Sortear Todos Incompletos</>}
+        <div className="flex gap-2">
+          <Button onClick={abrirModalNovoPalpite} variant="secondary">
+            Novo Palpite
           </Button>
-        )}
+          {resumo && resumo.participantesIncompletos > 0 && (
+            <Button onClick={sortearTodos} disabled={sorteandoTodos} variant="secondary">
+              {sorteandoTodos ? <><Loader2 className="w-4 h-4 animate-spin" /> Sorteando...</> : <><Dice5 className="w-4 h-4" /> Sortear Todos Incompletos</>}
+            </Button>
+          )}
+        </div>
       </div>
 
       {resumo && (
@@ -282,7 +336,11 @@ export default function AdminCompletarBolaoPage() {
                   <TableCell className="font-medium">{p.nome}</TableCell>
                   <TableCell>
                     {p.completo ? (
-                      <Badge variant="success"><CheckCircle className="w-3 h-3 mr-1" />Completo</Badge>
+                      <Badge variant="success"><CheckCircle className="w-3 h-3 mr-1" />
+                        {p.modo === 'completo' ? 'Completo (72+extras)' : 'Completo'}
+                      </Badge>
+                    ) : p.modo === 'completo' ? (
+                      <Badge variant="warning">{p.jogosCompletos}/{p.totalJogos} jogos + {p.extrasCompletos}/{p.totalExtras} extras</Badge>
                     ) : (
                       <Badge variant="warning">{p.jogosCompletos}/{p.totalJogos} jogos</Badge>
                     )}
@@ -326,6 +384,49 @@ export default function AdminCompletarBolaoPage() {
             </TableBody>
           </Table>
         </Card>
+      )}
+
+      {modalAberto && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <Card className="w-full max-w-md mx-4">
+            <CardContent className="p-6 space-y-4">
+              <h2 className="text-xl font-display font-bold">Novo Palpite</h2>
+              <p className="text-sm text-muted-foreground">
+                Crie um grupo vazio para um participante que não preencheu a planilha. Ele poderá preencher os 72 jogos + extras pelo link.
+              </p>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Participante</label>
+                <select
+                  className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm"
+                  value={participanteSelecionado}
+                  onChange={(e) => setParticipanteSelecionado(e.target.value)}
+                >
+                  <option value="">Selecione um participante</option>
+                  {elegiveis.map((p) => (
+                    <option key={p.id} value={p.id}>{p.nome}</option>
+                  ))}
+                </select>
+                {elegiveis.length === 0 && (
+                  <p className="text-xs text-muted-foreground">Todos os participantes já possuem palpites.</p>
+                )}
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Apelido (opcional)</label>
+                <Input
+                  placeholder="Palpite 1"
+                  value={apelidoInput}
+                  onChange={(e) => setApelidoInput(e.target.value)}
+                />
+              </div>
+              <div className="flex justify-end gap-2">
+                <Button variant="outline" onClick={() => setModalAberto(false)}>Cancelar</Button>
+                <Button onClick={criarPalpite} disabled={criando || !participanteSelecionado}>
+                  {criando ? <><Loader2 className="w-4 h-4 animate-spin" /> Criando...</> : 'Criar'}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       )}
     </div>
   )
