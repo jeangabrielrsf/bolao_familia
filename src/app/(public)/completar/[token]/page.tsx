@@ -43,6 +43,15 @@ interface PalpiteInput {
   placarB: string
 }
 
+interface ExtraInput {
+  tipo: string
+  valor: string
+}
+
+interface GrupoComModo extends PalpiteGrupo {
+  modo: 'completo' | 'restante'
+}
+
 type Status = 'loading' | 'invalido' | 'prazo_encerrado' | 'desabilitado' | 'pronto'
 type PalpitesPorAba = Map<string, Map<string, PalpiteInput>>
 
@@ -112,6 +121,28 @@ function countFilled(inputs: Map<string, PalpiteInput>): number {
   return count
 }
 
+function countExtrasFilled(extrasList: ExtraInput[]): number {
+  return extrasList.filter((e) => e.valor.trim() !== '').length
+}
+
+function hasExtrasChanges(current: ExtraInput[], original: ExtraInput[]): boolean {
+  if (current.length !== original.length) return true
+  for (let i = 0; i < current.length; i++) {
+    if (current[i].valor !== original[i].valor) return true
+  }
+  return false
+}
+
+const EXTRAS_LABELS: Record<string, string> = {
+  artilheiro: 'Artilheiro',
+  campeao: 'Campeão',
+  vice: 'Vice',
+  terceiro: '3º Lugar',
+  quarto: '4º Lugar',
+}
+
+const EXTRAS_TIPOS = ['artilheiro', 'campeao', 'vice', 'terceiro', 'quarto'] as const
+
 export default function CompletarBolaoPage() {
   const params = useParams()
   const token = params.token as string
@@ -126,6 +157,9 @@ export default function CompletarBolaoPage() {
   const [salvando, setSalvando] = useState(false)
   const [carregandoInicial, setCarregandoInicial] = useState(true)
   const initializedRef = useRef(false)
+  const [modo, setModo] = useState<'completo' | 'restante'>('restante')
+  const [extras, setExtras] = useState<ExtraInput[]>([])
+  const [extrasOriginais, setExtrasOriginais] = useState<ExtraInput[]>([])
 
   const carregarDados = useCallback(async () => {
     try {
@@ -137,9 +171,17 @@ export default function CompletarBolaoPage() {
         if (data.grupos.length > 0 && !grupoAtivo) {
           setGrupoAtivo(data.grupos[0].id)
         }
+        const primeiroModo = data.grupos[0]?.modo ?? 'restante'
+        setModo(primeiroModo)
       }
 
       setJogos(data.jogos)
+
+      if (data.extras) {
+        const extrasData = data.extras.map((e: ExtraInput) => ({ ...e }))
+        setExtras(extrasData)
+        setExtrasOriginais(extrasData.map((e: ExtraInput) => ({ ...e })))
+      }
 
       const inputs = inputsFromJogos(data.jogos)
       const abaId = grupoAtivo ?? data.grupos?.[0]?.id
@@ -201,6 +243,9 @@ export default function CompletarBolaoPage() {
   const trocarGrupo = (palpiteGrupoId: string) => {
     setGrupoAtivo(palpiteGrupoId)
 
+    const grupoData = grupos.find((g) => g.id === palpiteGrupoId) as GrupoComModo | undefined
+    if (grupoData?.modo) setModo(grupoData.modo)
+
     if (!todasAbas.has(palpiteGrupoId)) {
       fetch(`/api/completar/${token}/jogos?grupoId=${palpiteGrupoId}`)
         .then((r) => r.json())
@@ -219,6 +264,12 @@ export default function CompletarBolaoPage() {
             novo.set(palpiteGrupoId, inputs)
             return novo
           })
+
+          if (data.extras) {
+            const extrasData = data.extras.map((e: ExtraInput) => ({ ...e }))
+            setExtras(extrasData)
+            setExtrasOriginais(extrasData.map((e: ExtraInput) => ({ ...e })))
+          }
         })
         .catch(() => toast.error('Erro ao carregar jogos'))
     }
@@ -275,15 +326,29 @@ export default function CompletarBolaoPage() {
       return
     }
 
+    if (modo === 'completo') {
+      const extrasVazios = extras.filter((e) => !e.valor.trim())
+      if (extrasVazios.length > 0) {
+        toast.error('Preencha todos os palpites extras')
+        return
+      }
+    }
+
     setSalvando(true)
     try {
+      const body: Record<string, unknown> = {
+        palpites: palpitesArray,
+        palpiteGrupoId: grupoAtivo,
+      }
+
+      if (modo === 'completo') {
+        body.extras = extras
+      }
+
       const res = await fetch(`/api/completar/${token}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          palpites: palpitesArray,
-          palpiteGrupoId: grupoAtivo,
-        }),
+        body: JSON.stringify(body),
       })
 
       const data = await res.json()
@@ -299,6 +364,7 @@ export default function CompletarBolaoPage() {
         novo.set(grupoAtivo, novoOriginal)
         return novo
       })
+      setExtrasOriginais(extras.map((e) => ({ ...e })))
       clearDraft(token, grupoAtivo)
       toast.success(`Palpites salvos com sucesso! (${data.totalSalvos} jogos)`)
     } catch {
@@ -382,8 +448,13 @@ export default function CompletarBolaoPage() {
   const inputsOriginais = abasOriginais.get(grupoAtivo ?? '') ?? new Map()
   const totalPreenchidos = countFilled(inputsAtuais)
   const totalJogos = jogos.length
-  const temAlteracoes = hasUnsavedChanges(inputsAtuais, inputsOriginais)
-  const estaCompleto = totalPreenchidos === totalJogos && !temAlteracoes
+  const temAlteracoesJogos = hasUnsavedChanges(inputsAtuais, inputsOriginais)
+  const temAlteracoesExtras = modo === 'completo' ? hasExtrasChanges(extras, extrasOriginais) : false
+  const temAlteracoes = temAlteracoesJogos || temAlteracoesExtras
+  const extrasPreenchidos = modo === 'completo' ? countExtrasFilled(extras) : 0
+  const estaCompleto = totalPreenchidos === totalJogos
+    && (modo === 'restante' || extrasPreenchidos === 5)
+    && !temAlteracoes
 
   const grupoAtualNome = grupos.find((g) => g.id === grupoAtivo)?.apelido ?? ''
 
@@ -398,10 +469,17 @@ export default function CompletarBolaoPage() {
       <div className="space-y-2">
         <h1 className="text-3xl font-display tracking-wide">Complete seu Bolão</h1>
         <p className="text-muted-foreground">
-          Olá, <span className="font-semibold text-foreground">{tokenInfo?.nome}</span>! Preencha seus palpites para os {totalJogos} jogos restantes.
+          Olá, <span className="font-semibold text-foreground">{tokenInfo?.nome}</span>!{' '}
+          {modo === 'completo'
+            ? `Preencha seus palpites para os ${totalJogos} jogos da fase de grupos e os 5 extras.`
+            : `Preencha seus palpites para os ${totalJogos} jogos restantes.`}
         </p>
         <div className="flex items-center gap-2 flex-wrap">
-          <Badge variant="info">{totalPreenchidos}/{totalJogos} preenchidos</Badge>
+          {modo === 'completo' ? (
+            <Badge variant="info">{totalPreenchidos}/{totalJogos} jogos + {extrasPreenchidos}/5 extras</Badge>
+          ) : (
+            <Badge variant="info">{totalPreenchidos}/{totalJogos} preenchidos</Badge>
+          )}
           {temAlteracoes && (
             <Badge variant="warning">
               <AlertCircle className="w-3 h-3 mr-1" />
@@ -499,16 +577,54 @@ export default function CompletarBolaoPage() {
         </div>
       )}
 
+      {modo === 'completo' && (
+        <Card>
+          <CardContent className="p-4 space-y-4">
+            <h2 className="text-lg font-semibold">Palpites Extras</h2>
+            <div className="space-y-3">
+              {EXTRAS_TIPOS.map((tipo) => {
+                const extra = extras.find((e) => e.tipo === tipo)
+                return (
+                  <div key={tipo} className="flex items-center gap-3">
+                    <label className="text-sm font-medium w-28 shrink-0">{EXTRAS_LABELS[tipo]}</label>
+                    <Input
+                      value={extra?.valor ?? ''}
+                      onChange={(e) => {
+                        setExtras((prev) => {
+                          const exists = prev.find((ex) => ex.tipo === tipo)
+                          if (exists) {
+                            return prev.map((ex) => ex.tipo === tipo ? { ...ex, valor: e.target.value } : ex)
+                          }
+                          return [...prev, { tipo, valor: e.target.value }]
+                        })
+                      }}
+                      disabled={estaCompleto}
+                      placeholder={`Digite o ${EXTRAS_LABELS[tipo].toLowerCase()}`}
+                      className="flex-1"
+                    />
+                  </div>
+                )
+              })}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {!estaCompleto && (
         <div className="sticky bottom-4">
           <Button
             onClick={salvar}
-            disabled={salvando || totalPreenchidos !== totalJogos}
+            disabled={salvando || totalPreenchidos !== totalJogos || (modo === 'completo' && extrasPreenchidos !== 5)}
             size="lg"
             className="w-full shadow-lg"
           >
             {salvando ? (
               'Salvando...'
+            ) : modo === 'completo' ? (
+              <>
+                <Save className="w-4 h-4" />
+                Salvar{grupoAtualNome ? ` ${grupoAtualNome}` : ''} ({totalPreenchidos}/{totalJogos} jogos + {extrasPreenchidos}/5 extras)
+              </>
             ) : (
               <>
                 <Save className="w-4 h-4" />
