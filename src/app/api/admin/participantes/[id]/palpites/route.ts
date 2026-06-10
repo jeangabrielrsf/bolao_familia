@@ -1,6 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireAdmin } from '@/lib/auth/middleware'
-import { salvarPalpitesCompletar, getJogosRestantes } from '@/lib/db/queries/completar-bolao'
+import {
+  salvarPalpitesCompletar,
+  salvarExtrasCompletar,
+  getJogosRestantes,
+  getJogosCompletos,
+  detectarModoGrupo,
+  getGruposParticipante,
+} from '@/lib/db/queries/completar-bolao'
 
 export async function PUT(
   request: NextRequest,
@@ -17,13 +24,26 @@ export async function PUT(
     }
 
     const body = await request.json()
-    const { palpites, palpiteGrupoId } = body as {
+    const { palpites, extras, palpiteGrupoId } = body as {
       palpites: { jogoId: string; placarA: number; placarB: number }[]
+      extras?: { tipo: string; valor: string }[]
       palpiteGrupoId?: string
     }
 
     if (!Array.isArray(palpites) || palpites.length === 0) {
       return NextResponse.json({ error: 'Palpites inválidos' }, { status: 400 })
+    }
+
+    const grupos = await getGruposParticipante(id)
+    const targetGrupoId = palpiteGrupoId ?? grupos[0]?.id
+    const modo = targetGrupoId ? await detectarModoGrupo(targetGrupoId) : 'restante'
+
+    const maxPalpites = modo === 'completo' ? 72 : 39
+    if (palpites.length > maxPalpites) {
+      return NextResponse.json(
+        { error: `Máximo de ${maxPalpites} palpites permitidos` },
+        { status: 400 }
+      )
     }
 
     for (const p of palpites) {
@@ -35,19 +55,32 @@ export async function PUT(
       }
     }
 
-    const jogosRestantes = await getJogosRestantes()
-    const jogosRestantesIds = new Set(jogosRestantes.map((j) => j.id))
+    const jogosValidos = modo === 'completo' ? await getJogosCompletos() : await getJogosRestantes()
+    const jogosValidosIds = new Set(jogosValidos.map((j) => j.id))
 
     for (const p of palpites) {
-      if (!jogosRestantesIds.has(p.jogoId)) {
+      if (!jogosValidosIds.has(p.jogoId)) {
         return NextResponse.json(
-          { error: `Jogo ${p.jogoId} não é um jogo restante do bolão` },
+          { error: `Jogo ${p.jogoId} não é um jogo válido para o modo atual` },
           { status: 400 }
         )
       }
     }
 
     const resultado = await salvarPalpitesCompletar(id, palpites, palpiteGrupoId)
+
+    if (modo === 'completo' && Array.isArray(extras) && extras.length > 0) {
+      const tiposValidos = ['artilheiro', 'campeao', 'vice', 'terceiro', 'quarto']
+      for (const e of extras) {
+        if (!tiposValidos.includes(e.tipo) || !e.valor || typeof e.valor !== 'string') {
+          return NextResponse.json({ error: 'Extra inválido' }, { status: 400 })
+        }
+      }
+      await salvarExtrasCompletar(
+        resultado.palpiteGrupoId,
+        extras as { tipo: 'artilheiro' | 'campeao' | 'vice' | 'terceiro' | 'quarto'; valor: string }[]
+      )
+    }
 
     return NextResponse.json({ success: true, ...resultado })
   } catch {
