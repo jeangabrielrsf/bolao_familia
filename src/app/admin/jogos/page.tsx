@@ -13,7 +13,7 @@ import { Loader2, ChevronLeft } from 'lucide-react'
 
 type Fase = 'grupos' | 'oitavas' | 'quartas' | 'semifinal' | 'terceiro' | 'final'
 type StatusJogo = 'agendado' | 'em_andamento' | 'finalizado'
-interface Jogo { id: string; grupo: string | null; fase: Fase; dataHora: string; timeA: string; timeB: string; resultadoA: number | null; resultadoB: number | null; status: StatusJogo }
+interface Jogo { id: string; grupo: string | null; fase: Fase; dataHora: string; timeA: string; timeB: string; resultadoA: number | null; resultadoB: number | null; status: StatusJogo; local: string | null; cidade: string | null; vencedor: number | null }
 interface JogoSaveState { resultadoA: string; resultadoB: string; saving: boolean }
 
 const FASE_ORDER: Fase[] = ['grupos', 'oitavas', 'quartas', 'semifinal', 'terceiro', 'final']
@@ -137,6 +137,11 @@ export default function AdminJogosPage() {
                           </div>
                           <p className="font-medium">{jogo.timeA} vs {jogo.timeB}</p>
                           <p className="text-sm text-muted-foreground">{formatDateTime(jogo.dataHora)}</p>
+                          {jogo.local && (
+                            <p className="text-xs text-muted-foreground">
+                              📍 {jogo.local}{jogo.cidade && `, ${jogo.cidade}`}
+                            </p>
+                          )}
                           {jogo.resultadoA !== null && jogo.resultadoB !== null && (
                             <p className="text-sm font-semibold mt-1">Resultado: {jogo.resultadoA} x {jogo.resultadoB}</p>
                           )}

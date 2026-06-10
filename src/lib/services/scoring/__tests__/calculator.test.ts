@@ -45,4 +45,9 @@ describe('calcularPontosExtra', () => {
   it('ignora case e espaços', () => {
     expect(calcularPontosExtra(' brasil ', 'Brasil', PONTUACAO_PADRAO, 'campeao')).toBe(10)
   })
+
+  it('ignora acentos', () => {
+    expect(calcularPontosExtra('Brasíl', 'Brasil', PONTUACAO_PADRAO, 'campeao')).toBe(10)
+    expect(calcularPontosExtra('Argentina', 'Argentiná', PONTUACAO_PADRAO, 'vice')).toBe(10)
+  })
 })

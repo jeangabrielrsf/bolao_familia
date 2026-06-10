@@ -18,7 +18,12 @@ interface Jogo {
   resultadoA: number | null
   resultadoB: number | null
   status: string
-  isBolao: boolean
+  local: string | null
+  cidade: string | null
+  placarPenaltisA: number | null
+  placarPenaltisB: number | null
+  rankingTimeA: number | null
+  rankingTimeB: number | null
 }
 
 const faseOrder = ["grupos", "oitavas", "quartas", "semifinal", "terceiro", "final"]
@@ -106,7 +111,7 @@ export default function JogosPage() {
                     <h3 className="text-lg font-semibold">Grupo {grupo}</h3>
                     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                       {jogosDoGrupo.map((jogo) => (
-                        <GameCard key={jogo.id} id={jogo.id} timeA={jogo.timeA} timeB={jogo.timeB} dataHora={new Date(jogo.dataHora)} grupo={jogo.grupo} fase={jogo.fase} resultadoA={jogo.resultadoA} resultadoB={jogo.resultadoB} status={jogo.status} isBolao={jogo.isBolao} />
+                        <GameCard key={jogo.id} id={jogo.id} timeA={jogo.timeA} timeB={jogo.timeB} dataHora={new Date(jogo.dataHora)} grupo={jogo.grupo} fase={jogo.fase} resultadoA={jogo.resultadoA} resultadoB={jogo.resultadoB} status={jogo.status} local={jogo.local} cidade={jogo.cidade} placarPenaltisA={jogo.placarPenaltisA} placarPenaltisB={jogo.placarPenaltisB} rankingTimeA={jogo.rankingTimeA} rankingTimeB={jogo.rankingTimeB} />
                       ))}
                     </div>
                   </div>
@@ -123,7 +128,7 @@ export default function JogosPage() {
               </div>
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 {jogosDaFase.map((jogo) => (
-                  <GameCard key={jogo.id} id={jogo.id} timeA={jogo.timeA} timeB={jogo.timeB} dataHora={new Date(jogo.dataHora)} grupo={jogo.grupo} fase={jogo.fase} resultadoA={jogo.resultadoA} resultadoB={jogo.resultadoB} status={jogo.status} isBolao={jogo.isBolao} />
+                  <GameCard key={jogo.id} id={jogo.id} timeA={jogo.timeA} timeB={jogo.timeB} dataHora={new Date(jogo.dataHora)} grupo={jogo.grupo} fase={jogo.fase} resultadoA={jogo.resultadoA} resultadoB={jogo.resultadoB} status={jogo.status} local={jogo.local} cidade={jogo.cidade} placarPenaltisA={jogo.placarPenaltisA} placarPenaltisB={jogo.placarPenaltisB} rankingTimeA={jogo.rankingTimeA} rankingTimeB={jogo.rankingTimeB} />
                 ))}
               </div>
             </section>

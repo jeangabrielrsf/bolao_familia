@@ -23,7 +23,7 @@ def _fetch_event_result(sofascore_id: str) -> Optional[dict]:
 
     try:
         response = requests.get(
-            f"{BASE_URL}/sport/football/event/{sofascore_id}",
+            f"{BASE_URL}/event/{sofascore_id}",
             headers=HEADERS,
             impersonate="chrome",
             timeout=10,
@@ -34,17 +34,47 @@ def _fetch_event_result(sofascore_id: str) -> Optional[dict]:
 
         data = response.json()
         event = data.get("event", data)
-        home_score = event.get("homeScore", {}).get("current")
-        away_score = event.get("awayScore", {}).get("current")
+        home_score = event.get("homeScore", {})
+        away_score = event.get("awayScore", {})
         status_type = event.get("status", {}).get("type", "unknown")
+        venue = event.get("venue", {})
+        home_team = event.get("homeTeam", {})
+        away_team = event.get("awayTeam", {})
 
-        if home_score is None or away_score is None:
+        home_score_current = home_score.get("current")
+        away_score_current = away_score.get("current")
+
+        # Para jogos não iniciados, retornar metadados com placar 0
+        if status_type == "notstarted":
+            result = {
+                "resultadoA": 0,
+                "resultadoB": 0,
+                "status": status_type,
+                "local": venue.get("name"),
+                "cidade": venue.get("city", {}).get("name"),
+                "vencedor": None,
+                "rankingTimeA": home_team.get("ranking"),
+                "rankingTimeB": away_team.get("ranking"),
+                "placarPenaltisA": None,
+                "placarPenaltisB": None,
+            }
+            cache.set(cache_key, result, settings.CACHE_TTL_SECONDS)
+            return result
+
+        if home_score_current is None or away_score_current is None:
             return None
 
         result = {
-            "resultadoA": int(home_score),
-            "resultadoB": int(away_score),
+            "resultadoA": int(home_score.get("display", home_score_current)),
+            "resultadoB": int(away_score.get("display", away_score_current)),
             "status": status_type,
+            "local": venue.get("name"),
+            "cidade": venue.get("city", {}).get("name"),
+            "vencedor": event.get("winnerCode"),
+            "rankingTimeA": home_team.get("ranking"),
+            "rankingTimeB": away_team.get("ranking"),
+            "placarPenaltisA": home_score.get("penalties"),
+            "placarPenaltisB": away_score.get("penalties"),
         }
         cache.set(cache_key, result, settings.CACHE_TTL_SECONDS)
         return result

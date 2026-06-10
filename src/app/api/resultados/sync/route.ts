@@ -25,43 +25,69 @@ export async function POST(request: NextRequest) {
 
     const resultados = await syncResultados(sofascoreIds)
 
-    const validResultados = resultados.filter((r) => {
-      if (typeof r.sofascoreId !== 'string' || r.sofascoreId.length === 0) return false
-      if (!Number.isInteger(r.resultadoA) || r.resultadoA < 0) return false
-      if (!Number.isInteger(r.resultadoB) || r.resultadoB < 0) return false
-      return true
-    })
-
     const jogosBySofascoreId = new Map(
       jogos
         .filter((j) => j.sofascoreId)
         .map((j) => [j.sofascoreId, j])
     )
 
-    const updates: Array<{ id: string; resultadoA: number; resultadoB: number }> = []
+    // Jogos com dados disponíveis (exceto not_found)
+    const comDados = resultados.filter((r) => {
+      if (typeof r.sofascoreId !== 'string' || r.sofascoreId.length === 0) return false
+      if (r.status === 'not_found') return false
+      return true
+    })
+
+    // Jogos finalizados (com placar válido)
+    const finalizados = comDados.filter((r) => {
+      if (r.status !== 'finished') return false
+      if (!Number.isInteger(r.resultadoA) || r.resultadoA < 0) return false
+      if (!Number.isInteger(r.resultadoB) || r.resultadoB < 0) return false
+      return true
+    })
+
+    const updates: Array<{
+      id: string
+      data: Record<string, unknown>
+    }> = []
     const atualizadosList: Array<{
       sofascoreId: string
       timeA: string
       timeB: string
-      resultadoA: number
-      resultadoB: number
+      resultadoA: number | null
+      resultadoB: number | null
     }> = []
 
-    for (const resultado of validResultados) {
+    // Atualizar metadados para todos com dados
+    for (const resultado of comDados) {
       const jogo = jogosBySofascoreId.get(resultado.sofascoreId)
       if (!jogo) continue
 
-      updates.push({
-        id: jogo.id,
-        resultadoA: resultado.resultadoA,
-        resultadoB: resultado.resultadoB,
-      })
+      const isFinalizado = finalizados.some((f) => f.sofascoreId === resultado.sofascoreId)
+
+      const data: Record<string, unknown> = {
+        local: resultado.local ?? null,
+        cidade: resultado.cidade ?? null,
+        rankingTimeA: resultado.rankingTimeA ?? null,
+        rankingTimeB: resultado.rankingTimeB ?? null,
+      }
+
+      if (isFinalizado) {
+        data.resultadoA = resultado.resultadoA
+        data.resultadoB = resultado.resultadoB
+        data.vencedor = resultado.vencedor ?? null
+        data.placarPenaltisA = resultado.placarPenaltisA ?? null
+        data.placarPenaltisB = resultado.placarPenaltisB ?? null
+        data.status = 'finalizado'
+      }
+
+      updates.push({ id: jogo.id, data })
       atualizadosList.push({
         sofascoreId: resultado.sofascoreId,
         timeA: jogo.timeA,
         timeB: jogo.timeB,
-        resultadoA: resultado.resultadoA,
-        resultadoB: resultado.resultadoB,
+        resultadoA: isFinalizado ? resultado.resultadoA : null,
+        resultadoB: isFinalizado ? resultado.resultadoB : null,
       })
     }
 
@@ -69,18 +95,16 @@ export async function POST(request: NextRequest) {
       updates.map((u) =>
         prisma.jogo.update({
           where: { id: u.id },
-          data: {
-            resultadoA: u.resultadoA,
-            resultadoB: u.resultadoB,
-            status: 'finalizado',
-          },
+          data: u.data,
         })
-      )
+      ),
+      { timeout: 30000 }
     )
 
     return NextResponse.json({
       success: true,
       atualizados: updates.length,
+      finalizados: finalizados.length,
       resultados: atualizadosList,
     })
   } catch (error) {

@@ -6,14 +6,26 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
+import { Input } from '@/components/ui/input'
 import { FASE_LABELS } from '@/lib/utils/constants'
 import { toast } from 'sonner'
-import { Loader2, RefreshCw, ChevronLeft } from 'lucide-react'
+import { Loader2, RefreshCw, ChevronLeft, Trophy, Save } from 'lucide-react'
 
 type Fase = 'grupos' | 'oitavas' | 'quartas' | 'semifinal' | 'terceiro' | 'final'
 type StatusJogo = 'agendado' | 'em_andamento' | 'finalizado'
 interface Jogo { id: string; grupo: string | null; fase: Fase; dataHora: string; timeA: string; timeB: string; resultadoA: number | null; resultadoB: number | null; status: StatusJogo; sofascoreId: string | null }
 interface SyncResult { sofascoreId: string; timeA: string; timeB: string; resultadoA: number; resultadoB: number }
+type TipoExtra = 'artilheiro' | 'campeao' | 'vice' | 'terceiro' | 'quarto'
+interface ResultadoExtra { id: string; tipo: TipoExtra; valor: string }
+
+const EXTRAS_LABELS: Record<TipoExtra, string> = {
+  artilheiro: 'Artilheiro',
+  campeao: 'Campeão',
+  vice: 'Vice',
+  terceiro: '3º Lugar',
+  quarto: '4º Lugar',
+}
+const EXTRAS_ORDEM: TipoExtra[] = ['campeao', 'vice', 'terceiro', 'quarto', 'artilheiro']
 
 const FASE_ORDER: Fase[] = ['grupos', 'oitavas', 'quartas', 'semifinal', 'terceiro', 'final']
 const STATUS_BADGE: Record<StatusJogo, { variant: 'default' | 'warning' | 'success'; label: string }> = {
@@ -38,6 +50,9 @@ export default function AdminResultadosPage() {
   const [error, setError] = useState('')
   const [syncing, setSyncing] = useState(false)
   const [syncResults, setSyncResults] = useState<{ atualizados: number; resultados: SyncResult[] } | null>(null)
+  const [extras, setExtras] = useState<Record<TipoExtra, string>>({ artilheiro: '', campeao: '', vice: '', terceiro: '', quarto: '' })
+  const [extrasOriginal, setExtrasOriginal] = useState<Record<TipoExtra, string>>({ artilheiro: '', campeao: '', vice: '', terceiro: '', quarto: '' })
+  const [savingExtras, setSavingExtras] = useState(false)
 
   const fetchJogos = useCallback(async () => {
     try {
@@ -66,6 +81,43 @@ export default function AdminResultadosPage() {
     } catch (err) { toast.error(err instanceof Error ? err.message : 'Erro ao sincronizar') }
     finally { setSyncing(false) }
   }
+
+  const fetchExtras = useCallback(async () => {
+    try {
+      const res = await fetch('/api/admin/resultados-extras')
+      if (!res.ok) return
+      const data: ResultadoExtra[] = await res.json()
+      const map: Record<TipoExtra, string> = { artilheiro: '', campeao: '', vice: '', terceiro: '', quarto: '' }
+      for (const e of data) map[e.tipo] = e.valor
+      setExtras(map)
+      setExtrasOriginal(map)
+    } catch { /* silent */ }
+  }, [])
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    fetchExtras()
+  }, [fetchExtras])
+
+  async function handleSaveExtras() {
+    setSavingExtras(true)
+    try {
+      const body = EXTRAS_ORDEM
+        .filter((tipo) => extras[tipo].trim() !== '')
+        .map((tipo) => ({ tipo, valor: extras[tipo] }))
+      const res = await fetch('/api/admin/resultados-extras', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      })
+      if (!res.ok) throw new Error('Erro ao salvar')
+      setExtrasOriginal({ ...extras })
+      toast.success('Resultados extras salvos!')
+    } catch { toast.error('Erro ao salvar resultados extras') }
+    finally { setSavingExtras(false) }
+  }
+
+  const extrasChanged = EXTRAS_ORDEM.some((t) => extras[t].trim() !== extrasOriginal[t].trim())
 
   if (loading) {
     return (
@@ -118,6 +170,30 @@ export default function AdminResultadosPage() {
           </CardContent>
         </Card>
       )}
+
+      <Card>
+        <CardContent className="p-4 space-y-4">
+          <div className="flex items-center gap-2">
+            <Trophy className="w-5 h-5 text-yellow-500" />
+            <h2 className="text-lg font-display tracking-wide">Resultados Extras</h2>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {EXTRAS_ORDEM.map((tipo) => (
+              <div key={tipo} className="space-y-1">
+                <label className="text-sm font-medium text-muted-foreground">{EXTRAS_LABELS[tipo]}</label>
+                <Input
+                  value={extras[tipo]}
+                  onChange={(e) => setExtras({ ...extras, [tipo]: e.target.value })}
+                  placeholder={EXTRAS_LABELS[tipo]}
+                />
+              </div>
+            ))}
+          </div>
+          <Button onClick={handleSaveExtras} disabled={savingExtras || !extrasChanged} className={savingExtras ? 'animate-shimmer text-primary-foreground' : ''}>
+            {savingExtras ? <><Loader2 className="w-4 h-4 animate-spin" /> Salvando...</> : <><Save className="w-4 h-4" /> Salvar Extras</>}
+          </Button>
+        </CardContent>
+      </Card>
 
       {jogos.length === 0 && !error && (
         <Card><CardContent className="flex flex-col items-center justify-center py-12"><p className="text-muted-foreground">Nenhum jogo cadastrado.</p></CardContent></Card>

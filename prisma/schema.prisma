@@ -57,20 +57,27 @@ model Participante {
 }
 
 model Jogo {
-  id          String    @id @default(uuid())
-  grupo       String?
-  fase        Fase      @default(grupos)
-  dataHora    DateTime  @map("data_hora")
-  timeA       String    @map("time_a")
-  timeB       String    @map("time_b")
-  resultadoA  Int?      @map("resultado_a")
-  resultadoB  Int?      @map("resultado_b")
-  status      StatusJogo @default(agendado)
-  isBolao     Boolean   @default(false) @map("is_bolao")
-  sofascoreId String?   @map("sofascore_id")
-  criadoEm    DateTime  @default(now()) @map("criado_em")
+  id              String    @id @default(uuid())
+  grupo           String?
+  fase            Fase      @default(grupos)
+  dataHora        DateTime  @map("data_hora")
+  timeA           String    @map("time_a")
+  timeB           String    @map("time_b")
+  resultadoA      Int?      @map("resultado_a")
+  resultadoB      Int?      @map("resultado_b")
+  status          StatusJogo @default(agendado)
+  isBolao         Boolean   @default(false) @map("is_bolao")
+  sofascoreId     String?   @map("sofascore_id")
+  local           String?
+  cidade          String?
+  vencedor        Int?
+  rankingTimeA    Int?      @map("ranking_time_a")
+  rankingTimeB    Int?      @map("ranking_time_b")
+  placarPenaltisA Int?      @map("placar_penaltis_a")
+  placarPenaltisB Int?      @map("placar_penaltis_b")
+  criadoEm        DateTime  @default(now()) @map("criado_em")
 
-  palpites    Palpite[]
+  palpites        Palpite[]
 
   @@map("jogos")
 }

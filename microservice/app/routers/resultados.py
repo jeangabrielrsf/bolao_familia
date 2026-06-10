@@ -1,4 +1,5 @@
 import logging
+from typing import Optional
 
 from fastapi import APIRouter
 from pydantic import BaseModel
@@ -20,6 +21,13 @@ class ResultadoResponse(BaseModel):
     resultadoA: int
     resultadoB: int
     status: str
+    local: Optional[str] = None
+    cidade: Optional[str] = None
+    vencedor: Optional[int] = None
+    rankingTimeA: Optional[int] = None
+    rankingTimeB: Optional[int] = None
+    placarPenaltisA: Optional[int] = None
+    placarPenaltisB: Optional[int] = None
 
 
 @router.get("/health")

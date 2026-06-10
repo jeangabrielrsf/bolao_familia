@@ -12,7 +12,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Flag } from '@/components/ui/flag'
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table'
-import { Calendar, ChevronLeft } from 'lucide-react'
+import { Calendar, ChevronLeft, MapPin, Trophy } from 'lucide-react'
 
 export const dynamic = 'force-dynamic'
 
@@ -97,14 +97,29 @@ export default async function JogoDetailPage({
             </div>
           </div>
 
+          {(jogo.local || jogo.cidade) && (
+            <p className="text-sm text-muted-foreground text-center flex items-center justify-center gap-1">
+              <MapPin className="w-4 h-4" />
+              {jogo.local}{jogo.cidade ? `, ${jogo.cidade}` : ''}
+            </p>
+          )}
+
           <div className="flex items-center justify-center gap-6 py-4">
             <div className="flex-1 text-right flex items-center justify-end gap-3">
+              {jogo.rankingTimeA && <span className="text-sm text-muted-foreground font-medium"><span className="text-xs text-muted-foreground/60 mr-1">FIFA</span>#{jogo.rankingTimeA}</span>}
               {getTimeFlag(jogo.timeA) && <Flag codigoIso={getTimeFlag(jogo.timeA)!} size={28} />}
               <span className="text-xl sm:text-2xl font-display tracking-wide">{jogo.timeA}</span>
             </div>
-            <div className="shrink-0">
+            <div className="shrink-0 text-center">
               {jogo.status === 'finalizado' ? (
-                <span className="text-3xl sm:text-4xl font-display font-bold text-primary tabular-nums">{jogo.resultadoA} - {jogo.resultadoB}</span>
+                <div>
+                  <span className="text-3xl sm:text-4xl font-display font-bold text-primary tabular-nums">{jogo.resultadoA} - {jogo.resultadoB}</span>
+                  {jogo.fase !== 'grupos' && jogo.placarPenaltisA !== null && jogo.placarPenaltisB !== null && (
+                    <div className="text-sm text-muted-foreground mt-1">
+                      ({jogo.placarPenaltisA} - {jogo.placarPenaltisB} pênaltis)
+                    </div>
+                  )}
+                </div>
               ) : (
                 <span className="text-lg font-medium text-muted-foreground">vs</span>
               )}
@@ -112,10 +127,29 @@ export default async function JogoDetailPage({
             <div className="flex-1 text-left flex items-center gap-3">
               <span className="text-xl sm:text-2xl font-display tracking-wide">{jogo.timeB}</span>
               {getTimeFlag(jogo.timeB) && <Flag codigoIso={getTimeFlag(jogo.timeB)!} size={28} />}
+              {jogo.rankingTimeB && <span className="text-sm text-muted-foreground font-medium"><span className="text-xs text-muted-foreground/60 mr-1">FIFA</span>#{jogo.rankingTimeB}</span>}
             </div>
           </div>
         </CardContent>
       </Card>
+
+      {(jogo.status === 'finalizado' && jogo.vencedor !== null) && (
+        <Card>
+          <CardContent className="p-4 space-y-3">
+            <h3 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">Informações</h3>
+            
+            {jogo.status === 'finalizado' && jogo.vencedor !== null && (
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">Vencedor</span>
+                <Badge variant={jogo.vencedor === 0 ? 'default' : 'success'}>
+                  <Trophy className="w-3 h-3 mr-1" />
+                  {jogo.vencedor === 0 ? 'Empate' : jogo.vencedor === 1 ? jogo.timeA : jogo.timeB}
+                </Badge>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       <section className="space-y-4">
         <h2 className="text-2xl font-display tracking-wide">Palpites ({palpitesComPontos.length})</h2>

@@ -77,7 +77,7 @@ Lógica em `src/lib/utils/helpers.ts` (`calcularPontosJogo`, `calcularPontosExtr
 |--------|--------|-----------|
 | `Participante` | `participantes` | nome (unique), fotoUrl opcional, token (UUID único para link de completar) |
 | `PalpiteGrupo` | `palpites_grupos` | Grupo de palpites (participante pode ter vários), unique(participanteId, nome) |
-| `Jogo` | `jogos` | fase (enum: grupos→final), grupo, times, resultado, status, isBolao, sofascoreId |
+| `Jogo` | `jogos` | fase (enum: grupos→final), grupo, times, resultado, status, isBolao, sofascoreId, local, cidade, vencedor, rankingTimeA/B, placarPenaltisA/B |
 | `Palpite` | `palpites` | placarA/placarB por grupo+jogo (unique pair), fonte (excel/foto/pdf) |
 | `PalpiteExtra` | `palpites_extras` | tipo (artilheiro/campeao/vice/terceiro/quarto), valor string, por grupo |
 | `ResultadoExtra` | `resultados_extras` | resultado oficial dos extras |

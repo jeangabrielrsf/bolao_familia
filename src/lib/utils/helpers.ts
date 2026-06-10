@@ -21,13 +21,17 @@ export function calcularPontosJogo(
   return { pontos: 0, tipo: 'erro' }
 }
 
+function normalize(s: string): string {
+  return s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim()
+}
+
 export function calcularPontosExtra(
   valorPalpite: string,
   valorReal: string,
   config: ConfiguracaoPontuacao,
   tipo: 'campeao' | 'vice' | 'terceiro' | 'quarto' | 'artilheiro'
 ): number {
-  if (valorPalpite.toLowerCase().trim() === valorReal.toLowerCase().trim()) {
+  if (normalize(valorPalpite) === normalize(valorReal)) {
     return config[tipo]
   }
   return 0

@@ -24,6 +24,13 @@ export async function syncResultados(sofascoreIds: string[]) {
       resultadoA: number
       resultadoB: number
       status: string
+      local?: string | null
+      cidade?: string | null
+      vencedor?: number | null
+      rankingTimeA?: number | null
+      rankingTimeB?: number | null
+      placarPenaltisA?: number | null
+      placarPenaltisB?: number | null
     }>>
   } finally {
     clearTimeout(timeout)
