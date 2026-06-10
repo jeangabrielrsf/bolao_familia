@@ -21,6 +21,23 @@ export async function getJogosRestantes() {
   })
 }
 
+export async function detectarModoGrupo(palpiteGrupoId: string): Promise<'completo' | 'restante'> {
+  const count = await prisma.palpite.count({
+    where: {
+      palpiteGrupoId,
+      jogo: { isBolao: true },
+    },
+  })
+  return count === 0 ? 'completo' : 'restante'
+}
+
+export async function getJogosCompletos() {
+  return prisma.jogo.findMany({
+    where: { fase: 'grupos' },
+    orderBy: { dataHora: 'asc' },
+  })
+}
+
 export async function getConfigCompletarBolao() {
   const configs = await prisma.configuracao.findMany({
     where: {
@@ -95,6 +112,13 @@ export async function getPalpitesPorGrupo(palpiteGrupoId: string) {
   return palpitesMap
 }
 
+export async function getExtrasPorGrupo(palpiteGrupoId: string) {
+  return prisma.palpiteExtra.findMany({
+    where: { palpiteGrupoId },
+    orderBy: { tipo: 'asc' },
+  })
+}
+
 export async function getGruposParticipante(participanteId: string) {
   return prisma.palpiteGrupo.findMany({
     where: { participanteId },
@@ -162,6 +186,26 @@ export async function salvarPalpitesCompletar(
   return { totalSalvos: palpites.length, palpiteGrupoId: grupo.id }
 }
 
+export async function salvarExtrasCompletar(
+  palpiteGrupoId: string,
+  extras: { tipo: 'artilheiro' | 'campeao' | 'vice' | 'terceiro' | 'quarto'; valor: string }[]
+) {
+  for (const extra of extras) {
+    await prisma.palpiteExtra.upsert({
+      where: {
+        palpiteGrupoId_tipo: { palpiteGrupoId, tipo: extra.tipo },
+      },
+      update: { valor: extra.valor },
+      create: {
+        palpiteGrupoId,
+        tipo: extra.tipo,
+        valor: extra.valor,
+        fonte: 'excel',
+      },
+    })
+  }
+}
+
 export async function getStatusCompletarBolao() {
   const participantes = await prisma.participante.findMany({
     orderBy: { nome: 'asc' },
@@ -169,16 +213,22 @@ export async function getStatusCompletarBolao() {
       grupos: {
         include: {
           palpites: {
-            select: { jogoId: true },
+            select: { jogoId: true, jogo: { select: { isBolao: true } } },
           },
+          extras: true,
         },
       },
     },
   })
 
-  const jogosRestantes = await prisma.jogo.count({
-    where: { isBolao: false, fase: 'grupos' },
+  const totalJogosGrupos = await prisma.jogo.count({ where: { fase: 'grupos' } })
+  const totalJogosRestantes = await prisma.jogo.count({ where: { isBolao: false, fase: 'grupos' } })
+
+  const jogosGruposIds = await prisma.jogo.findMany({
+    where: { fase: 'grupos' },
+    select: { id: true },
   })
+  const jogosGruposSet = new Set(jogosGruposIds.map((j) => j.id))
 
   const jogosRestantesIds = await prisma.jogo.findMany({
     where: { isBolao: false, fase: 'grupos' },
@@ -187,57 +237,125 @@ export async function getStatusCompletarBolao() {
   const jogosRestantesSet = new Set(jogosRestantesIds.map((j) => j.id))
 
   return participantes.map((p) => {
-    const palpitesJogoIds = new Set<string>()
-    for (const grupo of p.grupos) {
-      for (const palpite of grupo.palpites) {
-        if (jogosRestantesSet.has(palpite.jogoId)) {
-          palpitesJogoIds.add(palpite.jogoId)
-        }
+    if (p.grupos.length === 0) {
+      return {
+        id: p.id,
+        nome: p.nome,
+        token: p.token,
+        fotoUrl: p.fotoUrl,
+        totalJogos: totalJogosGrupos,
+        jogosCompletos: 0,
+        jogosFaltando: totalJogosGrupos,
+        completo: false,
+        modo: 'completo' as const,
+        extrasCompletos: 0,
+        totalExtras: 5,
       }
     }
 
-    const jogosCompletos = palpitesJogoIds.size
-    const jogosFaltando = jogosRestantes - jogosCompletos
+    let totalCompletos = 0
+    let modo: 'completo' | 'restante' = 'restante'
+
+    for (const grupo of p.grupos) {
+      const temBolao = grupo.palpites.some((pal) => pal.jogo.isBolao)
+      const grupoModo: 'completo' | 'restante' = temBolao ? 'restante' : 'completo'
+
+      const targetSet = grupoModo === 'completo' ? jogosGruposSet : jogosRestantesSet
+
+      const grupoCompletos = grupo.palpites.filter((pal) => targetSet.has(pal.jogoId)).length
+      totalCompletos += grupoCompletos
+
+      if (grupoModo === 'completo') modo = 'completo'
+    }
+
+    const totalAlvo = modo === 'completo' ? totalJogosGrupos * Math.max(p.grupos.length, 1) : totalJogosRestantes * Math.max(p.grupos.length, 1)
+    const jogosFaltando = Math.max(0, totalAlvo - totalCompletos)
+
+    const extrasCompletos = modo === 'completo'
+      ? p.grupos.reduce((acc, g) => acc + g.extras.length, 0)
+      : 0
 
     return {
       id: p.id,
       nome: p.nome,
       token: p.token,
       fotoUrl: p.fotoUrl,
-      totalJogos: jogosRestantes,
-      jogosCompletos,
+      totalJogos: modo === 'completo' ? totalJogosGrupos : totalJogosRestantes,
+      jogosCompletos: totalCompletos,
       jogosFaltando,
-      completo: jogosFaltando === 0,
+      completo: jogosFaltando === 0 && (modo === 'restante' || extrasCompletos >= 5 * p.grupos.length),
+      modo,
+      extrasCompletos,
+      totalExtras: modo === 'completo' ? 5 * p.grupos.length : 0,
     }
   })
 }
 
 export async function sortearPalpites(participanteIds: string[]) {
-  const jogosRestantes = await prisma.jogo.findMany({
-    where: { isBolao: false, fase: 'grupos' },
-  })
+  const jogosGrupos = await prisma.jogo.findMany({ where: { fase: 'grupos' } })
+  const jogosRestantes = await prisma.jogo.findMany({ where: { isBolao: false, fase: 'grupos' } })
+
+  const TIMES_EXTRA = ['Argentina', 'Brasil', 'França', 'Alemanha', 'Espanha', 'Inglaterra', 'Holanda', 'Portugal'] as const
 
   const resultados: { participanteId: string; totalSorteados: number }[] = []
 
   for (const participanteId of participanteIds) {
-    const palpitesMap = await getPalpitesParticipante(participanteId)
+    const grupos = await prisma.palpiteGrupo.findMany({
+      where: { participanteId },
+      include: { palpites: true, extras: true },
+    })
 
-    const palpitesFaltantes = jogosRestantes
-      .filter((j) => !palpitesMap.has(j.id))
-      .map((j) => ({
-        jogoId: j.id,
-        placarA: Math.floor(Math.random() * 6),
-        placarB: Math.floor(Math.random() * 6),
-      }))
+    let totalSorteados = 0
 
-    if (palpitesFaltantes.length > 0) {
-      await salvarPalpitesCompletar(participanteId, palpitesFaltantes)
+    for (const grupo of grupos) {
+      const palpiteJogoIds = new Set(grupo.palpites.map((p) => p.jogoId))
+      const hasBolaoPalpites = grupo.palpites.some((pal) => {
+        const jogo = jogosGrupos.find((j) => j.id === pal.jogoId)
+        return jogo?.isBolao
+      })
+      const modo: 'completo' | 'restante' = hasBolaoPalpites ? 'restante' : (grupo.palpites.length === 0 ? 'completo' : 'restante')
+
+      const jogosAlvo = modo === 'completo' ? jogosGrupos : jogosRestantes
+
+      const faltantes = jogosAlvo
+        .filter((j) => !palpiteJogoIds.has(j.id))
+        .map((j) => ({
+          jogoId: j.id,
+          placarA: Math.floor(Math.random() * 6),
+          placarB: Math.floor(Math.random() * 6),
+        }))
+
+      if (faltantes.length > 0) {
+        await prisma.palpite.createMany({
+          data: faltantes.map((f) => ({
+            palpiteGrupoId: grupo.id,
+            jogoId: f.jogoId,
+            placarA: f.placarA,
+            placarB: f.placarB,
+            fonte: 'excel' as const,
+          })),
+        })
+        totalSorteados += faltantes.length
+      }
+
+      if (modo === 'completo') {
+        const extrasExistentes = new Set(grupo.extras.map((e) => e.tipo))
+        const tiposExtras = ['artilheiro', 'campeao', 'vice', 'terceiro', 'quarto'] as const
+        const extrasFaltantes = tiposExtras.filter((t) => !extrasExistentes.has(t))
+
+        for (const tipo of extrasFaltantes) {
+          const valor = TIMES_EXTRA[Math.floor(Math.random() * TIMES_EXTRA.length)]
+          await prisma.palpiteExtra.upsert({
+            where: { palpiteGrupoId_tipo: { palpiteGrupoId: grupo.id, tipo } },
+            update: { valor },
+            create: { palpiteGrupoId: grupo.id, tipo, valor, fonte: 'excel' },
+          })
+        }
+        totalSorteados += extrasFaltantes.length
+      }
     }
 
-    resultados.push({
-      participanteId,
-      totalSorteados: palpitesFaltantes.length,
-    })
+    resultados.push({ participanteId, totalSorteados })
   }
 
   return resultados
@@ -257,4 +375,62 @@ export async function getJogosRestantesComPalpites(participanteId: string, palpi
     timeB: j.timeB,
     palpite: palpitesMap.get(j.id) ?? null,
   }))
+}
+
+export async function getJogosCompletosComPalpites(participanteId: string, palpiteGrupoId?: string) {
+  const jogos = await getJogosCompletos()
+  const palpitesMap = palpiteGrupoId
+    ? await getPalpitesPorGrupo(palpiteGrupoId)
+    : await getPalpitesParticipante(participanteId)
+
+  return jogos.map((j) => ({
+    id: j.id,
+    grupo: j.grupo,
+    dataHora: j.dataHora,
+    timeA: j.timeA,
+    timeB: j.timeB,
+    palpite: palpitesMap.get(j.id) ?? null,
+  }))
+}
+
+export async function getParticipantesElegiveis() {
+  const participantesComGrupos = await prisma.palpiteGrupo.findMany({
+    select: { participanteId: true },
+    distinct: ['participanteId'],
+  })
+  const idsComGrupos = new Set(participantesComGrupos.map((g) => g.participanteId))
+
+  const todos = await prisma.participante.findMany({
+    orderBy: { nome: 'asc' },
+    select: { id: true, nome: true },
+  })
+
+  return todos.filter((p) => !idsComGrupos.has(p.id))
+}
+
+export async function criarNovoPalpite(participanteId: string, apelido?: string) {
+  const gruposExistentes = await prisma.palpiteGrupo.count({
+    where: { participanteId },
+  })
+
+  if (gruposExistentes > 0) {
+    throw new Error('Participante já possui palpites')
+  }
+
+  const participante = await prisma.participante.findUnique({
+    where: { id: participanteId },
+  })
+
+  if (!participante) {
+    throw new Error('Participante não encontrado')
+  }
+
+  return prisma.palpiteGrupo.create({
+    data: {
+      participanteId,
+      nome: `completo-${Date.now()}`,
+      apelido: apelido || 'Palpite 1',
+      fonte: 'excel',
+    },
+  })
 }
