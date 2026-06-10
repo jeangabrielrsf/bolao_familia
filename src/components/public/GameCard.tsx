@@ -1,7 +1,9 @@
 import Link from "next/link"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardFooter } from "@/components/ui/card"
+import { Flag } from "@/components/ui/flag"
 import { FASE_LABELS } from "@/lib/utils/constants"
+import { getTimeFlag } from "@/lib/utils/flags"
 import { Calendar, ChevronRight } from "lucide-react"
 import { cn } from "@/lib/utils"
 
@@ -40,7 +42,10 @@ export function GameCard({ id, timeA, timeB, dataHora, grupo, fase, resultadoA, 
           </div>
         </div>
         <div className="flex items-center justify-between gap-4">
-          <div className="flex-1 text-right"><span className="font-display text-lg tracking-wide">{timeA}</span></div>
+          <div className="flex-1 text-right flex items-center justify-end gap-2">
+            {getTimeFlag(timeA) && <Flag codigoIso={getTimeFlag(timeA)!} size={20} />}
+            <span className="font-display text-lg tracking-wide">{timeA}</span>
+          </div>
           <div className="shrink-0">
             {finalizado ? (
               <span className="text-2xl font-display font-bold text-primary tabular-nums">{resultadoA} - {resultadoB}</span>
@@ -48,7 +53,10 @@ export function GameCard({ id, timeA, timeB, dataHora, grupo, fase, resultadoA, 
               <span className="text-sm font-medium text-muted-foreground">vs</span>
             )}
           </div>
-          <div className="flex-1 text-left"><span className="font-display text-lg tracking-wide">{timeB}</span></div>
+          <div className="flex-1 text-left flex items-center gap-2">
+            <span className="font-display text-lg tracking-wide">{timeB}</span>
+            {getTimeFlag(timeB) && <Flag codigoIso={getTimeFlag(timeB)!} size={20} />}
+          </div>
         </div>
       </CardContent>
       <CardFooter className="px-4 pb-4 pt-0">
