@@ -367,6 +367,7 @@ export default function CompletarBolaoPage() {
       setExtrasOriginais(extras.map((e) => ({ ...e })))
       clearDraft(token, grupoAtivo)
       toast.success(`Palpites salvos com sucesso! (${data.totalSalvos} jogos)`)
+      window.scrollTo({ top: 0, behavior: 'smooth' })
     } catch {
       toast.error('Erro ao salvar palpites')
     } finally {
