@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
 import { FASE_LABELS } from '@/lib/utils/constants'
+import { formatarDataHoraCompleta } from '@/lib/utils/date'
 import { toast } from 'sonner'
 import { Loader2, ChevronLeft } from 'lucide-react'
 
@@ -24,7 +25,7 @@ const STATUS_BADGE: Record<StatusJogo, { variant: 'default' | 'warning' | 'succe
 }
 
 function formatDateTime(iso: string) {
-  return new Date(iso).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+  return formatarDataHoraCompleta(new Date(iso))
 }
 
 export default function AdminJogosPage() {

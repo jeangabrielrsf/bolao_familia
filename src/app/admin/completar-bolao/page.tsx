@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge'
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table'
 import { Skeleton } from '@/components/ui/skeleton'
 import { toast } from 'sonner'
+import { formatarDataHoraCompleta } from '@/lib/utils/date'
 import { Loader2, ChevronLeft, Copy, Dice5, CheckCircle, AlertCircle, Settings, ExternalLink } from 'lucide-react'
 
 interface ParticipanteStatus {
@@ -222,7 +223,7 @@ export default function AdminCompletarBolaoPage() {
   }
 
   const prazoFormatado = config?.prazo
-    ? new Date(config.prazo).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+    ? formatarDataHoraCompleta(new Date(config.prazo))
     : 'Não definido'
 
   return (

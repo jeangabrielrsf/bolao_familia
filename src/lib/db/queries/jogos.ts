@@ -1,10 +1,9 @@
 import { prisma } from '../client'
+import { inicioDiaBrasilia, fimDiaBrasilia } from '@/lib/utils/date'
 
 export async function getJogosDoDia() {
-  const inicio = new Date()
-  inicio.setHours(0, 0, 0, 0)
-  const fim = new Date()
-  fim.setHours(23, 59, 59, 999)
+  const inicio = inicioDiaBrasilia()
+  const fim = fimDiaBrasilia()
 
   return prisma.jogo.findMany({
     where: {

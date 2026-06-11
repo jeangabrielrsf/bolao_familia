@@ -1,7 +1,9 @@
 <!-- BEGIN:nextjs-agent-rules -->
+
 # This is NOT the Next.js you know
 
 This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` before writing any code. Heed deprecation notices.
+
 <!-- END:nextjs-agent-rules -->
 
 # Bolão Copa 2026 — Project Context
@@ -14,16 +16,16 @@ Bolão familiar da Copa do Mundo FIFA 2026. Sistema onde o admin carrega planilh
 
 A Copa do Mundo 2026 terá **104 jogos** distribuídos em **13 fases**, com 48 seleções:
 
-| Fase | Jogos | Detalhe |
-|------|-------|---------|
-| Fase de Grupos | 72 | 12 grupos de 4 seleções |
-| 16 avos de final | 16 | 32 seleções (nova fase eliminatória) |
-| Oitavas de final | 8 | |
-| Quartas de final | 4 | |
-| Semifinais | 2 | |
-| Disputa do 3º lugar | 1 | |
-| Final | 1 | |
-| **Total** | **104** | |
+| Fase                | Jogos   | Detalhe                              |
+| ------------------- | ------- | ------------------------------------ |
+| Fase de Grupos      | 72      | 12 grupos de 4 seleções              |
+| 16 avos de final    | 16      | 32 seleções (nova fase eliminatória) |
+| Oitavas de final    | 8       |                                      |
+| Quartas de final    | 4       |                                      |
+| Semifinais          | 2       |                                      |
+| Disputa do 3º lugar | 1       |                                      |
+| Final               | 1       |                                      |
+| **Total**           | **104** |                                      |
 
 **Upload em Lote:** Suporta upload de planilhas multi-abas, onde cada aba contém os palpites de um participante (ou múltiplos palpites do mesmo participante). O sistema cria automaticamente grupos de palpites (`PalpiteGrupo`) para cada aba, permitindo que um participante tenha vários conjuntos de palpites.
 
@@ -39,51 +41,76 @@ A Copa do Mundo 2026 terá **104 jogos** distribuídos em **13 fases**, com 48 s
 
 ## Comandos
 
-| Comando | Descrição |
-|---------|-----------|
-| `npm run dev` | Dev server (Turbopack) |
-| `npm run build` | Build produção |
-| `npm run lint` | ESLint |
-| `npm test` | Jest |
-| `npx prisma generate` | Gerar Prisma Client |
-| `npx prisma migrate dev` | Migration + aplica (dev) |
-| `npx prisma migrate deploy` | Aplica migrations (prod) |
-| `npx tsx --env-file=.env scripts/seed.ts` | Popular 72 jogos + config pontuação |
-| `npx tsx --env-file=.env scripts/seed-admin.ts` | Criar hash da senha admin |
+| Comando                                         | Descrição                           |
+| ----------------------------------------------- | ----------------------------------- |
+| `npm run dev`                                   | Dev server (Turbopack)              |
+| `npm run build`                                 | Build produção                      |
+| `npm run lint`                                  | ESLint                              |
+| `npm test`                                      | Jest                                |
+| `npx prisma generate`                           | Gerar Prisma Client                 |
+| `npx prisma migrate dev`                        | Migration + aplica (dev)            |
+| `npx prisma migrate deploy`                     | Aplica migrations (prod)            |
+| `npx tsx --env-file=.env scripts/seed.ts`       | Popular 72 jogos + config pontuação |
+| `npx tsx --env-file=.env scripts/seed-admin.ts` | Criar hash da senha admin           |
 
 ## Planilha do Bolão (`planilha/Bolão Copa do Mundo 2026.xlsx`)
 
 Formato da planilha que cada participante preenche:
+
 - **33 jogos** da fase de grupos: placar coluna C e E, com "x" na coluna D separando os times
 - **5 extras** nas linhas 42-46 (0-indexed): artilheiro, quarto, terceiro, vice, campeao (coluna B)
 - O parser (`src/lib/services/upload/excel-parser.ts`) identifica linhas de jogo pela coluna D="x"
 
 ## Sistema de Pontuação
 
-| Palpite | Pontos (padrão) |
-|---------|-----------------|
-| Placar exato | 10 |
-| Vencedor correto (sem placar exato) | 6 |
-| Campeão/Vice/3º/4º/Artilheiro | 10 cada |
-| **Máximo teórico** | **770** |
+| Palpite                             | Pontos (padrão) |
+| ----------------------------------- | --------------- |
+| Placar exato                        | 10              |
+| Vencedor correto (sem placar exato) | 6               |
+| Campeão/Vice/3º/4º/Artilheiro       | 10 cada         |
+| **Máximo teórico**                  | **770**         |
 
 **Desempate:** 1) mais placares exatos → 2) mais vencedores corretos
 
 Lógica em `src/lib/utils/helpers.ts` (`calcularPontosJogo`, `calcularPontosExtra`). Configuração editável pelo admin em `/admin/config`, armazenada na tabela `configuracoes`.
 
+## Fuso Horário
+
+**Todos os horários são exibidos em horário de Brasília (`America/Sao_Paulo`, UTC-3).**
+
+### Armazenamento
+
+- Horários dos jogos são armazenados em **UTC** no banco (`TIMESTAMP` sem timezone)
+- O seed (`scripts/seed.ts`) converte horários locais das sedes → UTC usando o offset da cidade
+- Mapeamento de cidades em `CITY_OFFSET_HOURS` no seed (junho/julho 2026 = horário de verão das sedes)
+
+### Exibição
+
+- **Nunca usar** `toLocaleDateString/Time` diretamente nos componentes
+- Usar as funções de `src/lib/utils/date.ts`:
+  - `formatarData(data)` → `dd/mm`
+  - `formatarHora(data)` → `hh:mm`
+  - `formatarDataHoraCompleta(data)` → `dd/mm/yyyy hh:mm`
+- Todas forçam `timeZone: 'America/Sao_Paulo'` no `toLocaleString`
+
+### Queries de "jogos do dia"
+
+- `getJogosDoDia()` em `src/lib/db/queries/jogos.ts` usa `inicioDiaBrasilia()` / `fimDiaBrasilia()`
+- Calcula início/fim do dia em horário de Brasília, independente do timezone do servidor
+
 ## Modelos do Banco (Prisma — `prisma/schema.prisma`)
 
-| Modelo | Tabela | Descrição |
-|--------|--------|-----------|
-| `Participante` | `participantes` | nome (unique), fotoUrl opcional, token (UUID único para link de completar) |
-| `PalpiteGrupo` | `palpites_grupos` | Grupo de palpites (participante pode ter vários), unique(participanteId, nome) |
-| `Jogo` | `jogos` | fase (enum: grupos→final), grupo, times, resultado, status, isBolao, sofascoreId, local, cidade, vencedor, rankingTimeA/B, placarPenaltisA/B |
-| `Palpite` | `palpites` | placarA/placarB por grupo+jogo (unique pair), fonte (excel/foto/pdf) |
-| `PalpiteExtra` | `palpites_extras` | tipo (artilheiro/campeao/vice/terceiro/quarto), valor string, por grupo |
-| `ResultadoExtra` | `resultados_extras` | resultado oficial dos extras |
-| `Configuracao` | `configuracoes` | chave/valor (pontuação, prazo_completar_bolao, completar_bolao_habilitado) |
-| `AdminAuth` | `admin_auth` | senhaHash |
-| `UploadLog` | `upload_logs` | histórico de uploads |
+| Modelo           | Tabela              | Descrição                                                                                                                                    |
+| ---------------- | ------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Participante`   | `participantes`     | nome (unique), fotoUrl opcional, token (UUID único para link de completar)                                                                   |
+| `PalpiteGrupo`   | `palpites_grupos`   | Grupo de palpites (participante pode ter vários), unique(participanteId, nome)                                                               |
+| `Jogo`           | `jogos`             | fase (enum: grupos→final), grupo, times, resultado, status, isBolao, sofascoreId, local, cidade, vencedor, rankingTimeA/B, placarPenaltisA/B |
+| `Palpite`        | `palpites`          | placarA/placarB por grupo+jogo (unique pair), fonte (excel/foto/pdf)                                                                         |
+| `PalpiteExtra`   | `palpites_extras`   | tipo (artilheiro/campeao/vice/terceiro/quarto), valor string, por grupo                                                                      |
+| `ResultadoExtra` | `resultados_extras` | resultado oficial dos extras                                                                                                                 |
+| `Configuracao`   | `configuracoes`     | chave/valor (pontuação, prazo_completar_bolao, completar_bolao_habilitado)                                                                   |
+| `AdminAuth`      | `admin_auth`        | senhaHash                                                                                                                                    |
+| `UploadLog`      | `upload_logs`       | histórico de uploads                                                                                                                         |
 
 ## Estrutura de Diretórios
 
@@ -113,7 +140,7 @@ src/lib/
     storage/         → supabase.ts
     resultados/      → client.ts (HTTP pro microserviço)
     scoring/         → calculator (testes)
-  utils/             → constants.ts, types.ts, helpers.ts
+  utils/             → constants.ts, types.ts, helpers.ts, date.ts (formatação timezone Brasília)
 microservice/        → FastAPI + curl_cffi (scraping SofaScore), deploy Fly.io
 scripts/             → seed.ts (jogos + config), seed-admin.ts
 planilha/            → Bolão Copa do Mundo 2026.xlsx (template)
@@ -123,18 +150,21 @@ docs/superpowers/    → specs e plans (superpowers workflow)
 ## Fluxo de Upload (Admin)
 
 ### Upload Individual
+
 1. Admin seleciona participante + arquivo (Excel, imagem ou PDF)
 2. `POST /api/upload` → parse (excel-parser / ocr-vision / pdf-parser) → validação → retorna preview
 3. Admin revisa/edita preview na UI
 4. `POST /api/admin/upload/confirm` → cria/atualiza PalpiteGrupo + salva palpites no DB + arquiva arquivo no Supabase Storage
 
 ### Upload em Lote (Multi-Abas)
+
 1. Admin seleciona arquivo Excel com múltiplas abas (cada aba = um grupo de palpites)
 2. `POST /api/upload/lote` → parseExcelMultiSheet → valida cada grupo → retorna preview com tabs
 3. Admin revisa preview (tabs por grupo, badges "existente"/"novo")
 4. `POST /api/admin/upload/confirm-lote` → busca/cria participantes, busca/cria PalpiteGrupos, salva palpites
 
 **Parser Multi-Abas:** `parseExcelMultiSheet(buffer, jogosIds)` em `src/lib/services/upload/excel-parser.ts`
+
 - Filtra aba "Modelo" (case-insensitive)
 - Extrai nome do participante e apelido do grupo do nome da aba (regex sufixo: "Leo 1", "João - Palpite 2", etc.)
 - Retorna `PalpiteGrupoParsed[]` com palpites e extras de cada aba
@@ -192,7 +222,7 @@ Use o MCP do Supabase para todas as operações diretas no banco e storage:
 
 Use o MCP do Supabase para todas as operações diretas no banco e storage:
 
-- **Queries SQL:** `supabase_execute_sql` — para SELECT, INSERT, UPDATE, DELETE, criar buckets, etc.
+- **Queries SQL:** `supabase_execute_sql` — para SELECT, INSERT, UPDATE, criar buckets, etc.
 - **Migrations:** `supabase_apply_migration` — para DDL (CREATE TABLE, ALTER TABLE, etc.)
 - **Buckets Storage:** criar via SQL (`INSERT INTO storage.buckets`) ou usar `supabase_execute_sql`
 - **Edge Functions:** `supabase_deploy_edge_function`, `supabase_list_edge_functions`
@@ -200,6 +230,7 @@ Use o MCP do Supabase para todas as operações diretas no banco e storage:
 - **Advisors:** `supabase_get_advisors` (security/performance)
 
 **NÃO use** `curl` direto para o Supabase — use as ferramentas MCP.
+**NÃO use** operações de DELETE.
 
 ## Convenções
 

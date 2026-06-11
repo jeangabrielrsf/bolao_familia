@@ -10,6 +10,7 @@ import { Flag } from '@/components/ui/flag'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { getTimeFlag } from '@/lib/utils/flags'
+import { formatarData, formatarHora } from '@/lib/utils/date'
 import { toast } from 'sonner'
 import { Save, XCircle, Calendar, Lock, AlertCircle, RotateCcw, CheckCircle } from 'lucide-react'
 
@@ -674,8 +675,8 @@ function JogosLista({
             <div className="space-y-2">
               {jogosDoGrupo.map((jogo) => {
                 const dataHora = new Date(jogo.dataHora)
-                const dataFormatada = dataHora.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })
-                const horaFormatada = dataHora.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+                const dataFormatada = formatarData(dataHora)
+                const horaFormatada = formatarHora(dataHora)
                 const palpiteAtual = inputs.get(jogo.id)
 
                 return (

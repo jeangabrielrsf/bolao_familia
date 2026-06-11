@@ -7,6 +7,7 @@ import { getRanking } from '@/lib/db/queries/ranking'
 import { calcularPontosJogo } from '@/lib/utils/helpers'
 import { getTimeFlag } from '@/lib/utils/flags'
 import { FASE_LABELS } from '@/lib/utils/constants'
+import { formatarData, formatarHora } from '@/lib/utils/date'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -71,12 +72,8 @@ export default async function JogoDetailPage({
     return a.palpiteGrupo.participante.nome.localeCompare(b.palpiteGrupo.participante.nome)
   })
 
-  const dataFormatada = jogo.dataHora.toLocaleDateString('pt-BR', {
-    day: '2-digit', month: 'long', year: 'numeric',
-  })
-  const horaFormatada = jogo.dataHora.toLocaleTimeString('pt-BR', {
-    hour: '2-digit', minute: '2-digit',
-  })
+  const dataFormatada = formatarData(jogo.dataHora)
+  const horaFormatada = formatarHora(jogo.dataHora)
 
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8 animate-fade-in-up">

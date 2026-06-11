@@ -4,6 +4,7 @@ import { Card, CardContent, CardFooter } from "@/components/ui/card"
 import { Flag } from "@/components/ui/flag"
 import { FASE_LABELS } from "@/lib/utils/constants"
 import { getTimeFlag } from "@/lib/utils/flags"
+import { formatarData, formatarHora } from "@/lib/utils/date"
 import { Calendar, ChevronRight, MapPin } from "lucide-react"
 import { cn } from "@/lib/utils"
 
@@ -26,8 +27,8 @@ interface GameCardProps {
 }
 
 export function GameCard({ id, timeA, timeB, dataHora, grupo, fase, resultadoA, resultadoB, status, local, cidade, placarPenaltisA, placarPenaltisB, rankingTimeA, rankingTimeB }: GameCardProps) {
-  const dataFormatada = dataHora.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" })
-  const horaFormatada = dataHora.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })
+  const dataFormatada = formatarData(dataHora)
+  const horaFormatada = formatarHora(dataHora)
   const finalizado = status === "finalizado"
   const temPenaltis = finalizado && fase !== 'grupos' && (placarPenaltisA !== null && placarPenaltisA !== undefined)
   const isBrasil = timeA === 'Brasil' || timeB === 'Brasil'

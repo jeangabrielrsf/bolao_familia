@@ -1,4 +1,5 @@
 import { calcularPontosJogo } from '@/lib/utils/helpers'
+import { formatarData } from '@/lib/utils/date'
 import type { ConfiguracaoPontuacao } from '@/lib/utils/types'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -56,9 +57,7 @@ export function PalpitesTable({ titulo, palpites, config }: PalpitesTableProps) 
                   config
                 ).pontos
               }
-              const dataFormatada = palpite.jogo.dataHora.toLocaleDateString('pt-BR', {
-                day: '2-digit', month: '2-digit',
-              })
+              const dataFormatada = formatarData(palpite.jogo.dataHora)
               return (
                 <TableRow key={palpite.id}>
                   <TableCell>{palpite.jogo.timeA} vs {palpite.jogo.timeB}</TableCell>
