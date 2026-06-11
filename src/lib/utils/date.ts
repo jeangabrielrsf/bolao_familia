@@ -32,7 +32,7 @@ export function inicioDiaBrasilia(): Date {
   const str = agora.toLocaleString('en-US', { timeZone: 'America/Sao_Paulo' })
   const [datePart] = str.split(',')
   const [month, day, year] = datePart.split('/').map(Number)
-  return new Date(year, month - 1, day, 0, 0, 0, 0)
+  return new Date(Date.UTC(year, month - 1, day, 3, 0, 0, 0))
 }
 
 export function fimDiaBrasilia(): Date {
