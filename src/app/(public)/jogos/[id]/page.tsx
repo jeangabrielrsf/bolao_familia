@@ -76,13 +76,13 @@ export default async function JogoDetailPage({
   const horaFormatada = formatarHora(jogo.dataHora)
 
   return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8 animate-fade-in-up">
+    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8 space-y-6 sm:space-y-8 animate-fade-in-up">
       <Button variant="ghost" size="sm" asChild>
         <Link href="/jogos"><ChevronLeft className="w-4 h-4" /> Voltar aos jogos</Link>
       </Button>
 
       <Card>
-        <CardContent className="p-6 space-y-4">
+        <CardContent className="p-4 sm:p-6 space-y-4">
           <div className="flex items-center justify-between flex-wrap gap-2">
             <div className="flex items-center gap-2">
               {jogo.grupo ? <Badge variant="info">Grupo {jogo.grupo}</Badge> : <Badge variant="info">{FASE_LABELS[jogo.fase] ?? jogo.fase}</Badge>}
@@ -101,30 +101,30 @@ export default async function JogoDetailPage({
             </p>
           )}
 
-          <div className="flex items-center justify-center gap-6 py-4">
-            <div className="flex-1 text-right flex items-center justify-end gap-3">
-              {jogo.rankingTimeA && <span className="text-sm text-muted-foreground font-medium"><span className="text-xs text-muted-foreground/60 mr-1">FIFA</span>#{jogo.rankingTimeA}</span>}
-              {getTimeFlag(jogo.timeA) && <Flag codigoIso={getTimeFlag(jogo.timeA)!} size={28} />}
-              <span className="text-xl sm:text-2xl font-display tracking-wide">{jogo.timeA}</span>
+          <div className="flex items-center justify-center gap-2 sm:gap-6 py-4">
+            <div className="flex-1 text-right flex items-center justify-end gap-1.5 sm:gap-3 min-w-0">
+              {jogo.rankingTimeA && <span className="hidden sm:inline text-sm text-muted-foreground font-medium"><span className="text-xs text-muted-foreground/60 mr-1">FIFA</span>#{jogo.rankingTimeA}</span>}
+              {getTimeFlag(jogo.timeA) && <Flag codigoIso={getTimeFlag(jogo.timeA)!} size={20} />}
+              <span className="text-sm sm:text-xl md:text-2xl font-display tracking-wide truncate">{jogo.timeA}</span>
             </div>
-            <div className="shrink-0 text-center">
+            <div className="shrink-0 text-center px-2">
               {jogo.status === 'finalizado' ? (
                 <div>
-                  <span className="text-3xl sm:text-4xl font-display font-bold text-primary tabular-nums">{jogo.resultadoA} - {jogo.resultadoB}</span>
+                  <span className="text-2xl sm:text-3xl md:text-4xl font-display font-bold text-primary tabular-nums">{jogo.resultadoA} - {jogo.resultadoB}</span>
                   {jogo.fase !== 'grupos' && jogo.placarPenaltisA !== null && jogo.placarPenaltisB !== null && (
-                    <div className="text-sm text-muted-foreground mt-1">
+                    <div className="text-xs sm:text-sm text-muted-foreground mt-1">
                       ({jogo.placarPenaltisA} - {jogo.placarPenaltisB} pênaltis)
                     </div>
                   )}
                 </div>
               ) : (
-                <span className="text-lg font-medium text-muted-foreground">vs</span>
+                <span className="text-base sm:text-lg font-medium text-muted-foreground">vs</span>
               )}
             </div>
-            <div className="flex-1 text-left flex items-center gap-3">
-              <span className="text-xl sm:text-2xl font-display tracking-wide">{jogo.timeB}</span>
-              {getTimeFlag(jogo.timeB) && <Flag codigoIso={getTimeFlag(jogo.timeB)!} size={28} />}
-              {jogo.rankingTimeB && <span className="text-sm text-muted-foreground font-medium"><span className="text-xs text-muted-foreground/60 mr-1">FIFA</span>#{jogo.rankingTimeB}</span>}
+            <div className="flex-1 text-left flex items-center gap-1.5 sm:gap-3 min-w-0">
+              <span className="text-sm sm:text-xl md:text-2xl font-display tracking-wide truncate">{jogo.timeB}</span>
+              {getTimeFlag(jogo.timeB) && <Flag codigoIso={getTimeFlag(jogo.timeB)!} size={20} />}
+              {jogo.rankingTimeB && <span className="hidden sm:inline text-sm text-muted-foreground font-medium"><span className="text-xs text-muted-foreground/60 mr-1">FIFA</span>#{jogo.rankingTimeB}</span>}
             </div>
           </div>
         </CardContent>
@@ -149,7 +149,7 @@ export default async function JogoDetailPage({
       )}
 
       <section className="space-y-4">
-        <h2 className="text-2xl font-display tracking-wide">Palpites ({palpitesComPontos.length})</h2>
+        <h2 className="text-xl sm:text-2xl font-display tracking-wide">Palpites ({palpitesComPontos.length})</h2>
 
         {palpitesComPontos.length > 0 ? (
           <Card>
@@ -165,21 +165,21 @@ export default async function JogoDetailPage({
                 {palpitesComPontos.map((palpite) => (
                   <TableRow key={palpite.id}>
                     <TableCell>
-                      <Link href={`/participantes/${palpite.palpiteGrupo.participante.id}`} className="flex items-center gap-3 hover:text-primary transition-colors">
-                        <div className="w-8 h-8 rounded-full overflow-hidden bg-muted flex items-center justify-center shrink-0">
-                          {palpite.palpiteGrupo.participante.fotoUrl ? (
-                            <Image src={palpite.palpiteGrupo.participante.fotoUrl} alt={palpite.palpiteGrupo.participante.nome} width={32} height={32} className="w-full h-full object-cover" />
-                          ) : (
-                            <span className="text-xs font-bold text-muted-foreground">{palpite.palpiteGrupo.participante.nome.charAt(0).toUpperCase()}</span>
-                          )}
-                        </div>
-                        <div className="flex flex-col">
-                          <span className="font-medium text-sm">{palpite.palpiteGrupo.nome}</span>
-                          {palpite.posicaoRanking && <span className="text-xs text-muted-foreground">{palpite.posicaoRanking}º no ranking</span>}
-                        </div>
-                      </Link>
+                        <Link href={`/participantes/${palpite.palpiteGrupo.participante.id}`} className="flex items-center gap-2 sm:gap-3 hover:text-primary transition-colors">
+                          <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full overflow-hidden bg-muted flex items-center justify-center shrink-0">
+                            {palpite.palpiteGrupo.participante.fotoUrl ? (
+                              <Image src={palpite.palpiteGrupo.participante.fotoUrl} alt={palpite.palpiteGrupo.participante.nome} width={32} height={32} className="w-full h-full object-cover" />
+                            ) : (
+                              <span className="text-xs font-bold text-muted-foreground">{palpite.palpiteGrupo.participante.nome.charAt(0).toUpperCase()}</span>
+                            )}
+                          </div>
+                          <div className="flex flex-col min-w-0">
+                            <span className="font-medium text-sm truncate">{palpite.palpiteGrupo.nome}</span>
+                            {palpite.posicaoRanking && <span className="text-xs text-muted-foreground">{palpite.posicaoRanking}º no ranking</span>}
+                          </div>
+                        </Link>
                     </TableCell>
-                    <TableCell><span className="font-semibold tabular-nums">{palpite.placarA} x {palpite.placarB}</span></TableCell>
+                    <TableCell><span className="font-semibold tabular-nums text-sm sm:text-base">{palpite.placarA} x {palpite.placarB}</span></TableCell>
                     <TableCell className="text-right">
                       {jogo.status === 'finalizado' ? (
                         <div className="flex items-center justify-end gap-2">
