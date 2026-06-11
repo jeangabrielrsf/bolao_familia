@@ -428,7 +428,7 @@ export async function criarNovoPalpite(participanteId: string, apelido?: string)
   return prisma.palpiteGrupo.create({
     data: {
       participanteId,
-      nome: `completo-${Date.now()}`,
+      nome: participante.nome,
       apelido: apelido || 'Palpite 1',
       fonte: 'excel',
     },
