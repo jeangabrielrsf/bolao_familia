@@ -15,7 +15,31 @@ import { Loader2, RefreshCw, ChevronLeft, Trophy, Save } from 'lucide-react'
 type Fase = 'grupos' | 'oitavas' | 'quartas' | 'semifinal' | 'terceiro' | 'final'
 type StatusJogo = 'agendado' | 'em_andamento' | 'finalizado'
 interface Jogo { id: string; grupo: string | null; fase: Fase; dataHora: string; timeA: string; timeB: string; resultadoA: number | null; resultadoB: number | null; status: StatusJogo; sofascoreId: string | null }
-interface SyncResult { sofascoreId: string; timeA: string; timeB: string; resultadoA: number; resultadoB: number }
+interface MudancaJogo {
+  sofascoreId: string
+  timeA: string
+  timeB: string
+  grupo: string | null
+  fase: string
+  mudouPlacar: boolean
+  mudouStatus: boolean
+  mudouLocal: boolean
+  mudouCidade: boolean
+  antes: {
+    status: string
+    resultadoA: number | null
+    resultadoB: number | null
+    local: string | null
+    cidade: string | null
+  }
+  depois: {
+    status: string
+    resultadoA: number | null
+    resultadoB: number | null
+    local: string | null
+    cidade: string | null
+  }
+}
 type TipoExtra = 'artilheiro' | 'campeao' | 'vice' | 'terceiro' | 'quarto'
 interface ResultadoExtra { id: string; tipo: TipoExtra; valor: string }
 
@@ -50,7 +74,7 @@ export default function AdminResultadosPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [syncing, setSyncing] = useState(false)
-  const [syncResults, setSyncResults] = useState<{ atualizados: number; resultados: SyncResult[] } | null>(null)
+  const [syncResults, setSyncResults] = useState<{ atualizados: number; mudancas: MudancaJogo[] } | null>(null)
   const [extras, setExtras] = useState<Record<TipoExtra, string>>({ artilheiro: '', campeao: '', vice: '', terceiro: '', quarto: '' })
   const [extrasOriginal, setExtrasOriginal] = useState<Record<TipoExtra, string>>({ artilheiro: '', campeao: '', vice: '', terceiro: '', quarto: '' })
   const [savingExtras, setSavingExtras] = useState(false)
@@ -76,9 +100,25 @@ export default function AdminResultadosPage() {
       const res = await fetch('/api/resultados/sync', { method: 'POST' })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Erro ao sincronizar')
-      setSyncResults({ atualizados: data.atualizados, resultados: data.resultados })
+      setSyncResults({ atualizados: data.atualizados, mudancas: data.mudancas })
       await fetchJogos()
-      toast.success(`${data.atualizados} jogo(s) atualizado(s)!`)
+
+      if (data.atualizados === 0) {
+        toast.info('Nenhum jogo foi atualizado')
+      } else {
+        const placares = data.mudancas.filter((m: MudancaJogo) => m.mudouPlacar).length
+        const status = data.mudancas.filter((m: MudancaJogo) => m.mudouStatus).length
+        const outros = data.mudancas.filter((m: MudancaJogo) => m.mudouLocal || m.mudouCidade).length
+
+        let mensagem = `${data.atualizados} jogo${data.atualizados !== 1 ? 's' : ''} atualizado${data.atualizados !== 1 ? 's' : ''}`
+        const detalhes: string[] = []
+        if (placares > 0) detalhes.push(`${placares} placar${placares !== 1 ? 'es' : ''}`)
+        if (status > 0) detalhes.push(`${status} status`)
+        if (outros > 0) detalhes.push(`${outros} local/cidade`)
+        if (detalhes.length > 0) mensagem += ` (${detalhes.join(', ')})`
+
+        toast.success(mensagem, { duration: 5000 })
+      }
     } catch (err) { toast.error(err instanceof Error ? err.message : 'Erro ao sincronizar') }
     finally { setSyncing(false) }
   }
@@ -156,14 +196,44 @@ export default function AdminResultadosPage() {
       {syncResults && (
         <Card>
           <CardContent className="p-4 space-y-4">
-            <Badge variant="success">{syncResults.atualizados} jogo{syncResults.atualizados !== 1 ? 's' : ''} atualizado{syncResults.atualizados !== 1 ? 's' : ''}</Badge>
-            {syncResults.atualizados === 0 && <p className="text-sm text-muted-foreground">Nenhum jogo foi atualizado nesta sincronização.</p>}
-            {syncResults.resultados.length > 0 && (
+            <Badge variant={syncResults.atualizados > 0 ? 'success' : 'default'}>
+              {syncResults.atualizados > 0
+                ? `${syncResults.atualizados} jogo${syncResults.atualizados !== 1 ? 's' : ''} atualizado${syncResults.atualizados !== 1 ? 's' : ''}`
+                : 'Nenhuma atualização'}
+            </Badge>
+            {syncResults.atualizados === 0 && (
+              <p className="text-sm text-muted-foreground">Nenhum jogo foi atualizado nesta sincronização.</p>
+            )}
+            {syncResults.mudancas.length > 0 && (
               <div className="space-y-2">
-                {syncResults.resultados.map((r) => (
-                  <div key={r.sofascoreId} className="flex items-center justify-between p-3 bg-muted rounded-md">
-                    <span className="font-medium">{r.timeA} vs {r.timeB}</span>
-                    <Badge variant="info">{r.resultadoA} x {r.resultadoB}</Badge>
+                {syncResults.mudancas.map((m) => (
+                  <div key={m.sofascoreId} className="p-3 bg-muted rounded-md space-y-2">
+                    <div className="flex items-center justify-between flex-wrap gap-2">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        {m.grupo && <Badge variant="info">Grupo {m.grupo}</Badge>}
+                        <span className="font-medium">{m.timeA} vs {m.timeB}</span>
+                      </div>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        {m.mudouPlacar && (
+                          <Badge variant="success">
+                            {m.antes.resultadoA ?? '-'}x{m.antes.resultadoB ?? '-'} → {m.depois.resultadoA}x{m.depois.resultadoB}
+                          </Badge>
+                        )}
+                        {m.mudouStatus && (
+                          <Badge variant="warning">{m.antes.status} → {m.depois.status}</Badge>
+                        )}
+                        {m.mudouLocal && (
+                          <span className="text-xs text-muted-foreground">
+                            Local: {m.antes.local ?? '-'} → {m.depois.local}
+                          </span>
+                        )}
+                        {m.mudouCidade && (
+                          <span className="text-xs text-muted-foreground">
+                            Cidade: {m.antes.cidade ?? '-'} → {m.depois.cidade}
+                          </span>
+                        )}
+                      </div>
+                    </div>
                   </div>
                 ))}
               </div>
