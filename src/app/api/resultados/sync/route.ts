@@ -11,11 +11,17 @@ export async function POST(request: NextRequest) {
   try {
     const jogos = await getTodosJogos()
 
-    const sofascoreIds = jogos
+    const jogosPayload = jogos
       .filter((j) => j.sofascoreId)
-      .map((j) => j.sofascoreId!)
+      .map((j) => ({
+        sofascoreId: j.sofascoreId!,
+        timeA: j.timeA,
+        timeB: j.timeB,
+        dataHora: j.dataHora.toISOString(),
+        grupo: j.grupo ?? '',
+      }))
 
-    if (sofascoreIds.length === 0) {
+    if (jogosPayload.length === 0) {
       return NextResponse.json({
         success: true,
         atualizados: 0,
@@ -23,22 +29,14 @@ export async function POST(request: NextRequest) {
       })
     }
 
-    const resultados = await syncResultados(sofascoreIds)
+    const resultados = await syncResultados(jogosPayload)
 
-    const jogosBySofascoreId = new Map(
-      jogos
-        .filter((j) => j.sofascoreId)
-        .map((j) => [j.sofascoreId, j])
-    )
-
-    // Jogos com dados disponíveis (exceto not_found)
     const comDados = resultados.filter((r) => {
       if (typeof r.sofascoreId !== 'string' || r.sofascoreId.length === 0) return false
       if (r.status === 'not_found') return false
       return true
     })
 
-    // Jogos finalizados (com placar válido)
     const finalizados = comDados.filter((r) => {
       if (r.status !== 'finished') return false
       if (!Number.isInteger(r.resultadoA) || r.resultadoA < 0) return false
@@ -58,18 +56,17 @@ export async function POST(request: NextRequest) {
       resultadoB: number | null
     }> = []
 
-    // Atualizar metadados para todos com dados
     for (const resultado of comDados) {
-      const jogo = jogosBySofascoreId.get(resultado.sofascoreId)
+      const jogo = jogos.find((j) => j.sofascoreId === resultado.sofascoreId)
       if (!jogo) continue
 
       const isFinalizado = finalizados.some((f) => f.sofascoreId === resultado.sofascoreId)
 
       const data: Record<string, unknown> = {
         local: resultado.local ?? null,
-        cidade: resultado.cidade ?? null,
-        rankingTimeA: resultado.rankingTimeA ?? null,
-        rankingTimeB: resultado.rankingTimeB ?? null,
+        cidade: resultado.cidade ?? jogo.cidade ?? null,
+        rankingTimeA: null,
+        rankingTimeB: null,
       }
 
       if (isFinalizado) {

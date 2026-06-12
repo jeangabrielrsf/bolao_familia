@@ -1,4 +1,24 @@
-export async function syncResultados(sofascoreIds: string[]) {
+interface JogoPayload {
+  sofascoreId: string
+  timeA: string
+  timeB: string
+  dataHora: string
+  grupo: string
+}
+
+interface ResultadoSync {
+  sofascoreId: string
+  resultadoA: number
+  resultadoB: number
+  status: string
+  local?: string | null
+  cidade?: string | null
+  vencedor?: number | null
+  placarPenaltisA?: number | null
+  placarPenaltisB?: number | null
+}
+
+export async function syncResultados(jogos: JogoPayload[]) {
   if (!process.env.MICROSERVICE_URL) {
     throw new Error('MICROSERVICE_URL não configurada')
   }
@@ -11,7 +31,7 @@ export async function syncResultados(sofascoreIds: string[]) {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        sofascore_ids: sofascoreIds,
+        jogos,
         force_refresh: true,
       }),
       signal: controller.signal,
@@ -19,19 +39,7 @@ export async function syncResultados(sofascoreIds: string[]) {
 
     if (!response.ok) throw new Error('Falha ao sincronizar resultados')
 
-    return response.json() as Promise<Array<{
-      sofascoreId: string
-      resultadoA: number
-      resultadoB: number
-      status: string
-      local?: string | null
-      cidade?: string | null
-      vencedor?: number | null
-      rankingTimeA?: number | null
-      rankingTimeB?: number | null
-      placarPenaltisA?: number | null
-      placarPenaltisB?: number | null
-    }>>
+    return response.json() as Promise<ResultadoSync[]>
   } finally {
     clearTimeout(timeout)
   }
