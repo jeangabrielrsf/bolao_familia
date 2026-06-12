@@ -24,7 +24,7 @@ Sistema de bolão para a Copa do Mundo FIFA 2026. Permite que participantes regi
 
 ### Microserviço (resultados ao vivo)
 - **Python FastAPI** (`microservice/`)
-- **curl_cffi** para scraping de resultados (SofaScore)
+- **football-data.org** (API primária) + **worldcup26.ir** (fallback)
 - Deploy no **Fly.io** (`fly.toml` configurado para região `gru`)
 
 ### IA / Visão computacional
@@ -55,6 +55,7 @@ cp .env.example .env
 | `OPENCODE_GO_API_KEY` | Condicional | Chave da API OpenCode Go | OCR de fotos/PDFs (`src/lib/services/upload/ocr-vision.ts`) - necessário se usar upload de fotos ou PDFs |
 | `VISION_MODEL` | Não | Modelo de visão para OCR. Padrão: `qwen3.7-plus` | Mesmo arquivo acima |
 | `MICROSERVICE_URL` | Condicional | URL do microserviço de resultados | Sync de resultados ao vivo (`src/lib/services/resultados/client.ts`) - só needed se usar resultados automáticos |
+| `FOOTBALL_DATA_API_KEY` | Condicional | Chave da API football-data.org | Configurada no microserviço Fly.io (`fly secrets set`) |
 
 ### Gerar SESSION_SECRET
 
@@ -227,7 +228,11 @@ Acesse [http://localhost:3000](http://localhost:3000).
 
 ### Microserviço (opcional, para resultados ao vivo)
 
-O microserviço Python faz scraping de resultados do SofaScore e atualiza o banco.
+O microserviço Python busca resultados de duas APIs:
+- **football-data.org** (primária): API gratuita com placar, status, local, vencedor, penalidades
+- **worldcup26.ir** (fallback): API gratuita sem API key, usada quando football-data.org não tem dados
+
+#### Configuração
 
 ```bash
 cd microservice
@@ -247,6 +252,11 @@ uvicorn app.main:app --reload --port 8000
 No `.env` do projeto principal:
 ```
 MICROSERVICE_URL="http://localhost:8000"
+```
+
+Para produção, configure a API key no Fly.io:
+```bash
+fly secrets set FOOTBALL_DATA_API_KEY=sua-chave
 ```
 
 ---
@@ -364,6 +374,40 @@ Sistema que permite aos participantes preencherem os 39 jogos restantes da fase 
 
 ---
 
+## Resultados ao Vivo
+
+Sistema de sincronização automática de resultados dos jogos usando duas APIs:
+- **football-data.org** (primária): API gratuita com 10 req/min
+- **worldcup26.ir** (fallback): API gratuita sem API key
+
+### Fluxo de Sincronização
+
+1. Admin clica "Sincronizar Resultados" em `/admin/resultados`
+2. API envia contexto dos jogos (timeA, timeB, dataHora, grupo) para microserviço
+3. Microserviço faz match por grupo + data (tolerância 3h para fusos horários)
+4. **Comparação inteligente**: só atualiza jogos que realmente mudaram (placar, status, local, cidade)
+5. Logs detalhados no console mostram antes/depois de cada mudança
+6. Toast mostra resumo: quantos placares, status, locais mudaram
+7. Card de resultados mostra detalhes visuais de cada mudança
+
+### Match de Jogos
+
+- **Fase de grupos**: match por `grupo` + `dataHora` (tolerância 3h)
+- **Mata-mata**: match por nome dos times (dicionário PT→EN)
+- **Merge de dados**: football-data.org para `local`, worldcup26.ir para `cidade` se faltando
+
+### Arquivos Principais
+
+| Arquivo | Descrição |
+|---------|-----------|
+| `microservice/app/services/football_data.py` | Serviço football-data.org |
+| `microservice/app/services/worldcup26.py` | Serviço worldcup26.ir com mapeamento de fusos |
+| `microservice/app/routers/resultados.py` | Endpoint `/resultados/lote` |
+| `src/lib/services/resultados/client.ts` | Cliente HTTP que envia contexto dos jogos |
+| `src/app/api/resultados/sync/route.ts` | API route com comparação inteligente |
+
+---
+
 ## Scripts npm
 
 | Comando | Descrição |
@@ -403,7 +447,7 @@ Não esqueça de criar os buckets `fotos` e `palpites` no Storage.
 
 ### 2. Fly.io (microserviço Python)
 
-O microserviço faz scraping de resultados do SofaScore.
+O microserviço busca resultados de football-data.org (primário) e worldcup26.ir (fallback).
 
 #### Pré-requisitos
 

@@ -36,7 +36,7 @@ A Copa do Mundo 2026 terá **104 jogos** distribuídos em **13 fases**, com 48 s
 - **Auth:** JWT customizado (`jose`) + `bcryptjs`, cookie `admin_session`, middleware protege `/admin/*`
 - **Storage:** Supabase (buckets `fotos` e `palpites`)
 - **Parsing:** `xlsx` (Excel), `sharp` (imagens), OpenCode Go/Qwen3.7 Plus (OCR)
-- **Microserviço:** Python FastAPI (`microservice/`) — scraping SofaScore, deploy Fly.io (região `gru`)
+- **Microserviço:** Python FastAPI (`microservice/`) — football-data.org (primário) + worldcup26.ir (fallback), deploy Fly.io (região `gru`)
 - **Testes:** Jest 30 + React Testing Library
 
 ## Comandos
@@ -141,7 +141,7 @@ src/lib/
     resultados/      → client.ts (HTTP pro microserviço)
     scoring/         → calculator (testes)
   utils/             → constants.ts, types.ts, helpers.ts, date.ts (formatação timezone Brasília)
-microservice/        → FastAPI + curl_cffi (scraping SofaScore), deploy Fly.io
+microservice/        → FastAPI + football-data.org + worldcup26.ir, deploy Fly.io
 scripts/             → seed.ts (jogos + config), seed-admin.ts
 planilha/            → Bolão Copa do Mundo 2026.xlsx (template)
 docs/superpowers/    → specs e plans (superpowers workflow)
@@ -206,11 +206,37 @@ Sistema que permite aos participantes preencherem os 39 jogos restantes da fase 
 
 ## Resultados ao Vivo
 
-Microserviço Python em `microservice/` faz scraping do SofaScore via `curl_cffi`. Admin dispara sync em `/admin/resultados`. Cliente HTTP em `src/lib/services/resultados/client.ts` chama `POST /resultados/lote`.
+Microserviço Python em `microservice/` busca resultados de duas APIs:
+- **football-data.org** (primário): API gratuita com 10 req/min, retorna placar, status, local, vencedor, penalidades
+- **worldcup26.ir** (fallback): API gratuita sem API key, usada quando football-data.org não tem dados
+
+### Fluxo de Sincronização
+
+1. Admin clica "Sincronizar Resultados" em `/admin/resultados`
+2. `POST /api/resultados/sync` envia contexto dos jogos (timeA, timeB, dataHora, grupo) para microserviço
+3. Microserviço faz match por grupo + data (tolerância 3h para fusos horários)
+4. **Comparação inteligente**: só atualiza jogos que realmente mudaram (placar, status, local, cidade)
+5. Logs detalhados no console mostram antes/depois de cada mudança
+6. Toast mostra resumo: quantos placares, status, locais mudaram
+7. Card de resultados mostra detalhes visuais de cada mudança
+
+### Arquivos Principais
+
+- `microservice/app/services/football_data.py` - serviço football-data.org
+- `microservice/app/services/worldcup26.py` - serviço worldcup26.ir com mapeamento de fusos
+- `microservice/app/routers/resultados.py` - endpoint `/resultados/lote`
+- `src/lib/services/resultados/client.ts` - cliente HTTP que envia contexto dos jogos
+- `src/app/api/resultados/sync/route.ts` - API route com comparação inteligente
+
+### Match de Jogos
+
+- Fase de grupos: match por `grupo` + `dataHora` (tolerância 3h)
+- Mata-mata: match por nome dos times (dicionário PT→EN)
+- Merge de dados: football-data.org para `local`, worldcup26.ir para `cidade` se faltando
 
 ## Variáveis de Ambiente
 
-Ver `.env.example`. Obrigatórias: `DATABASE_URL`, `SUPABASE_URL`, `SUPABASE_SERVICE_KEY`, `ADMIN_PASSWORD`, `SESSION_SECRET`. Condicionais: `OPENCODE_GO_API_KEY` (OCR), `MICROSERVICE_URL` (resultados ao vivo).
+Ver `.env.example`. Obrigatórias: `DATABASE_URL`, `SUPABASE_URL`, `SUPABASE_SERVICE_KEY`, `ADMIN_PASSWORD`, `SESSION_SECRET`. Condicionais: `OPENCODE_GO_API_KEY` (OCR), `MICROSERVICE_URL` (resultados ao vivo), `FOOTBALL_DATA_API_KEY` (API de resultados, configurada no microserviço Fly.io).
 
 ## Trabalho Pendente
 
