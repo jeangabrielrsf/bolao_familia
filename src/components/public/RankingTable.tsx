@@ -1,4 +1,5 @@
 import Image from "next/image"
+import Link from "next/link"
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table"
 import type { RankingEntry } from "@/lib/utils/types"
 
@@ -36,13 +37,24 @@ export function RankingTable({ ranking }: RankingTableProps) {
               <TableCell>{posicaoBadges[posicao] ? <span className="text-lg">{posicaoBadges[posicao]}</span> : <span className="text-muted-foreground font-medium">{posicao}</span>}</TableCell>
               <TableCell>
                 <div className="flex items-center gap-3">
-                  {entry.fotoUrl ? (
-                    <Image src={entry.fotoUrl} alt={entry.nomeGrupo} width={32} height={32} className="rounded-full object-cover" />
-                  ) : (
-                    <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-bold">{entry.nomeParticipante.charAt(0).toUpperCase()}</div>
-                  )}
+                  <Link
+                    href={`/participantes/${entry.participanteId}`}
+                    aria-label={`Ver perfil de ${entry.nomeParticipante}`}
+                    className="rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+                  >
+                    {entry.fotoUrl ? (
+                      <Image src={entry.fotoUrl} alt={`Foto de ${entry.nomeParticipante}`} width={32} height={32} className="rounded-full object-cover" />
+                    ) : (
+                      <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-bold">{entry.nomeParticipante.charAt(0).toUpperCase()}</div>
+                    )}
+                  </Link>
                   <div className="flex flex-col">
-                    <span className="font-medium">{entry.nomeGrupo}</span>
+                    <Link
+                      href={`/participantes/${entry.participanteId}`}
+                      className="font-medium rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+                    >
+                      {entry.nomeGrupo}
+                    </Link>
                   </div>
                 </div>
               </TableCell>
