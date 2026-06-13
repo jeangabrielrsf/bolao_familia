@@ -353,7 +353,13 @@ Spec detalhada em `docs/superpowers/specs/2026-06-12-auto-sync-resultados-design
 - **Endpoint target:** `POST /resultados/sincronizar` no microserviço (autentica, adquire lock, escreve DB).
 - **Bypass do Next.js:** o auto-sync não passa pelo Next.js. Admin manual pode continuar via Next.js (legado) ou via curl direto.
 
-**Status atual:** Spec escrita e validada. **Não implementado** (próxima fase: criar `.github/workflows/sync-resultados.yml` e adicionar secrets no GitHub).
+**Status atual:** ✅ **Implementado e deployado em produção.**
+
+- Microserviço refatorado deployado no Fly.io (`bolao-copa-microservice.fly.dev`)
+- Endpoint `POST /resultados/sincronizar` com auth + lock + write direto
+- Workflow `.github/workflows/sync-resultados.yml` criado
+- Secrets deployados no Fly.io: `DATABASE_URL`, `CRON_SECRET`
+- Pendente: adicionar `MICROSERVICE_URL` e `CRON_SECRET` como secrets no GitHub, fazer push, validar primeira execução
 
 ## Variáveis de Ambiente
 
@@ -361,7 +367,7 @@ Ver `.env.example`. Obrigatórias: `DATABASE_URL`, `SUPABASE_URL`, `SUPABASE_SER
 
 ## Trabalho Pendente
 
-- **Auto-Sync de Resultados (GitHub Actions):** Spec completa em `docs/superpowers/specs/2026-06-12-auto-sync-resultados-design.md`. Validação local da lógica de sync já feita (DB de teste + microserviço com write). Próximos passos: criar `.github/workflows/sync-resultados.yml`, adicionar secrets no GitHub (`MICROSERVICE_URL`, `CRON_SECRET`), deploy do microserviço refatorado no Fly.io, testar em produção com cuidado.
+- **Auto-Sync de Resultados (GitHub Actions):** ✅ Deployado, falta adicionar secrets no GitHub (`MICROSERVICE_URL` + `CRON_SECRET`) e validar primeira execução. Spec completa em `docs/superpowers/specs/2026-06-12-auto-sync-resultados-design.md`.
 - **Upload de PDF:** Implementado com `pdfjs-dist` + `@napi-rs/canvas` para converter PDF em imagens PNG, depois OCR via OpenCode Go/Qwen3.7 Plus.
 - **Refator do endpoint admin `/api/resultados/sync` (Next.js):** Migrar para usar a mesma service function que o endpoint auto-sync do microserviço, eliminando a duplicação de lógica de comparação (atualmente existe em Next.js `route.ts` e Python `sync_writer.py`).
 
