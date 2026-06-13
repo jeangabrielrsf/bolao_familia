@@ -102,4 +102,20 @@ describe('ProximosJogosTabs', () => {
 
     expect(screen.getByText(/nenhum jogo/i)).toBeInTheDocument()
   })
+
+  it('tab bar usa layout responsivo (flex-1 + w-full) para caber em telas pequenas', () => {
+    render(
+      <ProximosJogosTabs jogosHoje={[makeJogo()]} jogosAmanha={[]} jogosDepois={[]} />
+    )
+
+    const tabs = screen.getAllByRole('tab')
+    tabs.forEach((tab) => {
+      expect(tab).toHaveClass('flex-1')
+      expect(tab).toHaveClass('sm:flex-none')
+    })
+
+    const tabBar = tabs[0].parentElement
+    expect(tabBar).toHaveClass('w-full')
+    expect(tabBar).toHaveClass('sm:inline-flex')
+  })
 })

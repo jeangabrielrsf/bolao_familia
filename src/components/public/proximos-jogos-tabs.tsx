@@ -88,8 +88,8 @@ export function ProximosJogosTabs({ jogosHoje, jogosAmanha, jogosDepois }: Proxi
         </Button>
       </div>
 
-      <div className="relative inline-block" ref={wrapRef}>
-        <div className="inline-flex h-11 items-center rounded-md bg-muted p-1 text-muted-foreground relative">
+      <div className="relative w-full sm:inline-block sm:w-auto" ref={wrapRef}>
+        <div className="flex w-full h-11 items-center rounded-md bg-muted p-1 text-muted-foreground relative sm:inline-flex sm:w-auto">
           <div
             ref={indicatorRef}
             className="absolute top-1 bottom-1 rounded-sm bg-primary shadow-sm transition-[left,width] duration-300 ease-out"
@@ -108,7 +108,7 @@ export function ProximosJogosTabs({ jogosHoje, jogosAmanha, jogosDepois }: Proxi
               aria-selected={active === d.key}
               data-tab={d.key}
               className={cn(
-                'relative z-10 inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-sm px-4 py-1.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                'relative z-10 inline-flex flex-1 sm:flex-none items-center justify-center gap-1.5 sm:gap-2 whitespace-nowrap rounded-sm px-3 sm:px-4 py-1.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
                 active === d.key
                   ? 'text-primary-foreground'
                   : 'text-muted-foreground hover:text-foreground'
