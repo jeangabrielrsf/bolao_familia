@@ -1,0 +1,21 @@
+services:
+  postgres-test:
+    # Versão deve casar com o Supabase (Postgres 17) para pg_dump funcionar
+    image: postgres:17-alpine
+    container_name: bolao-test-db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: test
+      POSTGRES_DB: bolao_test
+    ports:
+      - "5433:5432"
+    volumes:
+      - bolao-test-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d bolao_test"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  bolao-test-data:
