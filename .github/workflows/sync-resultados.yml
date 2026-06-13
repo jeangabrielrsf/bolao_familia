@@ -1,0 +1,67 @@
+name: Sync Resultados Copa
+
+# Dispara POST /resultados/sincronizar no microserviço Fly.io.
+# Mantém placares atualizados sem admin precisar clicar manualmente.
+#
+# SEGREDO NECESSÁRIO (GitHub repo > Settings > Secrets and variables > Actions):
+#   MICROSERVICE_URL — ex: https://bolao-copa-microservice.fly.dev
+#   CRON_SECRET      — mesmo valor configurado em `fly secrets set CRON_SECRET`
+#
+# Schedule: cobre janelas de jogos BRT com folga:
+#   UTC 16-23 = BRT 13-20 (jogos diurnos)
+#   UTC 0-4   = BRT 21-01 (jogos noturnos)
+#   */15 = 4 invocações/hora (max ~25 min entre API atualizar e sync pegar)
+#
+# Para disparar manualmente: Actions > Sync Resultados Copa > Run workflow
+on:
+  schedule:
+    - cron: '*/15 16-23 * * *'
+    - cron: '*/15 0-4 * * *'
+  workflow_dispatch:
+    inputs:
+      window_hours:
+        description: 'Janela de jogos ativos (horas)'
+        required: false
+        default: '12'
+        type: string
+
+concurrency:
+  group: sync-resultados
+  cancel-in-progress: false  # Não cancela — espera terminar (timeout 6min é suficiente)
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - name: Disparar sync no microserviço
+        env:
+          MICROSERVICE_URL: ${{ secrets.MICROSERVICE_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          WINDOW_HOURS: ${{ github.event.inputs.window_hours || '12' }}
+        run: |
+          if [ -z "$MICROSERVICE_URL" ] || [ -z "$CRON_SECRET" ]; then
+            echo "::error::Secrets MICROSERVICE_URL e/ou CRON_SECRET não configurados"
+            echo "Configure em: Settings > Secrets and variables > Actions"
+            exit 1
+          fi
+
+          echo "→ POST $MICROSERVICE_URL/resultados/sincronizar"
+          echo "  window=$WINDOW_HOURS origem=github-actions"
+
+          HTTP_CODE=$(curl -sS -o /tmp/sync_response.json -w "%{http_code}" \
+            -X POST "$MICROSERVICE_URL/resultados/sincronizar" \
+            -H "X-Cron-Secret: $CRON_SECRET" \
+            -H "X-Origem: github-actions" \
+            -H "X-Window-Hours: $WINDOW_HOURS" \
+            --max-time 300)
+
+          echo "  HTTP $HTTP_CODE"
+          echo "  Resposta:"
+          cat /tmp/sync_response.json | python3 -m json.tool | sed 's/^/    /'
+
+          # Exit code 0 mesmo se skipped (lock ativo, sem jogos) — não é falha
+          if [ "$HTTP_CODE" != "200" ]; then
+            echo "::error::Sync retornou HTTP $HTTP_CODE"
+            exit 1
+          fi

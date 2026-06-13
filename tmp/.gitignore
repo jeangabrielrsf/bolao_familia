@@ -1,0 +1,5 @@
+backup.sql
+jogos_*.txt
+*.log
+pg_dump_err.log
+psql_restore.log

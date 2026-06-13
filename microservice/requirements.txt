@@ -3,3 +3,4 @@ uvicorn==0.34.*
 curl_cffi==0.9.*
 pydantic==2.*
 pydantic-settings==2.*
+asyncpg==0.30.*
