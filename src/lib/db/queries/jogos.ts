@@ -1,16 +1,26 @@
 import { prisma } from '../client'
-import { inicioDiaBrasilia, fimDiaBrasilia } from '@/lib/utils/date'
+import { inicioDiaBrasilia, fimDiaBrasilia, inicioDiaBrasiliaMais, fimDiaBrasiliaMais } from '@/lib/utils/date'
 
-export async function getJogosDoDia() {
-  const inicio = inicioDiaBrasilia()
-  const fim = fimDiaBrasilia()
-
+export async function getJogosPorPeriodo(inicio: Date, fim: Date) {
   return prisma.jogo.findMany({
     where: {
       dataHora: { gte: inicio, lte: fim },
     },
     orderBy: { dataHora: 'asc' },
   })
+}
+
+export async function getJogosDoDia() {
+  return getJogosPorPeriodo(inicioDiaBrasilia(), fimDiaBrasilia())
+}
+
+export async function getProximosJogos() {
+  const [hoje, amanha, depois] = await Promise.all([
+    getJogosPorPeriodo(inicioDiaBrasilia(), fimDiaBrasilia()),
+    getJogosPorPeriodo(inicioDiaBrasiliaMais(1), fimDiaBrasiliaMais(1)),
+    getJogosPorPeriodo(inicioDiaBrasiliaMais(2), fimDiaBrasiliaMais(2)),
+  ])
+  return { hoje, amanha, depois }
 }
 
 export async function getTodosJogos() {

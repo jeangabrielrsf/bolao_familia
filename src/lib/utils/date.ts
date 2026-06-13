@@ -39,3 +39,11 @@ export function fimDiaBrasilia(): Date {
   const inicio = inicioDiaBrasilia()
   return new Date(inicio.getTime() + 23 * 60 * 60 * 1000 + 59 * 60 * 1000 + 59 * 1000 + 999)
 }
+
+export function inicioDiaBrasiliaMais(dias: number): Date {
+  return new Date(inicioDiaBrasilia().getTime() + dias * 24 * 60 * 60 * 1000)
+}
+
+export function fimDiaBrasiliaMais(dias: number): Date {
+  return new Date(fimDiaBrasilia().getTime() + dias * 24 * 60 * 60 * 1000)
+}

@@ -7,6 +7,7 @@ const config: Config = {
       tsconfig: 'tsconfig.json',
     }],
   },
+  setupFilesAfterEnv: ['<rootDir>/jest.setup.ts'],
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1',
   },
