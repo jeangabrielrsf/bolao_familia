@@ -114,8 +114,11 @@ async def sincronizar_jogos(
 
         is_finalizado = sofascore_id in finalizados_set
 
-        # Calcula novos valores (espelho de route.ts linhas 89-96)
-        novo_local: str | None = resultado.get("local")
+        # Calcula novos valores (espelho de route.ts linhas 89-96).
+        # IMPORTANTE: se a API não retornar `local` ou `cidade`, preservar
+        # o valor existente no DB em vez de sobrescrever com None
+        # (regressão do bug que apagava nomes de estádios).
+        novo_local: str | None = resultado.get("local") or jogo.get("local")
         nova_cidade: str | None = resultado.get("cidade") or jogo.get("cidade")
         novo_resultado_a: int | None = (
             resultado.get("resultadoA") if is_finalizado else None

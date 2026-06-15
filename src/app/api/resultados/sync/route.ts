@@ -86,7 +86,7 @@ export async function POST(request: NextRequest) {
 
       const isFinalizado = finalizados.some((f) => f.sofascoreId === resultado.sofascoreId)
 
-      const novoLocal = resultado.local ?? null
+      const novoLocal = resultado.local ?? jogo.local ?? null
       const novaCidade = resultado.cidade ?? jogo.cidade ?? null
       const novoResultadoA = isFinalizado ? resultado.resultadoA : null
       const novoResultadoB = isFinalizado ? resultado.resultadoB : null
