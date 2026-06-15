@@ -114,14 +114,14 @@ export function ProximosJogosTabs({ jogosOntem, jogosHoje, jogosAmanha, jogosDep
               aria-selected={active === d.key}
               data-tab={d.key}
               className={cn(
-                'relative z-10 inline-flex flex-1 sm:flex-none items-center justify-center gap-1.5 sm:gap-2 whitespace-nowrap rounded-sm px-3 sm:px-4 py-1.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                'relative z-10 inline-flex flex-1 sm:flex-none items-center justify-center gap-1 sm:gap-2 whitespace-nowrap rounded-sm px-2 sm:px-4 py-1.5 text-xs sm:text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
                 active === d.key
                   ? 'text-primary-foreground'
                   : 'text-muted-foreground hover:text-foreground'
               )}
             >
               <span>{d.label}</span>
-              <span className="text-xs opacity-70">{DATA_LABELS[d.key]}</span>
+              <span className="hidden sm:inline text-xs opacity-70">{DATA_LABELS[d.key]}</span>
             </button>
           ))}
         </div>
