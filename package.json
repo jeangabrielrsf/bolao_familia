@@ -7,7 +7,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "jest"
+    "test": "jest",
+    "normalize-photos": "tsx --env-file=.env scripts/normalize-photos.ts",
+    "normalize-photos:dry": "tsx --env-file=.env scripts/normalize-photos.ts --dry-run"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.8.0",

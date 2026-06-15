@@ -10,10 +10,10 @@ import { FASE_LABELS } from '@/lib/utils/constants'
 import { formatarData, formatarHora } from '@/lib/utils/date'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
 import { Flag } from '@/components/ui/flag'
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table'
-import { Calendar, ChevronLeft, MapPin, Trophy } from 'lucide-react'
+import { BackButton } from '@/components/public/BackButton'
+import { Calendar, MapPin, Trophy } from 'lucide-react'
 
 export const dynamic = 'force-dynamic'
 
@@ -77,9 +77,7 @@ export default async function JogoDetailPage({
 
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8 space-y-6 sm:space-y-8 animate-fade-in-up">
-      <Button variant="ghost" size="sm" asChild>
-        <Link href="/jogos"><ChevronLeft className="w-4 h-4" /> Voltar aos jogos</Link>
-      </Button>
+      <BackButton />
 
       <Card>
         <CardContent className="p-4 sm:p-6 space-y-4">
