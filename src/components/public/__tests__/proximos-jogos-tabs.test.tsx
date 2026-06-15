@@ -31,11 +31,12 @@ function makeJogo(overrides: Partial<Jogo> = {}): Jogo {
 }
 
 describe('ProximosJogosTabs', () => {
-  it('renderiza as 3 abas', () => {
+  it('renderiza as 4 abas', () => {
     render(
-      <ProximosJogosTabs jogosHoje={[makeJogo()]} jogosAmanha={[]} jogosDepois={[]} />
+      <ProximosJogosTabs jogosOntem={[]} jogosHoje={[makeJogo()]} jogosAmanha={[]} jogosDepois={[]} />
     )
 
+    expect(screen.getByRole('tab', { name: /ontem/i })).toBeInTheDocument()
     expect(screen.getByRole('tab', { name: /hoje/i })).toBeInTheDocument()
     expect(screen.getByRole('tab', { name: /amanhã/i })).toBeInTheDocument()
     expect(screen.getByRole('tab', { name: /depois/i })).toBeInTheDocument()
@@ -43,7 +44,7 @@ describe('ProximosJogosTabs', () => {
 
   it('marca "Hoje" como ativa por padrão', () => {
     render(
-      <ProximosJogosTabs jogosHoje={[makeJogo()]} jogosAmanha={[]} jogosDepois={[]} />
+      <ProximosJogosTabs jogosOntem={[]} jogosHoje={[makeJogo()]} jogosAmanha={[]} jogosDepois={[]} />
     )
 
     const hojeTab = screen.getByRole('tab', { name: /hoje/i })
@@ -53,6 +54,7 @@ describe('ProximosJogosTabs', () => {
   it('exibe os jogos do dia ativo', () => {
     render(
       <ProximosJogosTabs
+        jogosOntem={[]}
         jogosHoje={[makeJogo({ timeA: 'Brasil' })]}
         jogosAmanha={[makeJogo({ id: 'j2', timeA: 'França' })]}
         jogosDepois={[]}
@@ -66,6 +68,7 @@ describe('ProximosJogosTabs', () => {
   it('troca para os jogos de Amanhã ao clicar na aba', () => {
     render(
       <ProximosJogosTabs
+        jogosOntem={[]}
         jogosHoje={[makeJogo({ timeA: 'Brasil' })]}
         jogosAmanha={[makeJogo({ id: 'j2', timeA: 'França' })]}
         jogosDepois={[]}
@@ -83,6 +86,7 @@ describe('ProximosJogosTabs', () => {
   it('troca para os jogos de Depois ao clicar na aba', () => {
     render(
       <ProximosJogosTabs
+        jogosOntem={[]}
         jogosHoje={[]}
         jogosAmanha={[]}
         jogosDepois={[makeJogo({ id: 'j3', timeA: 'Argentina' })]}
@@ -97,7 +101,7 @@ describe('ProximosJogosTabs', () => {
 
   it('mostra estado vazio quando não há jogos no dia ativo', () => {
     render(
-      <ProximosJogosTabs jogosHoje={[]} jogosAmanha={[]} jogosDepois={[]} />
+      <ProximosJogosTabs jogosOntem={[]} jogosHoje={[]} jogosAmanha={[]} jogosDepois={[]} />
     )
 
     expect(screen.getByText(/nenhum jogo/i)).toBeInTheDocument()
@@ -105,7 +109,7 @@ describe('ProximosJogosTabs', () => {
 
   it('tab bar usa layout responsivo (flex-1 + w-full) para caber em telas pequenas', () => {
     render(
-      <ProximosJogosTabs jogosHoje={[makeJogo()]} jogosAmanha={[]} jogosDepois={[]} />
+      <ProximosJogosTabs jogosOntem={[]} jogosHoje={[makeJogo()]} jogosAmanha={[]} jogosDepois={[]} />
     )
 
     const tabs = screen.getAllByRole('tab')

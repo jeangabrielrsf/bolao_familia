@@ -33,6 +33,7 @@ export default async function HomePage() {
       />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-10">
         <ProximosJogosTabs
+          jogosOntem={proximos.ontem}
           jogosHoje={proximos.hoje}
           jogosAmanha={proximos.amanha}
           jogosDepois={proximos.depois}

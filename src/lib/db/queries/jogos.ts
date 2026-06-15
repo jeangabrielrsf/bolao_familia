@@ -15,12 +15,13 @@ export async function getJogosDoDia() {
 }
 
 export async function getProximosJogos() {
-  const [hoje, amanha, depois] = await Promise.all([
+  const [ontem, hoje, amanha, depois] = await Promise.all([
+    getJogosPorPeriodo(inicioDiaBrasiliaMais(-1), fimDiaBrasiliaMais(-1)),
     getJogosPorPeriodo(inicioDiaBrasilia(), fimDiaBrasilia()),
     getJogosPorPeriodo(inicioDiaBrasiliaMais(1), fimDiaBrasiliaMais(1)),
     getJogosPorPeriodo(inicioDiaBrasiliaMais(2), fimDiaBrasiliaMais(2)),
   ])
-  return { hoje, amanha, depois }
+  return { ontem, hoje, amanha, depois }
 }
 
 export async function getTodosJogos() {

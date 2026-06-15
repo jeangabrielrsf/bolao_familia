@@ -10,43 +10,49 @@ import { ChevronRight } from 'lucide-react'
 import { formatarData, inicioDiaBrasilia, inicioDiaBrasiliaMais } from '@/lib/utils/date'
 import { cn } from '@/lib/utils'
 
-type DiaKey = 'hoje' | 'amanha' | 'depois'
+type DiaKey = 'ontem' | 'hoje' | 'amanha' | 'depois'
 
 const DIAS: { key: DiaKey; label: string }[] = [
+  { key: 'ontem', label: 'Ontem' },
   { key: 'hoje', label: 'Hoje' },
   { key: 'amanha', label: 'Amanhã' },
   { key: 'depois', label: 'Depois' },
 ]
 
 const DATA_LABELS: Record<DiaKey, string> = {
+  ontem: formatarData(inicioDiaBrasiliaMais(-1)),
   hoje: formatarData(inicioDiaBrasilia()),
   amanha: formatarData(inicioDiaBrasiliaMais(1)),
   depois: formatarData(inicioDiaBrasiliaMais(2)),
 }
 
 const VAZIO_MSG: Record<DiaKey, string> = {
+  ontem: 'Nenhum jogo ontem',
   hoje: 'Nenhum jogo hoje',
   amanha: 'Nenhum jogo amanhã',
   depois: 'Nenhum jogo depois de amanhã',
 }
 
 interface ProximosJogosTabsProps {
+  jogosOntem: Jogo[]
   jogosHoje: Jogo[]
   jogosAmanha: Jogo[]
   jogosDepois: Jogo[]
 }
 
-export function ProximosJogosTabs({ jogosHoje, jogosAmanha, jogosDepois }: ProximosJogosTabsProps) {
+export function ProximosJogosTabs({ jogosOntem, jogosHoje, jogosAmanha, jogosDepois }: ProximosJogosTabsProps) {
   const [active, setActive] = useState<DiaKey>('hoje')
   const wrapRef = useRef<HTMLDivElement>(null)
   const indicatorRef = useRef<HTMLDivElement>(null)
   const btnRefs = useRef<Record<DiaKey, HTMLButtonElement | null>>({
+    ontem: null,
     hoje: null,
     amanha: null,
     depois: null,
   })
 
   const jogosPorDia: Record<DiaKey, Jogo[]> = {
+    ontem: jogosOntem,
     hoje: jogosHoje,
     amanha: jogosAmanha,
     depois: jogosDepois,
