@@ -44,6 +44,9 @@ export default async function JogoDetailPage({
   if (!jogo) notFound()
 
   const rankingMap = new Map(ranking.map((r, idx) => [r.palpiteGrupoId, { ...r, posicao: idx + 1 }]))
+  const placarVisivel = jogo.status === 'finalizado' || jogo.status === 'em_andamento'
+  const placarAExibir = jogo.resultadoA ?? 0
+  const placarBExibir = jogo.resultadoB ?? 0
 
   const palpitesComPontos = jogo.palpites.map((palpite) => {
     let pontos = 0
@@ -106,9 +109,9 @@ export default async function JogoDetailPage({
               <span className="text-sm sm:text-xl md:text-2xl font-display tracking-wide truncate">{jogo.timeA}</span>
             </div>
             <div className="shrink-0 text-center px-2">
-              {jogo.status === 'finalizado' ? (
+              {placarVisivel ? (
                 <div>
-                  <span className="text-2xl sm:text-3xl md:text-4xl font-display font-bold text-primary tabular-nums">{jogo.resultadoA} - {jogo.resultadoB}</span>
+                  <span className="text-2xl sm:text-3xl md:text-4xl font-display font-bold text-primary tabular-nums">{placarAExibir} - {placarBExibir}</span>
                   {jogo.fase !== 'grupos' && jogo.placarPenaltisA !== null && jogo.placarPenaltisB !== null && (
                     <div className="text-xs sm:text-sm text-muted-foreground mt-1">
                       ({jogo.placarPenaltisA} - {jogo.placarPenaltisB} pênaltis)

@@ -30,6 +30,10 @@ export function GameCard({ id, timeA, timeB, dataHora, grupo, fase, resultadoA, 
   const dataFormatada = formatarData(dataHora)
   const horaFormatada = formatarHora(dataHora)
   const finalizado = status === "finalizado"
+  const emAndamento = status === "em_andamento"
+  const placarVisivel = finalizado || emAndamento
+  const placarAExibir = resultadoA ?? 0
+  const placarBExibir = resultadoB ?? 0
   const temPenaltis = finalizado && fase !== 'grupos' && (placarPenaltisA !== null && placarPenaltisA !== undefined)
   const isBrasil = timeA === 'Brasil' || timeB === 'Brasil'
 
@@ -49,7 +53,7 @@ export function GameCard({ id, timeA, timeB, dataHora, grupo, fase, resultadoA, 
           </div>
         </div>
         
-        {finalizado && (local || cidade) && (
+        {(local || cidade) && (
           <p className="text-xs text-muted-foreground text-center flex items-center justify-center gap-1">
             <MapPin className="w-3 h-3" />
             {local}{cidade ? `, ${cidade}` : ''}
@@ -63,9 +67,9 @@ export function GameCard({ id, timeA, timeB, dataHora, grupo, fase, resultadoA, 
             <span className="font-display text-base sm:text-lg tracking-wide leading-tight">{timeA}</span>
           </div>
           <div className="shrink-0 text-center">
-            {finalizado ? (
+            {placarVisivel ? (
               <div>
-                <span className="text-xl sm:text-2xl font-display font-bold text-primary tabular-nums">{resultadoA} - {resultadoB}</span>
+                <span className="text-xl sm:text-2xl font-display font-bold text-primary tabular-nums">{placarAExibir} - {placarBExibir}</span>
                 {temPenaltis && (
                   <div className="text-[10px] text-muted-foreground mt-0.5">
                     ({placarPenaltisA} - {placarPenaltisB} pên.)
