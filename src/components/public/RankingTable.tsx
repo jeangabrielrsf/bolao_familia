@@ -40,10 +40,12 @@ export function RankingTable({ ranking }: RankingTableProps) {
                   <Link
                     href={`/participantes/${entry.participanteId}`}
                     aria-label={`Ver perfil de ${entry.nomeParticipante}`}
-                    className="rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+                    className="block rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 shrink-0"
                   >
                     {entry.fotoUrl ? (
-                      <Image src={entry.fotoUrl} alt={`Foto de ${entry.nomeParticipante}`} width={32} height={32} className="rounded-full object-cover" />
+                      <div className="w-8 h-8 rounded-full overflow-hidden bg-muted relative">
+                        <Image src={entry.fotoUrl} alt={`Foto de ${entry.nomeParticipante}`} fill sizes="32px" className="object-cover" />
+                      </div>
                     ) : (
                       <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-bold">{entry.nomeParticipante.charAt(0).toUpperCase()}</div>
                     )}

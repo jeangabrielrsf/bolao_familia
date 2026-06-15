@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
+import sharp from 'sharp'
+import { randomUUID } from 'crypto'
 import { requireAdmin } from '@/lib/auth/middleware'
 import {
   getTodosParticipantes,
@@ -10,6 +12,9 @@ import { prisma } from '@/lib/db/client'
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024
 const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp']
+const FOTO_SIZE = 512
+const FOTO_QUALITY = 85
+const FOTO_MIN_SIZE = 100
 
 function extractStoragePath(url: string): string {
   const marker = '/fotos/'
@@ -22,6 +27,22 @@ function validateFoto(foto: File): string | null {
   if (foto.size > MAX_FILE_SIZE) return 'Foto deve ter no máximo 5MB'
   if (!ALLOWED_MIME_TYPES.includes(foto.type)) return 'Formato de imagem inválido. Use JPEG, PNG ou WebP'
   return null
+}
+
+async function processFoto(buffer: Buffer): Promise<{ buffer: Buffer; path: string; contentType: string }> {
+  const metadata = await sharp(buffer).metadata()
+  if ((metadata.width ?? 0) < FOTO_MIN_SIZE || (metadata.height ?? 0) < FOTO_MIN_SIZE) {
+    throw new Error(`Foto deve ter no mínimo ${FOTO_MIN_SIZE}x${FOTO_MIN_SIZE} pixels`)
+  }
+  const processed = await sharp(buffer)
+    .resize(FOTO_SIZE, FOTO_SIZE, { fit: 'cover', position: 'center' })
+    .webp({ quality: FOTO_QUALITY })
+    .toBuffer()
+  return {
+    buffer: processed,
+    path: `participantes/${Date.now()}-${randomUUID()}.webp`,
+    contentType: 'image/webp',
+  }
 }
 
 export async function GET(request: NextRequest) {
@@ -58,8 +79,8 @@ export async function POST(request: NextRequest) {
         }
         const { uploadFile } = await import('@/lib/services/storage/supabase')
         const buffer = Buffer.from(await foto.arrayBuffer())
-        const path = `participantes/${Date.now()}-${foto.name}`
-        fotoUrl = await uploadFile('fotos', path, buffer, foto.type || 'image/jpeg')
+        const processed = await processFoto(buffer)
+        fotoUrl = await uploadFile('fotos', processed.path, processed.buffer, processed.contentType)
       }
     } else {
       const body = await request.json()
@@ -103,8 +124,8 @@ export async function PUT(request: NextRequest) {
         const { uploadFile, deleteFile } = await import('@/lib/services/storage/supabase')
         const existente = await prisma.participante.findUnique({ where: { id: id! }, select: { fotoUrl: true } })
         const buffer = Buffer.from(await foto.arrayBuffer())
-        const path = `participantes/${Date.now()}-${foto.name}`
-        fotoUrl = await uploadFile('fotos', path, buffer, foto.type || 'image/jpeg')
+        const processed = await processFoto(buffer)
+        fotoUrl = await uploadFile('fotos', processed.path, processed.buffer, processed.contentType)
         if (existente?.fotoUrl) {
           try { await deleteFile('fotos', extractStoragePath(existente.fotoUrl)) } catch { /* ignore */ }
         }
