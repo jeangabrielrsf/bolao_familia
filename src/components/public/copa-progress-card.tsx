@@ -9,44 +9,16 @@ interface CopaProgressCardProps {
 }
 
 export function CopaProgressCard({ percentual, finalizados, total, href }: CopaProgressCardProps) {
-  const dasharray = `${percentual} 100`
-
   const content = (
     <Card
       role="group"
       aria-label={`Copa: ${percentual} por cento concluído, ${finalizados} de ${total} jogos`}
-      className="w-full"
+      className="w-full h-full"
     >
-      <CardContent className="p-4 flex flex-row items-center justify-center sm:justify-start gap-3 text-center sm:text-left">
-        <div className="shrink-0 text-primary">
-          <svg viewBox="0 0 36 36" className="w-10 h-10 sm:w-12 sm:h-12 -rotate-90" aria-hidden="true">
-            <circle
-              cx="18"
-              cy="18"
-              r="15.9"
-              fill="none"
-              className="text-border"
-              stroke="currentColor"
-              strokeWidth="2.5"
-            />
-            <circle
-              cx="18"
-              cy="18"
-              r="15.9"
-              fill="none"
-              className="text-primary"
-              stroke="currentColor"
-              strokeWidth="2.5"
-              strokeDasharray={dasharray}
-              strokeLinecap="round"
-            />
-          </svg>
-        </div>
-        <div className="min-w-0">
-          <p className="text-sm text-muted-foreground">Copa</p>
-          <p className="text-xl font-display text-primary truncate">{percentual}%</p>
-          <p className="text-xs text-muted-foreground">concluído</p>
-        </div>
+      <CardContent className="p-4 h-full flex flex-col items-center justify-center text-center">
+        <p className="text-sm text-muted-foreground">Copa</p>
+        <p className="text-xl font-display text-primary truncate">{percentual}%</p>
+        <p className="text-xs text-muted-foreground">concluído</p>
       </CardContent>
     </Card>
   )

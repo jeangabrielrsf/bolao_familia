@@ -22,16 +22,6 @@ describe('CopaProgressCard', () => {
     expect(screen.getByText('concluído')).toBeInTheDocument()
   })
 
-  it('SVG do anel tem stroke-dasharray correspondente ao percentual', () => {
-    const { container } = render(
-      <CopaProgressCard percentual={25} finalizados={26} total={104} />
-    )
-
-    const arc = container.querySelector('circle[stroke-dasharray]')
-    expect(arc).toBeInTheDocument()
-    expect(arc).toHaveAttribute('stroke-dasharray', '25 100')
-  })
-
   it('tem aria-label descritivo', () => {
     render(
       <CopaProgressCard percentual={14} finalizados={15} total={104} />
@@ -58,22 +48,11 @@ describe('CopaProgressCard', () => {
     expect(screen.queryByRole('link')).not.toBeInTheDocument()
   })
 
-  it('edge case: total=0 mostra 0% sem arco (dasharray="0 100")', () => {
-    const { container } = render(
+  it('edge case: total=0 mostra 0%', () => {
+    render(
       <CopaProgressCard percentual={0} finalizados={0} total={0} />
     )
 
-    const arc = container.querySelector('circle[stroke-dasharray]')
-    expect(arc).toHaveAttribute('stroke-dasharray', '0 100')
     expect(screen.getByText('0%')).toBeInTheDocument()
-  })
-
-  it('edge case: 100% mostra arco completo (dasharray="100 100")', () => {
-    const { container } = render(
-      <CopaProgressCard percentual={100} finalizados={104} total={104} />
-    )
-
-    const arc = container.querySelector('circle[stroke-dasharray]')
-    expect(arc).toHaveAttribute('stroke-dasharray', '100 100')
   })
 })

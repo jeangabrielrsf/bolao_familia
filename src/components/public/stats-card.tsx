@@ -14,8 +14,8 @@ interface StatsCardProps {
 
 export function StatsCard({ label, value, icon: Icon, iconColor = "text-primary", iconBg = "bg-primary/10", href }: StatsCardProps) {
   const content = (
-    <Card className={cn("w-full", href && "cursor-pointer hover:border-primary/50 hover:shadow-lg transition-all")}>
-      <CardContent className="p-4 flex flex-col sm:flex-row items-center sm:items-center gap-2 sm:gap-3 text-center sm:text-left">
+    <Card className={cn("w-full h-full", href && "cursor-pointer hover:border-primary/50 hover:shadow-lg transition-all")}>
+      <CardContent className="p-4 h-full flex flex-col sm:flex-row items-center justify-center sm:justify-center gap-2 sm:gap-3 text-center sm:text-left">
         <div className={`w-10 h-10 rounded-full ${iconBg} flex items-center justify-center shrink-0`}>
           <Icon className={`w-5 h-5 ${iconColor}`} />
         </div>
