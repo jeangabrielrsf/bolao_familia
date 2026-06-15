@@ -55,6 +55,7 @@ _COLUMNS_FINALIZADO: list[str] = [
 ]
 
 _COLUMNS_NAO_FINALIZADO: list[str] = [
+    "status",
     "local",
     "cidade",
     "ranking_time_a",
@@ -122,7 +123,12 @@ async def sincronizar_jogos(
         novo_resultado_b: int | None = (
             resultado.get("resultadoB") if is_finalizado else None
         )
-        novo_status: str = "finalizado" if is_finalizado else jogo.get("status")
+        if is_finalizado:
+            novo_status = "finalizado"
+        elif resultado.get("status") == "inprogress":
+            novo_status = "em_andamento"
+        else:
+            novo_status = jogo.get("status")
         novo_vencedor: int | None = resultado.get("vencedor")
         novo_penaltis_a: int | None = resultado.get("placarPenaltisA")
         novo_penaltis_b: int | None = resultado.get("placarPenaltisB")

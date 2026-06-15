@@ -90,7 +90,14 @@ export async function POST(request: NextRequest) {
       const novaCidade = resultado.cidade ?? jogo.cidade ?? null
       const novoResultadoA = isFinalizado ? resultado.resultadoA : null
       const novoResultadoB = isFinalizado ? resultado.resultadoB : null
-      const novoStatus = isFinalizado ? 'finalizado' : jogo.status
+      let novoStatus: string
+      if (isFinalizado) {
+        novoStatus = 'finalizado'
+      } else if (resultado.status === 'inprogress') {
+        novoStatus = 'em_andamento'
+      } else {
+        novoStatus = jogo.status
+      }
       const novoVencedor = resultado.vencedor ?? null
       const novoPlacarPenaltisA = resultado.placarPenaltisA ?? null
       const novoPlacarPenaltisB = resultado.placarPenaltisB ?? null
@@ -145,6 +152,7 @@ export async function POST(request: NextRequest) {
         }
 
         const data: Record<string, unknown> = {
+          status: novoStatus,
           local: novoLocal,
           cidade: novaCidade,
           rankingTimeA: null,
