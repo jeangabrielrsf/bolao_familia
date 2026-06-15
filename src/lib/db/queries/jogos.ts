@@ -52,3 +52,24 @@ export async function updateResultado(id: string, resultadoA: number, resultadoB
     },
   })
 }
+
+export type JogosCountByStatus = {
+  finalizado: number
+  em_andamento: number
+  restante: number
+  total: number
+}
+
+export async function countJogosByStatus(): Promise<JogosCountByStatus> {
+  const groups = await prisma.jogo.groupBy({
+    by: ['status'],
+    _count: { _all: true },
+  })
+  const map = new Map(groups.map((g) => [g.status, g._count._all]))
+  return {
+    finalizado: map.get('finalizado') ?? 0,
+    em_andamento: map.get('em_andamento') ?? 0,
+    restante: map.get('agendado') ?? 0,
+    total: groups.reduce((sum, g) => sum + g._count._all, 0),
+  }
+}

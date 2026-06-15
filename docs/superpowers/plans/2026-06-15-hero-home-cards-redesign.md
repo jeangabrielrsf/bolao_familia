@@ -539,7 +539,11 @@ export default async function HomePage() {
     <div className="space-y-10">
       <Hero
         totalParticipantes={participantes.length}
-        jogosStatus={jogosStatus}
+        jogosStatus={{
+          finalizado: jogosStatus.finalizado,
+          emAndamento: jogosStatus.em_andamento,
+          restante: jogosStatus.restante,
+        }}
         percentualCopa={percentualCopa}
       />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-10">

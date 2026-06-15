@@ -1,13 +1,19 @@
-import { Users, Trophy, Calendar } from "lucide-react"
+import { Users, Trophy } from "lucide-react"
 import { StatsCard } from "@/components/public/stats-card"
+import { JogosStatusCard } from "@/components/public/jogos-status-card"
+import { CopaProgressCard } from "@/components/public/copa-progress-card"
 
 interface HeroProps {
   totalParticipantes: number
-  totalJogos: number
-  pontosMaximos: number
+  jogosStatus: {
+    finalizado: number
+    emAndamento: number
+    restante: number
+  }
+  percentualCopa: number
 }
 
-export function Hero({ totalParticipantes, totalJogos, pontosMaximos }: HeroProps) {
+export function Hero({ totalParticipantes, jogosStatus, percentualCopa }: HeroProps) {
   return (
     <section className="relative overflow-hidden py-12 sm:py-16">
       <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-secondary/5" />
@@ -20,8 +26,18 @@ export function Hero({ totalParticipantes, totalJogos, pontosMaximos }: HeroProp
         <p className="text-lg text-muted-foreground max-w-2xl mx-auto">Faça seus palpites e dispute o ranking com a família!</p>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-2xl mx-auto pt-4">
           <StatsCard label="Participantes" value={totalParticipantes} icon={Users} href="/participantes" />
-          <StatsCard label="Jogos" value={totalJogos} icon={Calendar} href="/jogos" />
-          <StatsCard label="Pts Máx" value={pontosMaximos} icon={Trophy} iconColor="text-secondary" iconBg="bg-secondary/10" href="/regras" />
+          <JogosStatusCard
+            finalizado={jogosStatus.finalizado}
+            emAndamento={jogosStatus.emAndamento}
+            restante={jogosStatus.restante}
+            href="/jogos"
+          />
+          <CopaProgressCard
+            percentual={percentualCopa}
+            finalizados={jogosStatus.finalizado}
+            total={jogosStatus.finalizado + jogosStatus.emAndamento + jogosStatus.restante}
+            href="/jogos"
+          />
         </div>
       </div>
     </section>
