@@ -56,3 +56,6 @@ microservice/.venv
 
 # brainstorming / visual companion artifacts
 .superpowers/
+
+# git worktrees
+.worktrees/
