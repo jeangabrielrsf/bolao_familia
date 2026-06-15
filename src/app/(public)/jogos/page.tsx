@@ -5,8 +5,9 @@ import { GameCard } from "@/components/public/GameCard"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
-import { FilterTabs } from "@/components/public/filter-tabs"
+import { FilterBar } from "@/components/public/filter-bar"
 import { FASE_LABELS } from "@/lib/utils/constants"
+import { formatarData } from "@/lib/utils/date"
 
 interface Jogo {
   id: string
@@ -31,7 +32,9 @@ const faseOrder = ["grupos", "oitavas", "quartas", "semifinal", "terceiro", "fin
 export default function JogosPage() {
   const [jogos, setJogos] = useState<Jogo[]>([])
   const [loading, setLoading] = useState(true)
-  const [filter, setFilter] = useState("todos")
+  const [diaFilter, setDiaFilter] = useState("")
+  const [grupoFilter, setGrupoFilter] = useState("")
+  const [selecaoFilter, setSelecaoFilter] = useState("")
 
   useEffect(() => {
     fetch("/api/jogos")
@@ -42,12 +45,12 @@ export default function JogosPage() {
   }, [])
 
   const jogosFiltrados = jogos.filter((jogo) => {
-    if (filter === "todos") return true
-    if (filter === "encerrados") return jogo.status === "finalizado"
-    if (filter.startsWith("grupo-")) {
-      const grupo = filter.replace("grupo-", "")
-      return jogo.grupo === grupo
+    if (diaFilter) {
+      const dataJogo = formatarData(new Date(jogo.dataHora))
+      if (dataJogo !== diaFilter) return false
     }
+    if (grupoFilter && jogo.grupo !== grupoFilter) return false
+    if (selecaoFilter && jogo.timeA !== selecaoFilter && jogo.timeB !== selecaoFilter) return false
     return true
   })
 
@@ -75,7 +78,15 @@ export default function JogosPage() {
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6 animate-fade-in-up">
       <h1 className="text-3xl font-display tracking-wide">Jogos</h1>
 
-      <FilterTabs onFilterChange={setFilter} />
+      <FilterBar
+        jogos={jogos}
+        diaFilter={diaFilter}
+        grupoFilter={grupoFilter}
+        selecaoFilter={selecaoFilter}
+        onDiaChange={setDiaFilter}
+        onGrupoChange={setGrupoFilter}
+        onSelecaoChange={setSelecaoFilter}
+      />
 
       {jogosFiltrados.length === 0 ? (
         <Card>
@@ -83,7 +94,7 @@ export default function JogosPage() {
             <span className="text-6xl mb-4">⚽</span>
             <h3 className="text-xl font-semibold mb-2">Nenhum jogo encontrado</h3>
             <p className="text-muted-foreground text-center max-w-md">
-              {filter === "todos" ? "Os jogos aparecerão aqui quando cadastrados." : "Nenhum jogo para o filtro selecionado."}
+              {"Os jogos aparecerão aqui quando cadastrados."}
             </p>
           </CardContent>
         </Card>

@@ -35,6 +35,7 @@ export const GRUPOS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L
 
 export const FASE_LABELS: Record<string, string> = {
   grupos: 'Fase de Grupos',
+  dezerveis_avos: '16avos de Final',
   oitavas: 'Oitavas de Final',
   quartas: 'Quartas de Final',
   semifinal: 'Semifinal',
