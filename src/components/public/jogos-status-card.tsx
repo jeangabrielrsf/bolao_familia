@@ -16,26 +16,24 @@ export function JogosStatusCard({ finalizado, emAndamento, restante, href }: Jog
       aria-label={`Jogos: ${finalizado} finalizados, ${emAndamento} em jogo, ${restante} restantes`}
       className="w-full"
     >
-      <CardContent className="p-4 flex flex-row items-center gap-3">
+      <CardContent className="p-4 flex flex-col sm:flex-row items-center sm:items-center gap-3 text-center sm:text-left">
         <div className="w-10 h-10 rounded-full bg-success/10 flex items-center justify-center shrink-0">
           <Calendar className="w-5 h-5 text-success" />
         </div>
-        <div className="min-w-0 flex-1">
-          <p className="text-sm text-muted-foreground">Jogos</p>
-          <div className="flex items-center justify-between gap-1">
-            <div className="text-center flex-1 min-w-0">
-              <p className="text-xl font-display text-success truncate">{finalizado}</p>
-              <p className="text-xs text-muted-foreground">finalizados</p>
+        <div className="min-w-0 flex-1 w-full">
+          <p className="text-sm text-muted-foreground mb-2">Jogos</p>
+          <div className="space-y-1.5">
+            <div className="flex items-baseline justify-between gap-2">
+              <span className="text-xs text-muted-foreground">finalizados</span>
+              <span className="text-lg font-display text-success tabular-nums">{finalizado}</span>
             </div>
-            <span className="text-border text-sm select-none" aria-hidden="true">|</span>
-            <div className="text-center flex-1 min-w-0">
-              <p className="text-xl font-display text-warning truncate">{emAndamento}</p>
-              <p className="text-xs text-muted-foreground">em jogo</p>
+            <div className="flex items-baseline justify-between gap-2">
+              <span className="text-xs text-muted-foreground">em jogo</span>
+              <span className="text-lg font-display text-warning tabular-nums">{emAndamento}</span>
             </div>
-            <span className="text-border text-sm select-none" aria-hidden="true">|</span>
-            <div className="text-center flex-1 min-w-0">
-              <p className="text-xl font-display text-muted-foreground truncate">{restante}</p>
-              <p className="text-xs text-muted-foreground">restantes</p>
+            <div className="flex items-baseline justify-between gap-2">
+              <span className="text-xs text-muted-foreground">restantes</span>
+              <span className="text-lg font-display text-muted-foreground tabular-nums">{restante}</span>
             </div>
           </div>
         </div>

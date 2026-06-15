@@ -17,7 +17,7 @@ export function CopaProgressCard({ percentual, finalizados, total, href }: CopaP
       aria-label={`Copa: ${percentual} por cento concluído, ${finalizados} de ${total} jogos`}
       className="w-full"
     >
-      <CardContent className="p-4 flex flex-row items-center gap-3">
+      <CardContent className="p-4 flex flex-row items-center justify-center sm:justify-start gap-3 text-center sm:text-left">
         <div className="relative w-10 h-10 sm:w-12 sm:h-12 shrink-0 text-primary">
           <svg viewBox="0 0 36 36" className="w-full h-full -rotate-90" aria-hidden="true">
             <circle
