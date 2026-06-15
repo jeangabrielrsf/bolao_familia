@@ -16,7 +16,7 @@ from __future__ import annotations
 import logging
 from datetime import datetime, timezone
 
-from apscheduler.schedulers.background import BackgroundScheduler
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
 
 from app.services import sync_runner
@@ -30,7 +30,7 @@ CRON_EXPR_DIURNO = "*/15 16-23 * * *"
 CRON_EXPR_NOTURNO = "*/15 0-4 * * *"
 WINDOW_HOURS = 12
 
-_scheduler: BackgroundScheduler | None = None
+_scheduler: AsyncIOScheduler | None = None
 
 
 def _is_in_active_window() -> bool:
@@ -43,14 +43,19 @@ def _is_in_active_window() -> bool:
     return hour_utc <= 4 or 16 <= hour_utc <= 23
 
 
-def _job() -> None:
-    """Callback do cron. Roda sync_runner.run() se estiver em janela ativa."""
+async def _job() -> None:
+    """Callback do cron. Roda sync_runner.run() se estiver em janela ativa.
+
+    AsyncIOScheduler roda esta coroutine no MESMO event loop do FastAPI,
+    então o asyncpg pool (criado no startup) funciona corretamente.
+    Se fosse def regular + asyncio.run() dentro, criaria um novo loop
+    e o pool quebraria com 'Event loop is closed'.
+    """
     if not _is_in_active_window():
         logger.debug("Fora de janela ativa (UTC). Pulando job.")
         return
     try:
-        import asyncio
-        result = asyncio.run(sync_runner.run(window_hours=WINDOW_HOURS, origem="scheduler"))
+        result = await sync_runner.run(window_hours=WINDOW_HOURS, origem="scheduler")
         logger.info(
             f"[scheduler] sync ok: atualizados={result.get('atualizados')} "
             f"finalizados={result.get('finalizados')} skipped={result.get('skipped')}"
@@ -66,7 +71,7 @@ def start() -> None:
         logger.warning("Scheduler já estava rodando. Ignorando start() duplicado.")
         return
 
-    _scheduler = BackgroundScheduler(timezone="UTC")
+    _scheduler = AsyncIOScheduler(timezone="UTC")
     _scheduler.add_job(
         _job,
         CronTrigger.from_crontab(CRON_EXPR_DIURNO, timezone="UTC"),
