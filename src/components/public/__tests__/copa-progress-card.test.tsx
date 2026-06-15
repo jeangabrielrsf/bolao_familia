@@ -5,13 +5,12 @@ import { render, screen } from '@testing-library/react'
 import { CopaProgressCard } from '../copa-progress-card'
 
 describe('CopaProgressCard', () => {
-  it('renderiza o percentual arredondado no anel e no label grande', () => {
+  it('renderiza o percentual no label grande', () => {
     render(
       <CopaProgressCard percentual={14} finalizados={15} total={104} />
     )
 
-    const percentualElements = screen.getAllByText('14%')
-    expect(percentualElements.length).toBeGreaterThanOrEqual(2)
+    expect(screen.getByText('14%')).toBeInTheDocument()
   })
 
   it('renderiza o label "Copa" e o caption "concluído"', () => {
@@ -66,7 +65,7 @@ describe('CopaProgressCard', () => {
 
     const arc = container.querySelector('circle[stroke-dasharray]')
     expect(arc).toHaveAttribute('stroke-dasharray', '0 100')
-    expect(screen.getAllByText('0%').length).toBeGreaterThanOrEqual(2)
+    expect(screen.getByText('0%')).toBeInTheDocument()
   })
 
   it('edge case: 100% mostra arco completo (dasharray="100 100")', () => {
