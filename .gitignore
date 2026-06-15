@@ -53,3 +53,6 @@ assets/arquivos_planilhas
 
 
 microservice/.venv
+
+# brainstorming / visual companion artifacts
+.superpowers/
