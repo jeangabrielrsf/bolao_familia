@@ -48,7 +48,7 @@ export const TIME_CODIGOS: Record<string, string> = {
   'Tunísia': 'tn',
   'Turquia': 'tr',
   'Uruguai': 'uy',
-  'Uzebequistão': 'uz',
+  'Uzbequistão': 'uz',
 }
 
 export function getTimeFlag(nome: string): string | null {

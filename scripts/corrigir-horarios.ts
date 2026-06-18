@@ -95,11 +95,11 @@ const jogosCorrigidos: Array<{
 
   // Grupo K
   { grupo: 'K', timeA: 'Portugal', timeB: 'Congo', dataHoraUTC: '2026-06-17T17:00:00.000Z', cidade: 'Houston' },
-  { grupo: 'K', timeA: 'Uzebequistão', timeB: 'Colômbia', dataHoraUTC: '2026-06-18T02:00:00.000Z', cidade: 'Mexico City' },
-  { grupo: 'K', timeA: 'Portugal', timeB: 'Uzebequistão', dataHoraUTC: '2026-06-23T17:00:00.000Z', cidade: 'Houston' },
+  { grupo: 'K', timeA: 'Uzbequistão', timeB: 'Colômbia', dataHoraUTC: '2026-06-18T02:00:00.000Z', cidade: 'Mexico City' },
+  { grupo: 'K', timeA: 'Portugal', timeB: 'Uzbequistão', dataHoraUTC: '2026-06-23T17:00:00.000Z', cidade: 'Houston' },
   { grupo: 'K', timeA: 'Colômbia', timeB: 'Congo', dataHoraUTC: '2026-06-24T02:00:00.000Z', cidade: 'Guadalajara' },
   { grupo: 'K', timeA: 'Colômbia', timeB: 'Portugal', dataHoraUTC: '2026-06-27T23:30:00.000Z', cidade: 'Miami Gardens' },
-  { grupo: 'K', timeA: 'Congo', timeB: 'Uzebequistão', dataHoraUTC: '2026-06-27T23:30:00.000Z', cidade: 'Atlanta' },
+  { grupo: 'K', timeA: 'Congo', timeB: 'Uzbequistão', dataHoraUTC: '2026-06-27T23:30:00.000Z', cidade: 'Atlanta' },
 
   // Grupo L
   { grupo: 'L', timeA: 'Inglaterra', timeB: 'Croácia', dataHoraUTC: '2026-06-17T20:00:00.000Z', cidade: 'Arlington' },

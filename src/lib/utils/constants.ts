@@ -27,7 +27,7 @@ export const TIMES_VALIDOS = [
   'Honduras', 'El Salvador', 'Jamaica', 'Nigéria', 'Egito', 'Argélia',
   'Costa do Marfim', 'África do Sul', 'Tanzânia',
   'Haiti', 'Curaçao', 'Cabo Verde', 'Bósnia', 'Suécia', 'Iraque',
-  'Jordânia', 'Uzebequistão', 'República Checa', 'Congo', 'Noruega',
+  'Jordânia', 'Uzbequistão', 'República Checa', 'Congo', 'Noruega',
   'Turquia', 'Nova Zelândia',
 ] as const
 

@@ -29,7 +29,7 @@ const JOGOS_BOLAO = new Set([
   'França|Iraque',
   'Noruega|Senegal',
   'Jordânia|Argélia',
-  'Portugal|Uzebequistão',
+  'Portugal|Uzbequistão',
   'Escócia|Brasil',
   'República Checa|México',
   'Tunísia|Holanda',
@@ -132,11 +132,11 @@ const jogosData: Array<{
 
   // Grupo K
   { grupo: 'K', timeA: 'Portugal', timeB: 'Congo', dataHora: '2026-06-17T17:00:00.000Z', cidade: 'Houston', sofascoreId: '15186709' },
-  { grupo: 'K', timeA: 'Uzebequistão', timeB: 'Colômbia', dataHora: '2026-06-18T02:00:00.000Z', cidade: 'Mexico City', sofascoreId: '15186722' },
-  { grupo: 'K', timeA: 'Portugal', timeB: 'Uzebequistão', dataHora: '2026-06-23T17:00:00.000Z', cidade: 'Houston', sofascoreId: '15186858' },
+  { grupo: 'K', timeA: 'Uzbequistão', timeB: 'Colômbia', dataHora: '2026-06-18T02:00:00.000Z', cidade: 'Mexico City', sofascoreId: '15186722' },
+  { grupo: 'K', timeA: 'Portugal', timeB: 'Uzbequistão', dataHora: '2026-06-23T17:00:00.000Z', cidade: 'Houston', sofascoreId: '15186858' },
   { grupo: 'K', timeA: 'Colômbia', timeB: 'Congo', dataHora: '2026-06-24T02:00:00.000Z', cidade: 'Guadalajara', sofascoreId: '15186713' },
   { grupo: 'K', timeA: 'Colômbia', timeB: 'Portugal', dataHora: '2026-06-27T23:30:00.000Z', cidade: 'Miami Gardens', sofascoreId: '15186696' },
-  { grupo: 'K', timeA: 'Congo', timeB: 'Uzebequistão', dataHora: '2026-06-27T23:30:00.000Z', cidade: 'Atlanta', sofascoreId: '15186717' },
+  { grupo: 'K', timeA: 'Congo', timeB: 'Uzbequistão', dataHora: '2026-06-27T23:30:00.000Z', cidade: 'Atlanta', sofascoreId: '15186717' },
 
   // Grupo L
   { grupo: 'L', timeA: 'Inglaterra', timeB: 'Croácia', dataHora: '2026-06-17T20:00:00.000Z', cidade: 'Arlington', sofascoreId: '15186504' },

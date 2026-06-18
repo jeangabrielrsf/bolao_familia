@@ -112,7 +112,7 @@ export const TIME_CODIGOS: Record<string, string> = {
   'Tunísia': 'tn',
   'Turquia': 'tr',
   'Uruguai': 'uy',
-  'Uzebequistão': 'uz',
+  'Uzbequistão': 'uz',
 }
 
 export function getTimeFlag(nome: string): string | null {
@@ -224,7 +224,7 @@ Mesmo padrão do GameCard, mas com bandeira de 28px.
 | Tunísia | tn | 🇹🇳 |
 | Turquia | tr | 🇹🇷 |
 | Uruguai | uy | 🇺🇾 |
-| Uzebequistão | uz | 🇺🇿 |
+| Uzbequistão | uz | 🇺🇿 |
 
 **Total:** 48 times (50 entradas no mapeamento, pois Escócia e Inglaterra usam subdivisões do GB)
 
