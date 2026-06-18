@@ -76,7 +76,7 @@ export const TIME_CODIGOS: Record<string, string> = {
   'Cabo Verde': 'cv',
   'Catar': 'qa',
   'Colômbia': 'co',
-  'Congo': 'cg',
+  'Congo': 'cd',
   'Coreia do Sul': 'kr',
   'Costa do Marfim': 'ci',
   'Croácia': 'hr',
