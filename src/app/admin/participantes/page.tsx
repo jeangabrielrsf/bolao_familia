@@ -152,7 +152,7 @@ export default function AdminParticipantesPage() {
                 <TableRow key={p.id}>
                   <TableCell>
                     {p.fotoUrl ? (
-                      <Image src={p.fotoUrl} alt={p.nome} width={40} height={40} className="rounded-full object-cover" />
+                      <Image src={p.fotoUrl} alt={p.nome} width={40} height={40} unoptimized className="rounded-full object-cover" />
                     ) : (
                       <div className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center text-primary font-bold text-sm">{p.nome.charAt(0).toUpperCase()}</div>
                     )}
@@ -223,7 +223,7 @@ export default function AdminParticipantesPage() {
             </div>
             <div className="flex flex-col gap-1">
               <label className="text-sm font-medium">Foto</label>
-              {selected?.fotoUrl && <Image src={selected.fotoUrl} alt={selected.nome} width={64} height={64} className="rounded-full object-cover mb-2" />}
+              {selected?.fotoUrl && <Image src={selected.fotoUrl} alt={selected.nome} width={64} height={64} unoptimized className="rounded-full object-cover mb-2" />}
               <input type="file" accept="image/*" onChange={(e) => setFormFoto(e.target.files?.[0] || null)} className="w-full text-sm file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-primary file:text-white hover:file:bg-primary-dark" />
             </div>
             <DialogFooter>

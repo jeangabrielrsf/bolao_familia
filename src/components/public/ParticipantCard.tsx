@@ -16,7 +16,7 @@ export function ParticipantCard({ id, nome, fotoUrl, totalPalpites }: Participan
         <CardContent className="flex flex-col items-center gap-3 p-4">
           <div className="w-20 h-20 rounded-full overflow-hidden bg-muted flex items-center justify-center ring-2 ring-border group-hover:ring-primary/30 transition-all relative">
             {fotoUrl ? (
-              <Image src={fotoUrl} alt={nome} fill className="object-cover" />
+              <Image src={fotoUrl} alt={nome} fill unoptimized className="object-cover" />
             ) : (
               <span className="text-2xl font-display font-bold text-primary">{nome.charAt(0).toUpperCase()}</span>
             )}

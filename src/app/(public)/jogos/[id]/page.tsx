@@ -169,7 +169,7 @@ export default async function JogoDetailPage({
                         <Link href={`/participantes/${palpite.palpiteGrupo.participante.id}`} className="flex items-center gap-2 sm:gap-3 hover:text-primary transition-colors">
                           <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full overflow-hidden bg-muted flex items-center justify-center shrink-0">
                             {palpite.palpiteGrupo.participante.fotoUrl ? (
-                              <Image src={palpite.palpiteGrupo.participante.fotoUrl} alt={palpite.palpiteGrupo.participante.nome} width={32} height={32} className="w-full h-full object-cover" />
+                              <Image src={palpite.palpiteGrupo.participante.fotoUrl} alt={palpite.palpiteGrupo.participante.nome} width={32} height={32} unoptimized className="w-full h-full object-cover" />
                             ) : (
                               <span className="text-xs font-bold text-muted-foreground">{palpite.palpiteGrupo.participante.nome.charAt(0).toUpperCase()}</span>
                             )}

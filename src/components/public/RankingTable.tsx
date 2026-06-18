@@ -44,7 +44,7 @@ export function RankingTable({ ranking }: RankingTableProps) {
                   >
                     {entry.fotoUrl ? (
                       <div className="w-8 h-8 rounded-full overflow-hidden bg-muted relative">
-                        <Image src={entry.fotoUrl} alt={`Foto de ${entry.nomeParticipante}`} fill sizes="32px" className="object-cover" />
+                        <Image src={entry.fotoUrl} alt={`Foto de ${entry.nomeParticipante}`} fill sizes="32px" unoptimized className="object-cover" />
                       </div>
                     ) : (
                       <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-bold">{entry.nomeParticipante.charAt(0).toUpperCase()}</div>

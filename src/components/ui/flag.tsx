@@ -34,6 +34,7 @@ export function Flag({ codigoIso, size = 20, className }: FlagProps) {
         src={src}
         alt=""
         fill
+        unoptimized
         sizes="auto"
         className="object-contain"
       />

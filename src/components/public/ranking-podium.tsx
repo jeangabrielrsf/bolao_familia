@@ -28,7 +28,7 @@ export function RankingPodium({ ranking }: RankingPodiumProps) {
             >
               <div className={`${style.size} rounded-full overflow-hidden bg-background flex items-center justify-center ring-2 ring-border relative`}>
                 {entry.fotoUrl ? (
-                  <Image src={entry.fotoUrl} alt={`Foto de ${entry.nomeParticipante}`} fill className="object-cover" />
+                  <Image src={entry.fotoUrl} alt={`Foto de ${entry.nomeParticipante}`} fill unoptimized className="object-cover" />
                 ) : (
                   <span className="text-2xl font-display font-bold text-primary">{entry.nomeParticipante.charAt(0).toUpperCase()}</span>
                 )}

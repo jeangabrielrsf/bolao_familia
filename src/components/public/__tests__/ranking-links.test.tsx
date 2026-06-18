@@ -10,9 +10,10 @@ import type { RankingEntry } from '@/lib/utils/types'
 
 jest.mock('next/image', () => ({
   __esModule: true,
-  default: (props: React.ImgHTMLAttributes<HTMLImageElement> & { fill?: boolean }) => {
+  default: (props: React.ImgHTMLAttributes<HTMLImageElement> & { fill?: boolean; unoptimized?: boolean }) => {
     const imageProps = { ...props }
     delete imageProps.fill
+    delete imageProps.unoptimized
     return <img {...imageProps} alt={imageProps.alt ?? ''} />
   },
 }))
