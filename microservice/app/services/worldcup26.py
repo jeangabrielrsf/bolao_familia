@@ -4,6 +4,7 @@ from typing import Optional
 
 from curl_cffi import requests
 
+from app.services import teams
 from app.services.cache import cache
 
 logger = logging.getLogger(__name__)
@@ -85,9 +86,41 @@ def _dates_match(match_date: str, our_date: str) -> bool:
         dt_match = datetime.fromisoformat(match_date.replace("Z", "+00:00"))
         dt_ours = datetime.fromisoformat(our_date.replace("Z", "+00:00"))
         diff = abs((dt_match - dt_ours).total_seconds())
-        return diff < 3 * 3600
+        return diff < 1 * 3600
     except (ValueError, AttributeError):
         return False
+
+
+def _teams_match(
+    match: dict,
+    *,
+    time_a_pt: str | None,
+    time_b_pt: str | None,
+) -> bool:
+    """Compara times do worldcup26 (em inglês) com o jogo do DB (em PT).
+
+    Estratégia: usa o dicionário canônico `teams.TEAM_DICT` para resolver
+    o nome PT → nome EN que o worldcup26 retorna. Aceita home/away em
+    qualquer ordem.
+    """
+    if not time_a_pt or not time_b_pt:
+        return True
+
+    en_a = teams.get_en(time_a_pt)
+    en_b = teams.get_en(time_b_pt)
+    if not en_a or not en_b:
+        logger.warning(
+            f"worldcup26 _teams_match: PT sem mapping ({time_a_pt!r}, "
+            f"{time_b_pt!r}) — assumindo match"
+        )
+        return True
+
+    api_home = match.get("home_team_name_en", "")
+    api_away = match.get("away_team_name_en", "")
+
+    direct = api_home == en_a and api_away == en_b
+    swapped = api_home == en_b and api_away == en_a
+    return direct or swapped
 
 
 def _normalize_status(time_elapsed: str, finished: str) -> str:
@@ -111,9 +144,32 @@ def match_game(
     group: str,
     data_hora: str,
     stadiums: dict[int, dict],
+    *,
+    time_a_pt: str | None = None,
+    time_b_pt: str | None = None,
 ) -> Optional[dict]:
+    """Encontra o jogo do worldcup26 que casa com o jogo do DB.
+
+    Critérios:
+    1. Mesmo grupo
+    2. Data dentro de 1h
+    3. Times batem (nome EN do worldcup26 vs PT→EN via teams.TEAM_DICT)
+
+    Retorna None se:
+    - Nenhum candidato
+    - 2+ candidatos com times diferentes (ambigüidade — log warning)
+
+    Args:
+        matches: lista de jogos do worldcup26.ir
+        group: letra do grupo do jogo do DB
+        data_hora: ISO 8601 UTC do jogo do DB
+        stadiums: dict de estádios (id -> info)
+        time_a_pt: nome PT do timeA do DB
+        time_b_pt: nome PT do timeB do DB
+    """
     group_upper = group.upper()
 
+    candidatos: list[dict] = []
     for match in matches:
         if match.get("group", "").upper() != group_upper:
             continue
@@ -124,34 +180,54 @@ def match_game(
         if not _dates_match(match_date_utc, data_hora):
             continue
 
-        try:
-            home_score = int(match.get("home_score", 0))
-            away_score = int(match.get("away_score", 0))
-        except (ValueError, TypeError):
-            home_score = 0
-            away_score = 0
+        if not _teams_match(match, time_a_pt=time_a_pt, time_b_pt=time_b_pt):
+            continue
 
-        stadium_id = int(match.get("stadium_id", 0))
-        stadium = stadiums.get(stadium_id, {})
+        candidatos.append(match)
 
-        status = _normalize_status(
-            match.get("time_elapsed", ""),
-            match.get("finished", "FALSE"),
+    if len(candidatos) == 0:
+        return None
+
+    if len(candidatos) > 1:
+        logger.warning(
+            f"worldcup26 match_game: {len(candidatos)} candidatos para "
+            f"grupo={group} dataHora={data_hora} pt={time_a_pt}x{time_b_pt}. "
+            f"Descartando."
         )
+        return None
 
-        result = {
-            "resultadoA": home_score,
-            "resultadoB": away_score,
-            "status": status,
-            "local": stadium.get("name_en"),
-            "cidade": stadium.get("city_en"),
-            "vencedor": _derive_winner(home_score, away_score) if status == "finished" else None,
-            "placarPenaltisA": None,
-            "placarPenaltisB": None,
-        }
-        return result
+    match = candidatos[0]
+    try:
+        home_score = int(match.get("home_score", 0))
+        away_score = int(match.get("away_score", 0))
+    except (ValueError, TypeError):
+        home_score = 0
+        away_score = 0
 
-    return None
+    stadium_id = int(match.get("stadium_id", 0))
+    stadium = stadiums.get(stadium_id, {})
+
+    status = _normalize_status(
+        match.get("time_elapsed", ""),
+        match.get("finished", "FALSE"),
+    )
+
+    result = {
+        "resultadoA": home_score,
+        "resultadoB": away_score,
+        "status": status,
+        "local": stadium.get("name_en"),
+        "cidade": stadium.get("city_en"),
+        "vencedor": _derive_winner(home_score, away_score) if status == "finished" else None,
+        "placarPenaltisA": None,
+        "placarPenaltisB": None,
+    }
+    logger.info(
+        f"worldcup26 match_game OK: grupo={group} pt={time_a_pt}x{time_b_pt} "
+        f"en_api={match.get('home_team_name_en')}x{match.get('away_team_name_en')} "
+        f"status={status} placar={result['resultadoA']}x{result['resultadoB']}"
+    )
+    return result
 
 
 def _convert_local_to_utc(local_date: str, stadium_id: str) -> str:

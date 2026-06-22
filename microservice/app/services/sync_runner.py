@@ -13,7 +13,7 @@ from datetime import timezone
 from typing import Any
 
 from app.config import settings
-from app.services import db, football_data, sync_writer, worldcup26
+from app.services import db, football_data, sync_writer, teams, worldcup26
 
 logger = logging.getLogger(__name__)
 
@@ -90,17 +90,30 @@ async def run(window_hours: int = 12, origem: str = "auto") -> dict[str, Any]:
                 dt_aware = dt_naive.replace(tzinfo=timezone.utc)
                 data_hora_iso = dt_aware.isoformat().replace("+00:00", "Z")
                 grupo = jogo["grupo"] or ""
+                time_a_pt = jogo["time_a"]
+                time_b_pt = jogo["time_b"]
+                time_a_tla = teams.get_tla(time_a_pt)
+                time_b_tla = teams.get_tla(time_b_pt)
 
                 fd_result = None
                 wc_result = None
 
                 if fd_matches:
                     fd_result = football_data.match_game(
-                        fd_matches, grupo, data_hora_iso
+                        fd_matches,
+                        grupo,
+                        data_hora_iso,
+                        time_a_tla=time_a_tla,
+                        time_b_tla=time_b_tla,
                     )
                 if wc_matches:
                     wc_result = worldcup26.match_game(
-                        wc_matches, grupo, data_hora_iso, wc_stadiums
+                        wc_matches,
+                        grupo,
+                        data_hora_iso,
+                        wc_stadiums,
+                        time_a_pt=time_a_pt,
+                        time_b_pt=time_b_pt,
                     )
 
                 if fd_result is not None:

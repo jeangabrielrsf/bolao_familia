@@ -5,7 +5,7 @@ from fastapi import APIRouter, Header, HTTPException
 from pydantic import BaseModel
 
 from app.config import settings
-from app.services import football_data, sync_runner, worldcup26
+from app.services import football_data, sync_runner, teams, worldcup26
 
 logger = logging.getLogger(__name__)
 
@@ -65,11 +65,27 @@ async def get_resultados_lote(req: LoteRequestV2) -> list[ResultadoResponse]:
         fd_result = None
         wc_result = None
 
+        time_a_tla = teams.get_tla(jogo.timeA)
+        time_b_tla = teams.get_tla(jogo.timeB)
+
         if fd_matches:
-            fd_result = football_data.match_game(fd_matches, jogo.grupo, jogo.dataHora)
+            fd_result = football_data.match_game(
+                fd_matches,
+                jogo.grupo,
+                jogo.dataHora,
+                time_a_tla=time_a_tla,
+                time_b_tla=time_b_tla,
+            )
 
         if wc_matches:
-            wc_result = worldcup26.match_game(wc_matches, jogo.grupo, jogo.dataHora, wc_stadiums)
+            wc_result = worldcup26.match_game(
+                wc_matches,
+                jogo.grupo,
+                jogo.dataHora,
+                wc_stadiums,
+                time_a_pt=jogo.timeA,
+                time_b_pt=jogo.timeB,
+            )
 
         if fd_result is not None:
             result = fd_result
