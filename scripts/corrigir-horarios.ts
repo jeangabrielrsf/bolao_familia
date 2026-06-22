@@ -80,8 +80,8 @@ const jogosCorrigidos: Array<{
   // Grupo I
   { grupo: 'I', timeA: 'França', timeB: 'Senegal', dataHoraUTC: '2026-06-16T19:00:00.000Z', cidade: 'East Rutherford' },
   { grupo: 'I', timeA: 'Iraque', timeB: 'Noruega', dataHoraUTC: '2026-06-16T22:00:00.000Z', cidade: 'Foxborough' },
-  { grupo: 'I', timeA: 'França', timeB: 'Iraque', dataHoraUTC: '2026-06-21T21:00:00.000Z', cidade: 'Philadelphia' },
-  { grupo: 'I', timeA: 'Noruega', timeB: 'Senegal', dataHoraUTC: '2026-06-22T00:00:00.000Z', cidade: 'East Rutherford' },
+  { grupo: 'I', timeA: 'França', timeB: 'Iraque', dataHoraUTC: '2026-06-22T21:00:00.000Z', cidade: 'Philadelphia' },
+  { grupo: 'I', timeA: 'Noruega', timeB: 'Senegal', dataHoraUTC: '2026-06-23T00:00:00.000Z', cidade: 'East Rutherford' },
   { grupo: 'I', timeA: 'Noruega', timeB: 'França', dataHoraUTC: '2026-06-26T19:00:00.000Z', cidade: 'Foxborough' },
   { grupo: 'I', timeA: 'Senegal', timeB: 'Iraque', dataHoraUTC: '2026-06-26T19:00:00.000Z', cidade: 'Toronto' },
 
@@ -132,9 +132,7 @@ async function main() {
 
     if (resultado.count > 0) {
       atualizados++
-      const dataBRT = new Date(jogo.dataHoraUTC)
-      dataBRT.setHours(dataBRT.getHours() - 3) // UTC-3
-      console.log(`✓ ${jogo.timeA} vs ${jogo.timeB} → ${dataBRT.toLocaleString('pt-BR')} BRT (${jogo.cidade})`)
+      console.log(`✓ ${jogo.timeA} vs ${jogo.timeB} → ${jogo.dataHoraUTC} UTC (${jogo.cidade})`)
     } else {
       naoEncontrados++
       console.log(`✗ NÃO ENCONTRADO: ${jogo.timeA} vs ${jogo.timeB} (Grupo ${jogo.grupo})`)

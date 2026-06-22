@@ -117,8 +117,8 @@ const jogosData: Array<{
   // Grupo I
   { grupo: 'I', timeA: 'França', timeB: 'Senegal', dataHora: '2026-06-16T19:00:00.000Z', cidade: 'East Rutherford', sofascoreId: '15186501' },
   { grupo: 'I', timeA: 'Iraque', timeB: 'Noruega', dataHora: '2026-06-16T22:00:00.000Z', cidade: 'Foxborough', sofascoreId: '15186773' },
-  { grupo: 'I', timeA: 'França', timeB: 'Iraque', dataHora: '2026-06-21T21:00:00.000Z', cidade: 'Philadelphia', sofascoreId: '15186769' },
-  { grupo: 'I', timeA: 'Noruega', timeB: 'Senegal', dataHora: '2026-06-22T00:00:00.000Z', cidade: 'East Rutherford', sofascoreId: '15186770' },
+  { grupo: 'I', timeA: 'França', timeB: 'Iraque', dataHora: '2026-06-22T21:00:00.000Z', cidade: 'Philadelphia', sofascoreId: '15186769' },
+  { grupo: 'I', timeA: 'Noruega', timeB: 'Senegal', dataHora: '2026-06-23T00:00:00.000Z', cidade: 'East Rutherford', sofascoreId: '15186770' },
   { grupo: 'I', timeA: 'Noruega', timeB: 'França', dataHora: '2026-06-26T19:00:00.000Z', cidade: 'Foxborough', sofascoreId: '15186537' },
   { grupo: 'I', timeA: 'Senegal', timeB: 'Iraque', dataHora: '2026-06-26T19:00:00.000Z', cidade: 'Toronto', sofascoreId: '15186771' },
 
