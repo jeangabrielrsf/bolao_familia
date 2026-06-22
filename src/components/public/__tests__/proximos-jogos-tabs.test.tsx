@@ -107,6 +107,48 @@ describe('ProximosJogosTabs', () => {
     expect(screen.getByText(/nenhum jogo/i)).toBeInTheDocument()
   })
 
+  it('mantém indicador na aba ativa após resize event (regressão mobile)', () => {
+    const getRect = (left: number, width: number): DOMRect => ({
+      left, width, top: 0, height: 44, right: left + width, bottom: 44, x: left, y: 0, toJSON: () => {},
+    } as DOMRect)
+
+    const spy = jest
+      .spyOn(HTMLElement.prototype, 'getBoundingClientRect')
+      .mockImplementation(function (this: HTMLElement) {
+        const tab = this.getAttribute('data-tab')
+        if (tab === 'ontem') return getRect(0, 100)
+        if (tab === 'hoje') return getRect(100, 100)
+        if (tab === 'amanha') return getRect(200, 100)
+        if (tab === 'depois') return getRect(300, 100)
+        if (this.querySelector?.('[data-testid="tab-indicator"]')) return getRect(0, 400)
+        return getRect(0, 0)
+      })
+
+    try {
+      render(
+        <ProximosJogosTabs
+          jogosOntem={[]}
+          jogosHoje={[makeJogo({ timeA: 'Brasil' })]}
+          jogosAmanha={[makeJogo({ id: 'j2', timeA: 'França' })]}
+          jogosDepois={[]}
+        />
+      )
+
+      const indicator = screen.getByTestId('tab-indicator')
+
+      expect(indicator.style.left).toBe('100px')
+
+      fireEvent.click(screen.getByRole('tab', { name: /amanhã/i }))
+      expect(indicator.style.left).toBe('200px')
+
+      fireEvent(window, new Event('resize'))
+
+      expect(indicator.style.left).toBe('200px')
+    } finally {
+      spy.mockRestore()
+    }
+  })
+
   it('tab bar usa layout responsivo (flex-1 + w-full) para caber em telas pequenas', () => {
     render(
       <ProximosJogosTabs jogosOntem={[]} jogosHoje={[makeJogo()]} jogosAmanha={[]} jogosDepois={[]} />

@@ -50,6 +50,11 @@ export function ProximosJogosTabs({ jogosOntem, jogosHoje, jogosAmanha, jogosDep
     amanha: null,
     depois: null,
   })
+  const activeRef = useRef<DiaKey>('hoje')
+
+  useLayoutEffect(() => {
+    activeRef.current = active
+  }, [active])
 
   const jogosPorDia: Record<DiaKey, Jogo[]> = {
     ontem: jogosOntem,
@@ -61,7 +66,7 @@ export function ProximosJogosTabs({ jogosOntem, jogosHoje, jogosAmanha, jogosDep
 
   function moveIndicator() {
     const wrap = wrapRef.current
-    const btn = btnRefs.current[active]
+    const btn = btnRefs.current[activeRef.current]
     const indicator = indicatorRef.current
     if (!wrap || !btn || !indicator) return
 
@@ -74,13 +79,11 @@ export function ProximosJogosTabs({ jogosOntem, jogosHoje, jogosAmanha, jogosDep
 
   useLayoutEffect(() => {
     moveIndicator()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [active])
 
   useEffect(() => {
     window.addEventListener('resize', moveIndicator)
     return () => window.removeEventListener('resize', moveIndicator)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   return (
