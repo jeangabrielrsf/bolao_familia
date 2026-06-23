@@ -2,6 +2,7 @@
 import { useState } from 'react'
 import type { BracketSlot } from '@/lib/services/bracket/types'
 import { BracketColumn } from './bracket-column'
+import { BracketGrid } from './bracket-grid'
 
 type Props = {
   slots: BracketSlot[]
@@ -37,13 +38,9 @@ export function Bracket({ slots }: Props) {
         <BracketColumn fase={faseAtiva} slots={slotsPorFase(faseAtiva)} />
       </div>
 
-      {/* Desktop/tablet: todas as fases em scroll horizontal */}
-      <div className="hidden lg:block overflow-x-auto pb-4">
-        <div className="flex gap-6 min-w-max">
-          {FASES.map(f => (
-            <BracketColumn key={f} fase={f} slots={slotsPorFase(f)} />
-          ))}
-        </div>
+      {/* Desktop/tablet: grid BBC-style com row spans */}
+      <div className="hidden lg:block">
+        <BracketGrid slots={slots} />
       </div>
     </div>
   )
