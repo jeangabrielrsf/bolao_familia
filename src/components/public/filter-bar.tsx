@@ -49,8 +49,8 @@ export function FilterBar({
   const selecoes = useMemo(() => {
     const seen = new Set<string>()
     for (const jogo of jogos) {
-      seen.add(jogo.timeA)
-      seen.add(jogo.timeB)
+      if (jogo.timeA) seen.add(jogo.timeA)
+      if (jogo.timeB) seen.add(jogo.timeB)
     }
     return Array.from(seen).sort((a, b) => a.localeCompare(b, "pt-BR"))
   }, [jogos])
