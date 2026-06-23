@@ -4,7 +4,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import type { ClassificacaoGrupo, BracketSlot, JogoComTimes } from '@/lib/services/bracket/types'
 import { GroupTable } from './group-table'
 import { Bracket } from './bracket'
-// import { SimulatorTab } from './simulator-tab'  // Tarefa 19
+import { SimulatorTab } from './simulator-tab'
 
 type Props = {
   classificacao: ClassificacaoGrupo[]
@@ -13,7 +13,6 @@ type Props = {
 }
 
 export function CopaTabs({ classificacao, bracket, jogos }: Props) {
-  void jogos
   const [tab, setTab] = useState('classificacao')
 
   return (
@@ -37,7 +36,11 @@ export function CopaTabs({ classificacao, bracket, jogos }: Props) {
       </TabsContent>
 
       <TabsContent value="simulador" className="mt-6">
-        <p className="text-muted-foreground">Simulador em construção (Tarefa 19)</p>
+        <SimulatorTab
+          classificacaoInicial={classificacao}
+          bracketInicial={bracket}
+          jogos={jogos}
+        />
       </TabsContent>
     </Tabs>
   )
