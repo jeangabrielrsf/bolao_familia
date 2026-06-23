@@ -167,12 +167,13 @@ def match_game(
         time_a_pt: nome PT do timeA do DB
         time_b_pt: nome PT do timeB do DB
     """
-    group_upper = group.upper()
+    group_upper = group.upper() if group else None
 
     candidatos: list[dict] = []
     for match in matches:
-        if match.get("group", "").upper() != group_upper:
-            continue
+        if group_upper is not None:
+            if (match.get("group", "") or "").upper() != group_upper:
+                continue
 
         local_date = match.get("local_date", "")
         match_date_utc = _convert_local_to_utc(local_date, match.get("stadium_id"))
