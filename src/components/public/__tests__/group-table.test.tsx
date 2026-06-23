@@ -31,13 +31,32 @@ describe('GroupTable', () => {
     expect(screen.getByText('República Checa')).toBeInTheDocument()
   })
 
-  it('mostra 2 badges Classificado', () => {
-    render(<GroupTable grupo={mockClassificacao} />)
-    expect(screen.getAllByText(/Classificado/)).toHaveLength(2)
+  it('pinta 1º e 2º com bg verde (classificado)', () => {
+    const { container } = render(<GroupTable grupo={mockClassificacao} />)
+    const rows = container.querySelectorAll('tbody tr')
+    expect(rows[0].className).toContain('bg-green-50')
+    expect(rows[1].className).toContain('bg-green-50')
   })
 
-  it('mostra badge Eliminado pro 4º lugar', () => {
-    render(<GroupTable grupo={mockClassificacao} />)
-    expect(screen.getByText(/Eliminado/)).toBeInTheDocument()
+  it('pinta 3º com bg amarelo se qualificado entre os 8 melhores', () => {
+    const { container } = render(
+      <GroupTable grupo={mockClassificacao} qualificadosTerceiros={new Set(['A'])} />
+    )
+    const rows = container.querySelectorAll('tbody tr')
+    expect(rows[2].className).toContain('bg-amber-50')
+  })
+
+  it('pinta 3º com bg vermelho se NÃO qualificado entre os 8 melhores', () => {
+    const { container } = render(
+      <GroupTable grupo={mockClassificacao} qualificadosTerceiros={new Set(['B'])} />
+    )
+    const rows = container.querySelectorAll('tbody tr')
+    expect(rows[2].className).toContain('bg-red-50')
+  })
+
+  it('pinta 4º com bg vermelho (eliminado)', () => {
+    const { container } = render(<GroupTable grupo={mockClassificacao} />)
+    const rows = container.querySelectorAll('tbody tr')
+    expect(rows[3].className).toContain('bg-red-50')
   })
 })

@@ -40,14 +40,15 @@ export function SimulatorTab({ classificacaoInicial, bracketInicial, jogos }: Pr
     }
   }, [simulacao])
 
-  const { classificacao, bracket } = useMemo(() => {
+  const { classificacao, bracket, qualificadosTerceiros } = useMemo(() => {
     const jogosSimulados = aplicarSimulacao(jogos, simulacao)
     const jogosGrupos = jogosSimulados.filter(j => j.fase === 'grupos')
     const jogosMataMata = jogosSimulados.filter(j => j.fase !== 'grupos')
     const c = getClassificacaoGrupos(jogosGrupos)
     const t = getMelhores8Terceiros(c)
     const b = projetarChaveamento({ classificacao: c, melhoresTerceiros: t, jogosMataMata })
-    return { classificacao: c, bracket: b }
+    const q = new Set(t.map(x => x.grupo))
+    return { classificacao: c, bracket: b, qualificadosTerceiros: q }
   }, [jogos, simulacao])
 
   const limpar = () => setSimulacao({})
@@ -61,7 +62,7 @@ export function SimulatorTab({ classificacaoInicial, bracketInicial, jogos }: Pr
       </p>
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 mb-8">
         {classificacao.map(g => (
-          <GroupTable key={g.grupo} grupo={g} />
+          <GroupTable key={g.grupo} grupo={g} qualificadosTerceiros={qualificadosTerceiros} />
         ))}
       </div>
       <h3 className="font-display text-xl tracking-wide mb-4">Chaveamento (simulado)</h3>

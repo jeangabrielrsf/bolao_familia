@@ -1,7 +1,8 @@
 'use client'
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import type { ClassificacaoGrupo, BracketSlot, JogoComTimes } from '@/lib/services/bracket/types'
+import { getMelhores8Terceiros } from '@/lib/services/bracket/best-thirds'
 import { GroupTable } from './group-table'
 import { Bracket } from './bracket'
 import { SimulatorTab } from './simulator-tab'
@@ -15,6 +16,11 @@ type Props = {
 export function CopaTabs({ classificacao, bracket, jogos }: Props) {
   const [tab, setTab] = useState('classificacao')
 
+  const qualificadosTerceiros = useMemo(
+    () => new Set(getMelhores8Terceiros(classificacao).map(t => t.grupo)),
+    [classificacao]
+  )
+
   return (
     <Tabs value={tab} onValueChange={setTab}>
       <TabsList className="grid w-full grid-cols-3">
@@ -26,7 +32,7 @@ export function CopaTabs({ classificacao, bracket, jogos }: Props) {
       <TabsContent value="classificacao" className="mt-6">
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
           {classificacao.map(g => (
-            <GroupTable key={g.grupo} grupo={g} />
+            <GroupTable key={g.grupo} grupo={g} qualificadosTerceiros={qualificadosTerceiros} />
           ))}
         </div>
       </TabsContent>

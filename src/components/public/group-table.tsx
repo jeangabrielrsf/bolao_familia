@@ -4,9 +4,10 @@ import { getTimeFlag } from '@/lib/utils/flags'
 
 type Props = {
   grupo: ClassificacaoGrupo
+  qualificadosTerceiros?: Set<string>
 }
 
-export function GroupTable({ grupo }: Props) {
+export function GroupTable({ grupo, qualificadosTerceiros }: Props) {
   return (
     <div className="bg-card border rounded-lg overflow-hidden">
       <div className="bg-primary text-primary-foreground px-4 py-2 font-display tracking-wide">
@@ -23,16 +24,34 @@ export function GroupTable({ grupo }: Props) {
             <th className="px-3 py-2 text-center">E</th>
             <th className="px-3 py-2 text-center">D</th>
             <th className="px-3 py-2 text-center">SG</th>
-            <th className="px-3 py-2"></th>
           </tr>
         </thead>
         <tbody>
           {grupo.times.map((time, idx) => {
             const pos = idx + 1
             const isClassificado = pos <= 2
-            const isEliminado = pos > 3
+            const isTerceiro = pos === 3
+            const terceiroQualificado = isTerceiro && qualificadosTerceiros?.has(grupo.grupo)
+            const isEliminado = pos > 3 || (isTerceiro && !terceiroQualificado)
+
+            const rowBg = isClassificado
+              ? 'bg-green-50'
+              : terceiroQualificado
+              ? 'bg-amber-50'
+              : isEliminado
+              ? 'bg-red-50'
+              : ''
+
+            const borderAccent = isClassificado
+              ? 'border-l-4 border-green-500'
+              : terceiroQualificado
+              ? 'border-l-4 border-amber-500'
+              : isEliminado
+              ? 'border-l-4 border-red-500'
+              : ''
+
             return (
-              <tr key={time.time} className="border-b last:border-0 hover:bg-muted/50">
+              <tr key={time.time} className={`${rowBg} ${borderAccent} border-b last:border-0`}>
                 <td className="px-3 py-2 text-muted-foreground tabular-nums">{pos}</td>
                 <td className="px-3 py-2 font-medium">
                   <div className="flex items-center gap-2">
@@ -50,23 +69,6 @@ export function GroupTable({ grupo }: Props) {
                 <td className="px-3 py-2 text-center tabular-nums">{time.derrotas}</td>
                 <td className="px-3 py-2 text-center tabular-nums">
                   {time.saldo > 0 ? '+' : ''}{time.saldo}
-                </td>
-                <td className="px-3 py-2 text-right">
-                  {isClassificado && (
-                    <span className="inline-block px-2 py-0.5 text-xs rounded bg-green-100 text-green-700 border border-green-300">
-                      ✓ Classificado
-                    </span>
-                  )}
-                  {pos === 3 && (
-                    <span className="inline-block px-2 py-0.5 text-xs rounded bg-amber-100 text-amber-700 border border-amber-300">
-                      ⚠ Melhores 8 terceiros
-                    </span>
-                  )}
-                  {isEliminado && (
-                    <span className="inline-block px-2 py-0.5 text-xs rounded bg-red-100 text-red-700 border border-red-300">
-                      ✗ Eliminado
-                    </span>
-                  )}
                 </td>
               </tr>
             )
