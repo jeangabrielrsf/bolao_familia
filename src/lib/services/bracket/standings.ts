@@ -1,6 +1,6 @@
 import type { ClassificacaoGrupo, ClassificacaoTime, JogoComTimes } from './types'
 import { GRUPOS } from '@/lib/utils/constants'
-import { aplicarTiebreakers } from './tiebreakers-stub'
+import { aplicarTiebreakers } from './tiebreakers'
 
 export function getClassificacaoGrupos(jogos: JogoComTimes[]): ClassificacaoGrupo[] {
   const gruposMap = new Map<string, JogoComTimes[]>()
