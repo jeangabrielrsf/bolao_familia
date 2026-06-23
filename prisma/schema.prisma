@@ -61,8 +61,8 @@ model Jogo {
   grupo           String?
   fase            Fase      @default(grupos)
   dataHora        DateTime  @map("data_hora")
-  timeA           String    @map("time_a")
-  timeB           String    @map("time_b")
+  timeA           String?   @map("time_a")
+  timeB           String?   @map("time_b")
   resultadoA      Int?      @map("resultado_a")
   resultadoB      Int?      @map("resultado_b")
   status          StatusJogo @default(agendado)
