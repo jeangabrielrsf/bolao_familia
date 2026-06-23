@@ -195,52 +195,60 @@ const mataMataData: Array<{
   { fase: 'final', slot: 1, dataHora: '2026-07-19T19:00:00.000Z', cidade: 'East Rutherford', sofascoreId: 'F-M1' },
 ]
 
+// Idempotente: pula se já existe por sofascoreId.
+// Não usamos deleteMany porque Palpite.jogoId é FK sem CASCADE — apagar
+// jogos com palpites relacionados daria erro. O check explícito preserva
+// dados e reentrância segura do seed.
+async function criarJogoSeNaoExiste(data: {
+  fase: 'grupos' | 'dezesseis_avos' | 'oitavas' | 'quartas' | 'semifinal' | 'terceiro' | 'final'
+  grupo?: string | null
+  dataHora: Date
+  timeA: string | null
+  timeB: string | null
+  sofascoreId: string
+  cidade: string
+  isBolao: boolean
+}): Promise<boolean> {
+  const existing = await prisma.jogo.findFirst({
+    where: { sofascoreId: data.sofascoreId },
+  })
+  if (existing) return false
+  await prisma.jogo.create({ data })
+  return true
+}
+
 async function main() {
   console.log('Criando jogos da fase de grupos (idempotente)...')
   let gruposCriados = 0
   for (const jogo of jogosData) {
-    const existing = await prisma.jogo.findFirst({
-      where: { sofascoreId: jogo.sofascoreId },
+    const created = await criarJogoSeNaoExiste({
+      fase: 'grupos',
+      grupo: jogo.grupo,
+      dataHora: new Date(jogo.dataHora),
+      timeA: jogo.timeA,
+      timeB: jogo.timeB,
+      sofascoreId: jogo.sofascoreId,
+      cidade: jogo.cidade,
+      isBolao: JOGOS_BOLAO.has(`${jogo.timeA}|${jogo.timeB}`),
     })
-    if (existing) continue
-    await prisma.jogo.create({
-      data: {
-        fase: 'grupos',
-        grupo: jogo.grupo,
-        dataHora: new Date(jogo.dataHora),
-        timeA: jogo.timeA,
-        timeB: jogo.timeB,
-        sofascoreId: jogo.sofascoreId,
-        cidade: jogo.cidade,
-        status: 'agendado',
-        isBolao: JOGOS_BOLAO.has(`${jogo.timeA}|${jogo.timeB}`),
-      },
-    })
-    gruposCriados++
+    if (created) gruposCriados++
   }
   console.log(`  ${gruposCriados} jogos da fase de grupos criados (resto já existia)`)
 
   console.log('Criando jogos do mata-mata (idempotente)...')
   let mataMataCriados = 0
   for (const jogo of mataMataData) {
-    const existing = await prisma.jogo.findFirst({
-      where: { sofascoreId: jogo.sofascoreId },
+    const created = await criarJogoSeNaoExiste({
+      fase: jogo.fase,
+      grupo: null,
+      dataHora: new Date(jogo.dataHora),
+      timeA: null,
+      timeB: null,
+      sofascoreId: jogo.sofascoreId,
+      cidade: jogo.cidade,
+      isBolao: false,
     })
-    if (existing) continue
-    await prisma.jogo.create({
-      data: {
-        fase: jogo.fase,
-        grupo: null,
-        dataHora: new Date(jogo.dataHora),
-        timeA: null,
-        timeB: null,
-        sofascoreId: jogo.sofascoreId,
-        cidade: jogo.cidade,
-        status: 'agendado',
-        isBolao: false,
-      },
-    })
-    mataMataCriados++
+    if (created) mataMataCriados++
   }
   console.log(`  ${mataMataCriados} jogos do mata-mata criados (resto já existia)`)
 
