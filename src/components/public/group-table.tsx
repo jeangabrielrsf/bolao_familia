@@ -35,30 +35,30 @@ export function GroupTable({ grupo, qualificadosTerceiros }: Props) {
             const isEliminado = pos > 3 || (isTerceiro && !terceiroQualificado)
 
             const rowBg = isClassificado
-              ? 'bg-green-50'
+              ? 'bg-green-50 dark:bg-green-950/40'
               : terceiroQualificado
-              ? 'bg-amber-50'
+              ? 'bg-amber-50 dark:bg-amber-950/40'
               : isEliminado
-              ? 'bg-red-50'
+              ? 'bg-red-50 dark:bg-red-950/40'
               : ''
 
             const borderAccent = isClassificado
-              ? 'border-l-4 border-green-500'
+              ? 'border-l-4 border-green-500 dark:border-l-green-400'
               : terceiroQualificado
-              ? 'border-l-4 border-amber-500'
+              ? 'border-l-4 border-amber-500 dark:border-l-amber-400'
               : isEliminado
-              ? 'border-l-4 border-red-500'
+              ? 'border-l-4 border-red-500 dark:border-l-red-400'
               : ''
 
             return (
-              <tr key={time.time} className={`${rowBg} ${borderAccent} border-b last:border-0`}>
+              <tr key={time.time} className={`${rowBg} ${borderAccent} border-b border-border last:border-0`}>
                 <td className="px-3 py-2 text-muted-foreground tabular-nums">{pos}</td>
                 <td className="px-3 py-2 font-medium">
                   <div className="flex items-center gap-2">
                     {getTimeFlag(time.time) && <Flag codigoIso={getTimeFlag(time.time)!} size={20} />}
                     <span>{time.time}</span>
                     {time.posicao === null && (
-                      <span className="text-xs text-amber-600" title="Desempate exige fair play / ranking FIFA">⚠</span>
+                      <span className="text-xs text-amber-600 dark:text-amber-400" title="Desempate exige fair play / ranking FIFA">⚠</span>
                     )}
                   </div>
                 </td>
