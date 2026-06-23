@@ -1,12 +1,15 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import Link from 'next/link'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
+import { JogoFilters, FiltrosJogos } from '@/components/admin/jogo-filters'
+import { JogoPagination } from '@/components/admin/jogo-pagination'
 import { FASE_LABELS } from '@/lib/utils/constants'
 import { formatarDataHoraCompleta } from '@/lib/utils/date'
 import { toast } from 'sonner'
@@ -24,15 +27,42 @@ const STATUS_BADGE: Record<StatusJogo, { variant: 'default' | 'warning' | 'succe
   finalizado: { variant: 'success', label: 'Finalizado' },
 }
 
+const PER_PAGE = 25
+
 function formatDateTime(iso: string) {
   return formatarDataHoraCompleta(new Date(iso))
 }
 
+function parseFiltrosFromURL(params: URLSearchParams): FiltrosJogos {
+  return {
+    fases: (params.get('fase') || '').split(',').filter(Boolean),
+    statuses: (params.get('status') || '').split(',').filter(Boolean),
+    grupos: [],
+    time: params.get('q') || '',
+    de: '',
+    ate: '',
+  }
+}
+
 export default function AdminJogosPage() {
+  const router = useRouter()
+  const searchParams = useSearchParams()
+  const [filtros, setFiltros] = useState<FiltrosJogos>(parseFiltrosFromURL(searchParams))
+  const [page, setPage] = useState(1)
   const [jogos, setJogos] = useState<Jogo[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [saveStates, setSaveStates] = useState<Record<string, JogoSaveState>>({})
+
+  useEffect(() => {
+    const params = new URLSearchParams()
+    if (filtros.fases.length) params.set('fase', filtros.fases.join(','))
+    if (filtros.statuses.length) params.set('status', filtros.statuses.join(','))
+    if (filtros.time) params.set('q', filtros.time)
+    const qs = params.toString()
+    const target = qs ? `/admin/jogos?${qs}` : '/admin/jogos'
+    router.replace(target)
+  }, [filtros, router])
 
   const fetchJogos = useCallback(async () => {
     try {
@@ -48,6 +78,22 @@ export default function AdminJogosPage() {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchJogos()
   }, [fetchJogos])
+
+  const jogosFiltrados = useMemo(() => {
+    return jogos.filter(j => {
+      if (filtros.fases.length > 0 && !filtros.fases.includes(j.fase)) return false
+      if (filtros.statuses.length > 0 && !filtros.statuses.includes(j.status)) return false
+      if (filtros.time) {
+        const q = filtros.time.toLowerCase()
+        if (!j.timeA?.toLowerCase().includes(q) && !j.timeB?.toLowerCase().includes(q)) return false
+      }
+      return true
+    })
+  }, [jogos, filtros])
+
+  const jogosPaginados = useMemo(() => {
+    return jogosFiltrados.slice((page - 1) * PER_PAGE, page * PER_PAGE)
+  }, [jogosFiltrados, page])
 
   function getSaveState(jogoId: string): JogoSaveState {
     return saveStates[jogoId] || { resultadoA: '', resultadoB: '', saving: false }
@@ -97,7 +143,8 @@ export default function AdminJogosPage() {
     )
   }
 
-  const grouped = groupByFase(jogos)
+  const grouped = groupByFase(jogosPaginados)
+  const fasesVisiveis = FASE_ORDER.filter(f => grouped[f]?.length > 0)
 
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8 animate-fade-in-up">
@@ -106,6 +153,8 @@ export default function AdminJogosPage() {
       </Button>
       <h1 className="text-3xl font-display tracking-wide">Jogos</h1>
 
+      <JogoFilters value={filtros} onChange={(f) => { setFiltros(f); setPage(1) }} />
+
       {error && (
         <Card><CardContent className="p-4 flex items-center gap-2">
           <Badge variant="destructive">{error}</Badge>
@@ -113,13 +162,12 @@ export default function AdminJogosPage() {
         </CardContent></Card>
       )}
 
-      {jogos.length === 0 && !error && (
-        <Card><CardContent className="flex flex-col items-center justify-center py-12"><p className="text-muted-foreground">Nenhum jogo cadastrado.</p></CardContent></Card>
+      {jogosFiltrados.length === 0 && !error && (
+        <Card><CardContent className="flex flex-col items-center justify-center py-12"><p className="text-muted-foreground">Nenhum jogo encontrado com os filtros atuais.</p></CardContent></Card>
       )}
 
-      {FASE_ORDER.map((fase) => {
+      {fasesVisiveis.map((fase) => {
         const faseJogos = grouped[fase]
-        if (!faseJogos || faseJogos.length === 0) return null
         return (
           <div key={fase} className="space-y-3">
             <h2 className="text-xl font-display tracking-wide">{FASE_LABELS[fase] || fase}</h2>
@@ -171,6 +219,8 @@ export default function AdminJogosPage() {
           </div>
         )
       })}
+
+      <JogoPagination total={jogosFiltrados.length} page={page} perPage={PER_PAGE} onPageChange={setPage} />
     </div>
   )
 }
