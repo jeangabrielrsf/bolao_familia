@@ -68,3 +68,27 @@ def test_worldcup26_mata_mata_nao_casa_com_times_diferentes():
         time_b_pt="México",
     )
     assert result is None
+
+
+def test_worldcup26_mata_mata_api_retorna_group_none():
+    """worldcup26.ir pode retornar group=None para mata-mata — defensivo 'or \"\"' deve casar."""
+    api_match = _wc_match(
+        group=None,
+        local_date="06/29/2026 18:00",
+        stadium_id=10,
+        home_en="Brazil",
+        away_en="Mexico",
+        home_score=3,
+        away_score=0,
+    )
+    result = worldcup26.match_game(
+        [api_match],
+        "",
+        "2026-06-29T22:00:00Z",
+        stadiums={},
+        time_a_pt="Brasil",
+        time_b_pt="México",
+    )
+    assert result is not None
+    assert result["resultadoA"] == 3
+    assert result["resultadoB"] == 0
