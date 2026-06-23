@@ -33,6 +33,8 @@ export const TIMES_VALIDOS = [
 
 export const GRUPOS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L'] as const
 
+export const FASES = ['grupos', 'dezesseis_avos', 'oitavas', 'quartas', 'semifinal', 'terceiro', 'final'] as const
+
 export const FASE_LABELS: Record<string, string> = {
   grupos: 'Fase de Grupos',
   dezerveis_avos: '16avos de Final',
