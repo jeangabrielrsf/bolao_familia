@@ -6,6 +6,7 @@ import { getClassificacaoGrupos } from '@/lib/services/bracket/standings'
 import { getMelhores8Terceiros } from '@/lib/services/bracket/best-thirds'
 import { projetarChaveamento } from '@/lib/services/bracket/projector'
 import { GroupTable } from './group-table'
+import { GroupLegend } from './group-legend'
 import { Bracket } from './bracket'
 import { SimulatorBanner } from './simulator-banner'
 
@@ -60,6 +61,7 @@ export function SimulatorTab({ classificacaoInicial, bracketInicial, jogos }: Pr
       <p className="text-sm text-muted-foreground mb-4">
         Edite placares de jogos futuros pra ver como isso afeta a classificação e o chaveamento.
       </p>
+      <GroupLegend />
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 mb-8">
         {classificacao.map(g => (
           <GroupTable key={g.grupo} grupo={g} qualificadosTerceiros={qualificadosTerceiros} />
