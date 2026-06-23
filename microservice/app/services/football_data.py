@@ -159,13 +159,14 @@ def match_game(
         time_a_tla: TLA (código FIFA) do timeA do jogo do DB (ex: "BRA")
         time_b_tla: TLA do timeB do jogo do DB
     """
-    group_normalized = _normalize_group(group)
+    group_normalized = _normalize_group(group) if group else None
 
     candidatos: list[dict] = []
     for match in matches:
-        match_group = match.get("group", "")
-        if match_group != group_normalized:
-            continue
+        if group_normalized is not None:
+            match_group = match.get("group", "")
+            if match_group != group_normalized:
+                continue
 
         utc_date = match.get("utcDate", "")
         if not _dates_match(utc_date, data_hora):
