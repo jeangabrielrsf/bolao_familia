@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback, useMemo } from 'react'
+import { Suspense, useState, useEffect, useCallback, useMemo } from 'react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Card, CardContent } from '@/components/ui/card'
@@ -45,6 +45,14 @@ function parseFiltrosFromURL(params: URLSearchParams): FiltrosJogos {
 }
 
 export default function AdminJogosPage() {
+  return (
+    <Suspense fallback={null}>
+      <AdminJogosContent />
+    </Suspense>
+  )
+}
+
+function AdminJogosContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [filtros, setFiltros] = useState<FiltrosJogos>(parseFiltrosFromURL(searchParams))
