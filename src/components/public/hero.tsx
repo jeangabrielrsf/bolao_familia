@@ -36,7 +36,7 @@ export function Hero({ totalParticipantes, jogosStatus, percentualCopa }: HeroPr
             percentual={percentualCopa}
             finalizados={jogosStatus.finalizado}
             total={jogosStatus.finalizado + jogosStatus.emAndamento + jogosStatus.restante}
-            href="/jogos"
+            href="/copa"
           />
         </div>
       </div>

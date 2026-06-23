@@ -1,4 +1,6 @@
 import type { ClassificacaoGrupo } from '@/lib/services/bracket/types'
+import { Flag } from '@/components/ui/flag'
+import { getTimeFlag } from '@/lib/utils/flags'
 
 type Props = {
   grupo: ClassificacaoGrupo
@@ -33,10 +35,13 @@ export function GroupTable({ grupo }: Props) {
               <tr key={time.time} className="border-b last:border-0 hover:bg-muted/50">
                 <td className="px-3 py-2 text-muted-foreground tabular-nums">{pos}</td>
                 <td className="px-3 py-2 font-medium">
-                  {time.time}
-                  {time.posicao === null && (
-                    <span className="ml-2 text-xs text-amber-600" title="Desempate exige fair play / ranking FIFA">⚠</span>
-                  )}
+                  <div className="flex items-center gap-2">
+                    {getTimeFlag(time.time) && <Flag codigoIso={getTimeFlag(time.time)!} size={20} />}
+                    <span>{time.time}</span>
+                    {time.posicao === null && (
+                      <span className="text-xs text-amber-600" title="Desempate exige fair play / ranking FIFA">⚠</span>
+                    )}
+                  </div>
                 </td>
                 <td className="px-3 py-2 text-center tabular-nums font-bold">{time.pontos}</td>
                 <td className="px-3 py-2 text-center tabular-nums">{time.jogos}</td>
