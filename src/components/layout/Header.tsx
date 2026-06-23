@@ -11,6 +11,7 @@ const links = [
   { href: '/', label: 'Início' },
   { href: '/participantes', label: 'Participantes' },
   { href: '/jogos', label: 'Jogos' },
+  { href: '/copa', label: 'Copa' },
   { href: '/ranking', label: 'Ranking' },
   { href: '/regras', label: 'Regras' },
 ]
