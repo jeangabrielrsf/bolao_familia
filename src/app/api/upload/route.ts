@@ -58,8 +58,8 @@ export async function POST(request: NextRequest) {
       const pdfResult = await parsePdf(buffer)
       const mappedPalpites = pdfResult.palpites.map((p) => {
         const jogo = jogos.find(j =>
-          j.timeA.toLowerCase() === p.timeA.toLowerCase() &&
-          j.timeB.toLowerCase() === p.timeB.toLowerCase()
+          j.timeA?.toLowerCase() === p.timeA.toLowerCase() &&
+          j.timeB?.toLowerCase() === p.timeB.toLowerCase()
         )
         return {
           jogoId: jogo?.id ?? '',
@@ -82,8 +82,8 @@ export async function POST(request: NextRequest) {
       const fotoResult = await parseFoto(buffer, mime)
       const mappedPalpites = fotoResult.palpites.map((p) => {
         const jogo = jogos.find(j =>
-          j.timeA.toLowerCase() === p.timeA.toLowerCase() &&
-          j.timeB.toLowerCase() === p.timeB.toLowerCase()
+          j.timeA?.toLowerCase() === p.timeA.toLowerCase() &&
+          j.timeB?.toLowerCase() === p.timeB.toLowerCase()
         )
         return {
           jogoId: jogo?.id ?? '',

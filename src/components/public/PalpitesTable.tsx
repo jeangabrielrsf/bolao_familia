@@ -6,8 +6,8 @@ import { Badge } from '@/components/ui/badge'
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table'
 
 interface JogoPalpite {
-  timeA: string
-  timeB: string
+  timeA: string | null
+  timeB: string | null
   dataHora: Date
   resultadoA: number | null
   resultadoB: number | null
@@ -60,7 +60,7 @@ export function PalpitesTable({ titulo, palpites, config }: PalpitesTableProps) 
               const dataFormatada = formatarData(palpite.jogo.dataHora)
               return (
                 <TableRow key={palpite.id}>
-                  <TableCell>{palpite.jogo.timeA} vs {palpite.jogo.timeB}</TableCell>
+                  <TableCell>{palpite.jogo.timeA ?? 'A definir'} vs {palpite.jogo.timeB ?? 'A definir'}</TableCell>
                   <TableCell>{dataFormatada}</TableCell>
                   <TableCell>{palpite.placarA} x {palpite.placarB}</TableCell>
                   <TableCell>{finalizado ? `${resultadoA} x ${resultadoB}` : '-'}</TableCell>

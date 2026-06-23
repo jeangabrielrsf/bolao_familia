@@ -105,8 +105,8 @@ export default async function JogoDetailPage({
           <div className="flex items-center justify-center gap-2 sm:gap-6 py-4">
             <div className="flex-1 text-right flex items-center justify-end gap-1.5 sm:gap-3 min-w-0">
               {jogo.rankingTimeA && <span className="hidden sm:inline text-sm text-muted-foreground font-medium"><span className="text-xs text-muted-foreground/60 mr-1">FIFA</span>#{jogo.rankingTimeA}</span>}
-              {getTimeFlag(jogo.timeA) && <Flag codigoIso={getTimeFlag(jogo.timeA)!} size={20} />}
-              <span className="text-sm sm:text-xl md:text-2xl font-display tracking-wide truncate">{jogo.timeA}</span>
+              {jogo.timeA && getTimeFlag(jogo.timeA) && <Flag codigoIso={getTimeFlag(jogo.timeA)!} size={20} />}
+              <span className="text-sm sm:text-xl md:text-2xl font-display tracking-wide truncate">{jogo.timeA ?? 'A definir'}</span>
             </div>
             <div className="shrink-0 text-center px-2">
               {placarVisivel ? (
@@ -123,8 +123,8 @@ export default async function JogoDetailPage({
               )}
             </div>
             <div className="flex-1 text-left flex items-center gap-1.5 sm:gap-3 min-w-0">
-              <span className="text-sm sm:text-xl md:text-2xl font-display tracking-wide truncate">{jogo.timeB}</span>
-              {getTimeFlag(jogo.timeB) && <Flag codigoIso={getTimeFlag(jogo.timeB)!} size={20} />}
+              <span className="text-sm sm:text-xl md:text-2xl font-display tracking-wide truncate">{jogo.timeB ?? 'A definir'}</span>
+              {jogo.timeB && getTimeFlag(jogo.timeB) && <Flag codigoIso={getTimeFlag(jogo.timeB)!} size={20} />}
               {jogo.rankingTimeB && <span className="hidden sm:inline text-sm text-muted-foreground font-medium"><span className="text-xs text-muted-foreground/60 mr-1">FIFA</span>#{jogo.rankingTimeB}</span>}
             </div>
           </div>

@@ -10,8 +10,8 @@ import { cn } from "@/lib/utils"
 
 interface GameCardProps {
   id?: string
-  timeA: string
-  timeB: string
+  timeA: string | null
+  timeB: string | null
   dataHora: Date
   grupo: string | null
   fase: string
@@ -36,6 +36,8 @@ export function GameCard({ id, timeA, timeB, dataHora, grupo, fase, resultadoA, 
   const placarBExibir = resultadoB ?? 0
   const temPenaltis = finalizado && fase !== 'grupos' && (placarPenaltisA !== null && placarPenaltisA !== undefined)
   const isBrasil = timeA === 'Brasil' || timeB === 'Brasil'
+  const timeAExibir = timeA ?? 'A definir'
+  const timeBExibir = timeB ?? 'A definir'
 
   const content = (
     <Card className={cn(
@@ -63,8 +65,8 @@ export function GameCard({ id, timeA, timeB, dataHora, grupo, fase, resultadoA, 
         <div className="flex items-center justify-between gap-4 min-h-[56px]">
           <div className="flex-1 text-right flex items-center justify-end gap-1.5">
             {rankingTimeA && <span className="text-[11px] text-muted-foreground font-medium whitespace-nowrap"><span className="text-[9px] text-muted-foreground/60 mr-0.5">FIFA</span>#{rankingTimeA}</span>}
-            {getTimeFlag(timeA) && <Flag codigoIso={getTimeFlag(timeA)!} size={20} />}
-            <span className="font-display text-base sm:text-lg tracking-wide leading-tight">{timeA}</span>
+            {timeA && getTimeFlag(timeA) && <Flag codigoIso={getTimeFlag(timeA)!} size={20} />}
+            <span className="font-display text-base sm:text-lg tracking-wide leading-tight">{timeAExibir}</span>
           </div>
           <div className="shrink-0 text-center">
             {placarVisivel ? (
@@ -81,8 +83,8 @@ export function GameCard({ id, timeA, timeB, dataHora, grupo, fase, resultadoA, 
             )}
           </div>
           <div className="flex-1 text-left flex items-center gap-1.5">
-            <span className="font-display text-base sm:text-lg tracking-wide leading-tight">{timeB}</span>
-            {getTimeFlag(timeB) && <Flag codigoIso={getTimeFlag(timeB)!} size={20} />}
+            <span className="font-display text-base sm:text-lg tracking-wide leading-tight">{timeBExibir}</span>
+            {timeB && getTimeFlag(timeB) && <Flag codigoIso={getTimeFlag(timeB)!} size={20} />}
             {rankingTimeB && <span className="text-[11px] text-muted-foreground font-medium whitespace-nowrap"><span className="text-[9px] text-muted-foreground/60 mr-0.5">FIFA</span>#{rankingTimeB}</span>}
           </div>
         </div>

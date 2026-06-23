@@ -1,7 +1,7 @@
 interface JogoPayload {
   sofascoreId: string
-  timeA: string
-  timeB: string
+  timeA: string | null
+  timeB: string | null
   dataHora: string
   grupo: string
 }

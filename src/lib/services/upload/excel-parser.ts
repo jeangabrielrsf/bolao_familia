@@ -3,8 +3,8 @@ import type { UploadResult, PalpiteDTO, PalpiteExtraDTO, PalpiteGrupoParsed } fr
 
 export interface JogoInfo {
   id: string
-  timeA: string
-  timeB: string
+  timeA: string | null
+  timeB: string | null
 }
 
 export function parseExcel(buffer: Buffer, jogos: JogoInfo[]): UploadResult {
@@ -54,6 +54,7 @@ function parseSheet(sheet: XLSX.WorkSheet, jogos: JogoInfo[], sheetName: string)
 
   const jogosMap = new Map<string, JogoInfo>()
   for (const jogo of jogos) {
+    if (!jogo.timeA || !jogo.timeB) continue
     const key = `${normalizeTeamName(jogo.timeA)}|${normalizeTeamName(jogo.timeB)}`
     jogosMap.set(key, jogo)
   }

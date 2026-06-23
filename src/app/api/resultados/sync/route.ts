@@ -6,8 +6,8 @@ import { prisma } from '@/lib/db/client'
 
 interface MudancaJogo {
   sofascoreId: string
-  timeA: string
-  timeB: string
+  timeA: string | null
+  timeB: string | null
   grupo: string | null
   fase: string
   mudouPlacar: boolean
