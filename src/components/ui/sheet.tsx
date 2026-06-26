@@ -9,6 +9,8 @@ type Side = 'right' | 'bottom'
 type SheetContentProps = React.ComponentProps<typeof DialogPrimitive.Content> & {
   side?: Side
   onOpenChange?: (open: boolean) => void
+  overlayClassName?: string
+  zIndex?: number
 }
 
 const Sheet = DialogPrimitive.Root
@@ -17,15 +19,17 @@ const SheetClose = DialogPrimitive.Close
 
 const SheetOverlay = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Overlay>,
-  React.ComponentPropsWithoutRef<typeof DialogPrimitive.Overlay>
->(({ className, ...props }, ref) => (
+  React.ComponentPropsWithoutRef<typeof DialogPrimitive.Overlay> & { overlayClassName?: string }
+>(({ className, overlayClassName, ...props }, ref) => (
   <DialogPrimitive.Overlay
     className={cn(
-      'fixed inset-0 z-50 bg-black/40',
+      'fixed inset-0 bg-black/60',
       'data-[state=open]:animate-in data-[state=open]:fade-in-0',
       'data-[state=closed]:animate-out data-[state=closed]:fade-out-0',
+      overlayClassName,
       className,
     )}
+    style={{ zIndex: 60 }}
     {...props}
     ref={ref}
   />
@@ -48,16 +52,17 @@ const sideClasses: Record<Side, string> = {
 const SheetContent = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Content>,
   SheetContentProps
->(({ side = 'right', className, children, onOpenChange, ...props }, ref) => (
+>(({ side = 'right', className, children, onOpenChange, overlayClassName, zIndex = 50, ...props }, ref) => (
   <DialogPrimitive.Portal>
-    <SheetOverlay />
+    <SheetOverlay overlayClassName={overlayClassName} />
     <DialogPrimitive.Content
       ref={ref}
       className={cn(
-        'fixed z-50 gap-4 bg-background p-6 shadow-lg',
+        'fixed gap-4 bg-background p-6 shadow-lg',
         sideClasses[side],
         className,
       )}
+      style={{ zIndex: zIndex + 10 }}
       onPointerDownOutside={() => onOpenChange?.(false)}
       onEscapeKeyDown={() => onOpenChange?.(false)}
       {...props}
