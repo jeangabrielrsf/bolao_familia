@@ -503,7 +503,8 @@ Criar `src/components/public/jogo-simulator-row.tsx`:
 ```tsx
 'use client'
 import { Input } from '@/components/ui/input'
-import { Flag } from './flag'
+import { Flag } from '@/components/ui/flag'
+import { getTimeFlag } from '@/lib/utils/flags'
 import type { JogoComTimes } from '@/lib/services/bracket/types'
 
 type Props = {
@@ -517,18 +518,26 @@ export function JogoSimulatorRow({ jogo, onPlacarChange }: Props) {
   if (finalizado && jogo.resultadoA !== null && jogo.resultadoB !== null) {
     return (
       <div className="flex items-center gap-3 py-2 opacity-60">
-        <Flag team={jogo.timeA ?? ''} size="sm" />
+        {jogo.timeA && getTimeFlag(jogo.timeA) && (
+          <Flag codigoIso={getTimeFlag(jogo.timeA)!} size={20} />
+        )}
         <span className="flex-1 font-medium">{jogo.timeA}</span>
-        <span className="font-mono tabular-nums">{jogo.resultadoA} × {jogo.resultadoB}</span>
+        <span className="font-mono tabular-nums">{jogo.resultadoA}</span>
+        <span className="text-muted-foreground">×</span>
+        <span className="font-mono tabular-nums">{jogo.resultadoB}</span>
         <span className="flex-1 font-medium text-right">{jogo.timeB}</span>
-        <Flag team={jogo.timeB ?? ''} size="sm" />
+        {jogo.timeB && getTimeFlag(jogo.timeB) && (
+          <Flag codigoIso={getTimeFlag(jogo.timeB)!} size={20} />
+        )}
       </div>
     )
   }
 
   return (
     <div className="flex items-center gap-3 py-2">
-      <Flag team={jogo.timeA ?? ''} size="sm" />
+      {jogo.timeA && getTimeFlag(jogo.timeA) && (
+        <Flag codigoIso={getTimeFlag(jogo.timeA)!} size={20} />
+      )}
       <span className="flex-1 font-medium">{jogo.timeA}</span>
       <Input
         type="number"
@@ -550,7 +559,9 @@ export function JogoSimulatorRow({ jogo, onPlacarChange }: Props) {
         className="w-16 text-center"
       />
       <span className="flex-1 font-medium text-right">{jogo.timeB}</span>
-      <Flag team={jogo.timeB ?? ''} size="sm" />
+      {jogo.timeB && getTimeFlag(jogo.timeB) && (
+        <Flag codigoIso={getTimeFlag(jogo.timeB)!} size={20} />
+      )}
     </div>
   )
 }
