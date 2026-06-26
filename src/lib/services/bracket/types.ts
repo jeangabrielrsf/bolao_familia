@@ -38,8 +38,8 @@ export type BracketSlot = {
   status: 'agendado' | 'em_andamento' | 'finalizado'
   vencedor: 'A' | 'B' | null
   sourceGrupo?: {
-    timeA: { grupo: string; posicao: 1 | 2 | 3 }
-    timeB: { grupo: string; posicao: 1 | 2 | 3 }
+    timeA: { grupo: string; posicao: 1 | 2 | 3; gruposAlternativos?: string[] }
+    timeB: { grupo: string; posicao: 1 | 2 | 3; gruposAlternativos?: string[] }
   }
 }
 
