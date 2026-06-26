@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import {
   Sheet,
   SheetContent,
@@ -9,6 +9,7 @@ import {
 } from '@/components/ui/sheet'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
+import { useIsDesktop } from '@/lib/hooks/use-is-desktop'
 import { JogoSimulatorRow } from './jogo-simulator-row'
 import type { JogoComTimes, ClassificacaoGrupo } from '@/lib/services/bracket/types'
 
@@ -21,15 +22,7 @@ type Props = {
 }
 
 export function GroupSimulator({ grupo, jogos, open, onOpenChange, onPlacarChange }: Props) {
-  const [isDesktop, setIsDesktop] = useState(false)
-
-  useEffect(() => {
-    const mq = window.matchMedia('(min-width: 768px)')
-    const onChange = () => setIsDesktop(mq.matches)
-    onChange()
-    mq.addEventListener('change', onChange)
-    return () => mq.removeEventListener('change', onChange)
-  }, [])
+  const isDesktop = useIsDesktop()
 
   useEffect(() => {
     if (isDesktop || !open) return
@@ -49,7 +42,7 @@ export function GroupSimulator({ grupo, jogos, open, onOpenChange, onPlacarChang
         className={cn(
           'flex flex-col gap-0 p-0',
           isDesktop
-            ? 'sm:max-w-md p-6'
+            ? 'sm:max-w-md'
             : 'h-[100dvh] max-h-[100dvh] rounded-t-2xl border-t shadow-2xl',
         )}
       >
