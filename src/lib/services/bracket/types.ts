@@ -37,6 +37,7 @@ export type BracketSlot = {
   placarPenaltisB: number | null
   status: 'agendado' | 'em_andamento' | 'finalizado'
   vencedor: 'A' | 'B' | null
+  dataHora: Date | null
   sourceGrupo?: {
     timeA: { grupo: string; posicao: 1 | 2 | 3; gruposAlternativos?: string[] }
     timeB: { grupo: string; posicao: 1 | 2 | 3; gruposAlternativos?: string[] }

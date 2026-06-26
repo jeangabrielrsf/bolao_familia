@@ -10,11 +10,13 @@ const slotFinalizado: BracketSlot = {
   timeA: 'Brasil', timeB: 'México',
   placarA: 2, placarB: 1, placarPenaltisA: null, placarPenaltisB: null,
   status: 'finalizado', vencedor: 'A',
+  dataHora: null,
 }
 
 const slotTBD: BracketSlot = {
   ...slotFinalizado, timeA: null, timeB: null,
   placarA: null, placarB: null, status: 'agendado', vencedor: null,
+  dataHora: null,
 }
 
 const slotComPenaltes: BracketSlot = {
@@ -23,10 +25,16 @@ const slotComPenaltes: BracketSlot = {
   placarPenaltisA: 4, placarPenaltisB: 3,
 }
 
+const slotFuturo: BracketSlot = {
+  ...slotFinalizado, status: 'agendado', placarA: null, placarB: null, vencedor: null,
+  dataHora: new Date('2026-06-28T16:00:00.000Z'),
+}
+
 const slotTerceiroIndefinido: BracketSlot = {
   jogoId: 'r32-2', fase: 'dezesseis_avos', slot: 2,
   timeA: 'Alemanha', timeB: null,
   placarA: null, placarB: null, status: 'agendado', vencedor: null,
+  dataHora: null,
   sourceGrupo: {
     timeA: { grupo: 'E', posicao: 1 },
     timeB: { grupo: 'A', posicao: 3, gruposAlternativos: ['A', 'B', 'C', 'D', 'F'] },
@@ -37,6 +45,7 @@ const slotTerceiroDefinido: BracketSlot = {
   jogoId: 'r32-2', fase: 'dezesseis_avos', slot: 2,
   timeA: 'Alemanha', timeB: 'Marrocos',
   placarA: null, placarB: null, status: 'agendado', vencedor: null,
+  dataHora: null,
   sourceGrupo: {
     timeA: { grupo: 'E', posicao: 1 },
     timeB: { grupo: 'C', posicao: 3, gruposAlternativos: ['A', 'B', 'C', 'D', 'F'] },
@@ -87,5 +96,27 @@ describe('BracketMatch', () => {
     aDefinir.forEach(el => {
       expect(el.className).not.toMatch(/italic/)
     })
+  })
+
+  it('renderiza data/hora (Brasília) quando dataHora está setada', () => {
+    // 2026-06-28T16:00:00.000Z = 13:00 Brasília (UTC-3)
+    render(<BracketMatch slot={slotFuturo} />)
+    expect(screen.getByText('28/06 · 13:00')).toBeInTheDocument()
+  })
+
+  it('não renderiza data/hora quando dataHora é null', () => {
+    render(<BracketMatch slot={slotTBD} />)
+    expect(screen.queryByText(/\d{2}\/\d{2} · \d{2}:\d{2}/)).not.toBeInTheDocument()
+  })
+
+  it('renderiza como link quando href é fornecido', () => {
+    render(<BracketMatch slot={slotFuturo} href="/jogos/r32-1" />)
+    const link = screen.getByRole('link')
+    expect(link).toHaveAttribute('href', '/jogos/r32-1')
+  })
+
+  it('não renderiza link quando href não é fornecido', () => {
+    render(<BracketMatch slot={slotFuturo} />)
+    expect(screen.queryByRole('link')).not.toBeInTheDocument()
   })
 })

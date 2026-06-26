@@ -1,10 +1,13 @@
+import Link from 'next/link'
 import type { BracketSlot } from '@/lib/services/bracket/types'
 import { Flag } from '@/components/ui/flag'
 import { getTimeFlag } from '@/lib/utils/flags'
+import { formatarData, formatarHora } from '@/lib/utils/date'
 
 type Props = {
   slot: BracketSlot
   size?: 'sm' | 'md' | 'lg'
+  href?: string
 }
 
 const SIZE_CLASSES = {
@@ -30,7 +33,11 @@ function placeholder3rd(source: BracketSlot['sourceGrupo'], lado: 'timeA' | 'tim
   return `3º de ${ultimos} ou ${grupos[grupos.length - 1]}`
 }
 
-export function BracketMatch({ slot, size = 'md' }: Props) {
+function formatarDataHora(data: Date): string {
+  return `${formatarData(data)} · ${formatarHora(data)}`
+}
+
+export function BracketMatch({ slot, size = 'md', href }: Props) {
   const isFinalizado = slot.status === 'finalizado'
   const isTBD = slot.timeA === null && slot.timeB === null
   const comPenaltes = isFinalizado
@@ -44,9 +51,12 @@ export function BracketMatch({ slot, size = 'md' }: Props) {
   const textoB = slot.timeB ?? placeholderB ?? 'A definir'
   const italicA = !!placeholderA
   const italicB = !!placeholderB
+  const dataHoraTexto = slot.dataHora ? formatarDataHora(slot.dataHora) : null
 
-  return (
-    <div className={`bg-card border rounded ${SIZE_CLASSES[size]} ${isTBD ? 'opacity-50' : ''}`}>
+  const cardClasses = `block bg-card border rounded ${SIZE_CLASSES[size]} ${isTBD ? 'opacity-50' : ''} ${href ? 'hover:bg-muted/50 transition-colors cursor-pointer' : ''}`
+
+  const inner = (
+    <>
       <div className="flex items-center justify-between gap-2">
         <span className={`flex-1 truncate flex items-center gap-1.5 ${slot.vencedor === 'A' ? 'font-bold' : ''}`}>
           {slot.timeA && getTimeFlag(slot.timeA) && <Flag codigoIso={getTimeFlag(slot.timeA)!} size={size === 'sm' ? 14 : 18} />}
@@ -66,6 +76,21 @@ export function BracketMatch({ slot, size = 'md' }: Props) {
           ({slot.placarPenaltisA}-{slot.placarPenaltisB} pen)
         </div>
       )}
-    </div>
+      {dataHoraTexto && (
+        <div className="text-[10px] text-muted-foreground mt-1.5 whitespace-nowrap border-t pt-1">
+          {dataHoraTexto}
+        </div>
+      )}
+    </>
   )
+
+  if (href) {
+    return (
+      <Link href={href} className={cardClasses}>
+        {inner}
+      </Link>
+    )
+  }
+
+  return <div className={cardClasses}>{inner}</div>
 }

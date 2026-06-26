@@ -29,6 +29,7 @@ export function projetarChaveamento(input: Input): BracketSlot[] {
       placarPenaltisB: jogo.placarPenaltisB,
       status: jogo.status,
       vencedor: jogo.vencedor === 1 ? 'A' : jogo.vencedor === 2 ? 'B' : null,
+      dataHora: jogo.dataHora,
       sourceGrupo: {
         timeA: extrairOrigem(refA, resA.grupo),
         timeB: extrairOrigem(refB, resB.grupo),
@@ -59,6 +60,7 @@ export function projetarChaveamento(input: Input): BracketSlot[] {
         placarPenaltisB: jogo.placarPenaltisB,
         status: jogo.status,
         vencedor: jogo.vencedor === 1 ? 'A' : jogo.vencedor === 2 ? 'B' : null,
+        dataHora: jogo.dataHora,
       })
     }
   }
@@ -79,6 +81,7 @@ export function projetarChaveamento(input: Input): BracketSlot[] {
       placarPenaltisB: final.placarPenaltisB,
       status: final.status,
       vencedor: final.vencedor === 1 ? 'A' : final.vencedor === 2 ? 'B' : null,
+      dataHora: final.dataHora,
     })
   }
 
@@ -96,6 +99,7 @@ export function projetarChaveamento(input: Input): BracketSlot[] {
       placarPenaltisB: terceiro.placarPenaltisB,
       status: terceiro.status,
       vencedor: terceiro.vencedor === 1 ? 'A' : terceiro.vencedor === 2 ? 'B' : null,
+      dataHora: terceiro.dataHora,
     })
   }
 

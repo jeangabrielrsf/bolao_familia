@@ -47,7 +47,7 @@ export function BracketGrid({ slots }: Props) {
           if (!slot) return null
           return (
             <div key={`r32-${i}`} style={{ gridRow: i, gridColumn: 1 }} className="flex items-center">
-              <BracketMatch slot={slot} size="sm" />
+              <BracketMatch slot={slot} size="sm" href={`/jogos/${slot.jogoId}`} />
             </div>
           )
         })}
@@ -62,7 +62,7 @@ export function BracketGrid({ slots }: Props) {
               style={{ gridRow: `${(i - 1) * 2 + 1} / span 2`, gridColumn: 2 }}
               className="flex items-center"
             >
-              <BracketMatch slot={slot} size="sm" />
+              <BracketMatch slot={slot} size="sm" href={`/jogos/${slot.jogoId}`} />
             </div>
           )
         })}
@@ -77,7 +77,7 @@ export function BracketGrid({ slots }: Props) {
               style={{ gridRow: `${(i - 1) * 4 + 1} / span 4`, gridColumn: 3 }}
               className="flex items-center"
             >
-              <BracketMatch slot={slot} size="sm" />
+              <BracketMatch slot={slot} size="sm" href={`/jogos/${slot.jogoId}`} />
             </div>
           )
         })}
@@ -92,7 +92,7 @@ export function BracketGrid({ slots }: Props) {
               style={{ gridRow: `${(i - 1) * 8 + 1} / span 8`, gridColumn: 4 }}
               className="flex items-center"
             >
-              <BracketMatch slot={slot} size="sm" />
+              <BracketMatch slot={slot} size="sm" href={`/jogos/${slot.jogoId}`} />
             </div>
           )
         })}
@@ -107,7 +107,7 @@ export function BracketGrid({ slots }: Props) {
               style={{ gridRow: '1 / span 16', gridColumn: 5 }}
               className="flex items-center"
             >
-              <BracketMatch slot={slot} size="md" />
+              <BracketMatch slot={slot} size="md" href={`/jogos/${slot.jogoId}`} />
             </div>
           )
         })()}
@@ -125,7 +125,7 @@ export function BracketGrid({ slots }: Props) {
               <div className="text-xs font-display tracking-wide text-muted-foreground mb-1">
                 {FASE_LABEL.terceiro}
               </div>
-              <BracketMatch slot={slot} size="sm" />
+              <BracketMatch slot={slot} size="sm" href={`/jogos/${slot.jogoId}`} />
             </div>
           )
         })()}

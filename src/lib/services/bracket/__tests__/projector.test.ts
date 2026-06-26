@@ -179,4 +179,27 @@ describe('projetarChaveamento', () => {
     expect(m2.timeB).not.toBeNull()
     expect(['Time A3', 'Time B3']).toContain(m2.timeB)
   })
+
+  it('propaga dataHora do Jogo em todos os slots mata-mata', () => {
+    const dataR32 = new Date('2026-06-28T16:00:00.000Z')
+    const dataR16 = new Date('2026-07-04T20:00:00.000Z')
+    const dataFinal = new Date('2026-07-19T20:00:00.000Z')
+    const jogos = makeChaveamentoCompleto().map(j => {
+      if (j.sofascoreId?.startsWith('R32-')) return { ...j, dataHora: dataR32 }
+      if (j.sofascoreId?.startsWith('R16-')) return { ...j, dataHora: dataR16 }
+      if (j.sofascoreId === 'F-M1') return { ...j, dataHora: dataFinal }
+      return j
+    })
+    const result = projetarChaveamento({
+      classificacao: [],
+      melhoresTerceiros: [],
+      jogosMataMata: jogos,
+    })
+    const r32 = result.find(s => s.fase === 'dezesseis_avos' && s.slot === 1)!
+    const r16 = result.find(s => s.fase === 'oitavas' && s.slot === 1)!
+    const fin = result.find(s => s.fase === 'final' && s.slot === 1)!
+    expect(r32.dataHora).toEqual(dataR32)
+    expect(r16.dataHora).toEqual(dataR16)
+    expect(fin.dataHora).toEqual(dataFinal)
+  })
 })
