@@ -27,7 +27,7 @@ describe('Pares R32 oficiais FIFA 2026', () => {
       acc[g] = (acc[g] || 0) + 1
       return acc
     }, {} as Record<string, number>)
-    for (const [g, n] of Object.entries(counts)) {
+    for (const [, n] of Object.entries(counts)) {
       expect(n).toBeLessThanOrEqual(1)
     }
     // 16 R32, 12 grupos = 1X de cada um aparece exatamente 1×
