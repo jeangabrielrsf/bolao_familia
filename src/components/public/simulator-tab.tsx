@@ -2,6 +2,7 @@
 import { useState, useMemo } from 'react'
 import type { JogoComTimes } from '@/lib/services/bracket/types'
 import { useSimulacao } from '@/lib/hooks/use-simulacao'
+import { useIsDesktop } from '@/lib/hooks/use-is-desktop'
 import { getClassificacaoGrupos } from '@/lib/services/bracket/standings'
 import { getMelhores8Terceiros } from '@/lib/services/bracket/best-thirds'
 import { projetarChaveamento } from '@/lib/services/bracket/projector'
@@ -17,6 +18,7 @@ type Props = {
 
 export function SimulatorTab({ jogos }: Props) {
   const [grupoAberto, setGrupoAberto] = useState<string | null>(null)
+  const isDesktop = useIsDesktop()
   const { jogosComSimulacao, setPlacar, clear, count } = useSimulacao(jogos)
 
   const { classificacao, bracket, qualificadosTerceiros } = useMemo(() => {
@@ -43,12 +45,13 @@ export function SimulatorTab({ jogos }: Props) {
 
       <GroupLegend />
 
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3 mb-8">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 xl:grid-cols-3 gap-2 md:gap-3 mb-8">
         {classificacao.map(g => (
           <GroupCard
             key={g.grupo}
             grupo={g}
             qualificadosTerceiros={qualificadosTerceiros}
+            variant={isDesktop ? 'full' : 'compact'}
             onClick={() => setGrupoAberto(g.grupo)}
           />
         ))}
