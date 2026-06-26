@@ -86,3 +86,117 @@ describe('GroupSimulator', () => {
     expect(onPlacarChange).toHaveBeenCalledWith('j1', 3, 0)
   })
 })
+
+const mockMatchMedia = (matches: boolean) => {
+  Object.defineProperty(window, 'matchMedia', {
+    writable: true,
+    value: jest.fn().mockImplementation((query: string) => ({
+      matches,
+      media: query,
+      addEventListener: jest.fn(),
+      removeEventListener: jest.fn(),
+      dispatchEvent: jest.fn(),
+    })),
+  })
+}
+
+describe('GroupSimulator mobile drawer', () => {
+  beforeEach(() => {
+    mockMatchMedia(false) // mobile
+    document.body.style.overflow = ''
+  })
+
+  it('renderiza drag handle visual (h-1 w-8 rounded-full)', () => {
+    render(
+      <GroupSimulator
+        grupo={makeGrupo()}
+        jogos={[makeJogo('j1')]}
+        open
+        onOpenChange={() => {}}
+        onPlacarChange={() => {}}
+      />,
+    )
+    const handle = document.body.querySelector('.h-1.w-8.rounded-full')
+    expect(handle).toBeInTheDocument()
+  })
+
+  it('renderiza botão Fechar full-width no rodapé', () => {
+    render(
+      <GroupSimulator
+        grupo={makeGrupo()}
+        jogos={[makeJogo('j1')]}
+        open
+        onOpenChange={() => {}}
+        onPlacarChange={() => {}}
+      />,
+    )
+    const closeButton = screen.getByText('Fechar')
+    expect(closeButton).toBeInTheDocument()
+    expect(closeButton.className).toMatch(/w-full/)
+  })
+
+  it('Fechar no rodapé chama onOpenChange(false)', () => {
+    const onOpenChange = jest.fn()
+    render(
+      <GroupSimulator
+        grupo={makeGrupo()}
+        jogos={[makeJogo('j1')]}
+        open
+        onOpenChange={onOpenChange}
+        onPlacarChange={() => {}}
+      />,
+    )
+    fireEvent.click(screen.getByText('Fechar'))
+    expect(onOpenChange).toHaveBeenCalledWith(false)
+  })
+
+  it('trava body scroll quando abre (mobile)', () => {
+    render(
+      <GroupSimulator
+        grupo={makeGrupo()}
+        jogos={[makeJogo('j1')]}
+        open
+        onOpenChange={() => {}}
+        onPlacarChange={() => {}}
+      />,
+    )
+    expect(document.body.style.overflow).toBe('hidden')
+  })
+
+  it('restaura body scroll quando fecha (mobile)', () => {
+    const { rerender } = render(
+      <GroupSimulator
+        grupo={makeGrupo()}
+        jogos={[makeJogo('j1')]}
+        open
+        onOpenChange={() => {}}
+        onPlacarChange={() => {}}
+      />,
+    )
+    expect(document.body.style.overflow).toBe('hidden')
+    rerender(
+      <GroupSimulator
+        grupo={makeGrupo()}
+        jogos={[makeJogo('j1')]}
+        open={false}
+        onOpenChange={() => {}}
+        onPlacarChange={() => {}}
+      />,
+    )
+    expect(document.body.style.overflow).not.toBe('hidden')
+  })
+
+  it('NÃO trava body scroll em desktop', () => {
+    mockMatchMedia(true) // desktop
+    render(
+      <GroupSimulator
+        grupo={makeGrupo()}
+        jogos={[makeJogo('j1')]}
+        open
+        onOpenChange={() => {}}
+        onPlacarChange={() => {}}
+      />,
+    )
+    expect(document.body.style.overflow).not.toBe('hidden')
+  })
+})
