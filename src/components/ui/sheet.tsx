@@ -6,8 +6,6 @@ import { cn } from '@/lib/utils'
 
 type Side = 'right' | 'bottom'
 
-type SheetProps = React.ComponentProps<typeof DialogPrimitive.Root>
-
 type SheetContentProps = React.ComponentProps<typeof DialogPrimitive.Content> & {
   side?: Side
   onOpenChange?: (open: boolean) => void

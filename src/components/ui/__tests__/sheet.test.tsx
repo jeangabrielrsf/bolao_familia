@@ -2,7 +2,7 @@
  * @jest-environment jsdom
  */
 import { render, screen, fireEvent } from '@testing-library/react'
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '../sheet'
+import { Sheet, SheetContent, SheetTitle } from '../sheet'
 
 describe('Sheet', () => {
   it('renderiza children quando open=true', () => {

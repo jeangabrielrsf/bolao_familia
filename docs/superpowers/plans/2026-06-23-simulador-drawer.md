@@ -265,8 +265,8 @@ describe('Sheet', () => {
 
   it('aplica classes de side="bottom" quando especificado', () => {
     render(
-      <Sheet open onOpenChange={() => {}} side="bottom">
-        <SheetContent>
+      <Sheet open onOpenChange={() => {}}>
+        <SheetContent side="bottom">
           <SheetTitle>Bottom</SheetTitle>
         </SheetContent>
       </Sheet>
