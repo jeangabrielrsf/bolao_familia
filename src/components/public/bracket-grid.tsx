@@ -21,6 +21,19 @@ export function BracketGrid({ slots }: Props) {
 
   return (
     <div className="overflow-x-auto pb-4">
+      {/* Phase titles — header row no topo com contagem de jogos */}
+      <div
+        className="grid gap-x-6 mb-3 min-w-max text-xs font-display tracking-wide text-muted-foreground"
+        style={{ gridTemplateColumns: 'repeat(6, 180px)' }}
+      >
+        <div className="text-center">R32 (16 jogos)</div>
+        <div className="text-center">Oitavas (8 jogos)</div>
+        <div className="text-center">Quartas (4 jogos)</div>
+        <div className="text-center">Semi (2 jogos)</div>
+        <div className="text-center">Final (1 jogo)</div>
+        <div></div>
+      </div>
+
       <div
         className="grid gap-x-6 min-w-max"
         style={{
@@ -116,19 +129,6 @@ export function BracketGrid({ slots }: Props) {
             </div>
           )
         })()}
-      </div>
-
-      {/* Fase labels — header row */}
-      <div
-        className="grid gap-x-6 mt-3 min-w-max text-xs font-display tracking-wide text-muted-foreground text-center"
-        style={{ gridTemplateColumns: 'repeat(6, 180px)' }}
-      >
-        <div>R32</div>
-        <div>Oitavas</div>
-        <div>Quartas</div>
-        <div>Semi</div>
-        <div>Final</div>
-        <div></div>
       </div>
     </div>
   )

@@ -21,4 +21,14 @@ describe('Bracket', () => {
     const { container } = render(<Bracket slots={slots} />)
     expect(container.querySelector('.overflow-x-auto')).toBeInTheDocument()
   })
+
+  it('mostra phase titles com contagem de jogos', () => {
+    render(<Bracket slots={slots} />)
+    // Phase titles no topo com formato "Fase (N jogos)"
+    expect(screen.getByText(/R32.*16 jogos/)).toBeInTheDocument()
+    expect(screen.getByText(/Oitavas.*8 jogos/)).toBeInTheDocument()
+    expect(screen.getByText(/Quartas.*4 jogos/)).toBeInTheDocument()
+    expect(screen.getByText(/Semi.*2 jogos/)).toBeInTheDocument()
+    expect(screen.getByText(/Final.*1 jogo/)).toBeInTheDocument()
+  })
 })
