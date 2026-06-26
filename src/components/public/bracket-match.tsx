@@ -13,6 +13,23 @@ const SIZE_CLASSES = {
   lg: 'text-base p-4 min-w-[220px]',
 }
 
+/**
+ * Gera texto descritivo para slot cujo time depende de 3rd de set de grupos.
+ * Ex: "3º de A, B, C, D ou F"
+ * Retorna null se não for um caso de 3rd-set indefinido.
+ */
+function placeholder3rd(source: BracketSlot['sourceGrupo'], lado: 'timeA' | 'timeB'): string | null {
+  if (!source) return null
+  const info = source[lado]
+  if (!info) return null
+  if (info.posicao !== 3) return null
+  const grupos = info.gruposAlternativos
+  if (!grupos || grupos.length < 2) return null
+  if (grupos.length === 2) return `3º de ${grupos[0]} ou ${grupos[1]}`
+  const ultimos = grupos.slice(0, -1).join(', ')
+  return `3º de ${ultimos} ou ${grupos[grupos.length - 1]}`
+}
+
 export function BracketMatch({ slot, size = 'md' }: Props) {
   const isFinalizado = slot.status === 'finalizado'
   const isTBD = slot.timeA === null && slot.timeB === null
@@ -21,19 +38,26 @@ export function BracketMatch({ slot, size = 'md' }: Props) {
     && slot.placarPenaltisA !== null
     && slot.placarPenaltisB !== null
 
+  const placeholderA = slot.timeA === null ? placeholder3rd(slot.sourceGrupo, 'timeA') : null
+  const placeholderB = slot.timeB === null ? placeholder3rd(slot.sourceGrupo, 'timeB') : null
+  const textoA = slot.timeA ?? placeholderA ?? 'A definir'
+  const textoB = slot.timeB ?? placeholderB ?? 'A definir'
+  const italicA = !!placeholderA
+  const italicB = !!placeholderB
+
   return (
     <div className={`bg-card border rounded ${SIZE_CLASSES[size]} ${isTBD ? 'opacity-50' : ''}`}>
       <div className="flex items-center justify-between gap-2">
         <span className={`flex-1 truncate flex items-center gap-1.5 ${slot.vencedor === 'A' ? 'font-bold' : ''}`}>
           {slot.timeA && getTimeFlag(slot.timeA) && <Flag codigoIso={getTimeFlag(slot.timeA)!} size={size === 'sm' ? 14 : 18} />}
-          <span className="truncate">{slot.timeA ?? 'A definir'}</span>
+          <span className={`truncate ${italicA ? 'italic text-muted-foreground' : ''}`}>{textoA}</span>
         </span>
         <span className="tabular-nums font-mono">{slot.placarA ?? '-'}</span>
       </div>
       <div className="flex items-center justify-between gap-2 mt-1">
         <span className={`flex-1 truncate flex items-center gap-1.5 ${slot.vencedor === 'B' ? 'font-bold' : ''}`}>
           {slot.timeB && getTimeFlag(slot.timeB) && <Flag codigoIso={getTimeFlag(slot.timeB)!} size={size === 'sm' ? 14 : 18} />}
-          <span className="truncate">{slot.timeB ?? 'A definir'}</span>
+          <span className={`truncate ${italicB ? 'italic text-muted-foreground' : ''}`}>{textoB}</span>
         </span>
         <span className="tabular-nums font-mono">{slot.placarB ?? '-'}</span>
       </div>

@@ -23,6 +23,26 @@ const slotComPenaltes: BracketSlot = {
   placarPenaltisA: 4, placarPenaltisB: 3,
 }
 
+const slotTerceiroIndefinido: BracketSlot = {
+  jogoId: 'r32-2', fase: 'dezesseis_avos', slot: 2,
+  timeA: 'Alemanha', timeB: null,
+  placarA: null, placarB: null, status: 'agendado', vencedor: null,
+  sourceGrupo: {
+    timeA: { grupo: 'E', posicao: 1 },
+    timeB: { grupo: 'A', posicao: 3, gruposAlternativos: ['A', 'B', 'C', 'D', 'F'] },
+  },
+}
+
+const slotTerceiroDefinido: BracketSlot = {
+  jogoId: 'r32-2', fase: 'dezesseis_avos', slot: 2,
+  timeA: 'Alemanha', timeB: 'Marrocos',
+  placarA: null, placarB: null, status: 'agendado', vencedor: null,
+  sourceGrupo: {
+    timeA: { grupo: 'E', posicao: 1 },
+    timeB: { grupo: 'C', posicao: 3, gruposAlternativos: ['A', 'B', 'C', 'D', 'F'] },
+  },
+}
+
 describe('BracketMatch', () => {
   it('renderiza nomes dos times', () => {
     render(<BracketMatch slot={slotFinalizado} />)
@@ -44,5 +64,28 @@ describe('BracketMatch', () => {
   it('mostra "(4-3 pen)" quando placar decidido nos pênaltis', () => {
     render(<BracketMatch slot={slotComPenaltes} />)
     expect(screen.getByText('(4-3 pen)')).toBeInTheDocument()
+  })
+
+  it('renderiza "3º de X, Y ou Z" (italic muted) quando 3rd indefinido', () => {
+    render(<BracketMatch slot={slotTerceiroIndefinido} />)
+    const placeholder = screen.getByText('3º de A, B, C, D ou F')
+    expect(placeholder).toBeInTheDocument()
+    expect(placeholder.tagName).toBe('SPAN')
+    expect(placeholder.className).toMatch(/italic/)
+    expect(placeholder.className).toMatch(/muted-foreground/)
+  })
+
+  it('renderiza nome do time quando 3rd já resolvido', () => {
+    render(<BracketMatch slot={slotTerceiroDefinido} />)
+    expect(screen.getByText('Marrocos')).toBeInTheDocument()
+    expect(screen.queryByText('3º de A, B, C, D ou F')).not.toBeInTheDocument()
+  })
+
+  it('mostra "A definir" sem italic (não é placeholder de 3rd)', () => {
+    render(<BracketMatch slot={slotTBD} />)
+    const aDefinir = screen.getAllByText('A definir')
+    aDefinir.forEach(el => {
+      expect(el.className).not.toMatch(/italic/)
+    })
   })
 })
