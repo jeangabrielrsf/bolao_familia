@@ -2,7 +2,7 @@
  * @jest-environment jsdom
  */
 import { renderHook, act } from '@testing-library/react'
-import { useSimulacao } from '../use-simulacao'
+import { useSimulacao, STORAGE_KEY } from '../use-simulacao'
 import type { JogoComTimes } from '@/lib/services/bracket/types'
 
 const makeJogo = (id: string, overrides: Partial<JogoComTimes> = {}): JogoComTimes => ({
@@ -13,11 +13,10 @@ const makeJogo = (id: string, overrides: Partial<JogoComTimes> = {}): JogoComTim
   ...overrides,
 })
 
-const STORAGE_KEY = 'copa_sim'
-
 const localStorageMock: Record<string, string> = {}
 
 beforeEach(() => {
+  for (const k of Object.keys(localStorageMock)) delete localStorageMock[k]
   localStorage.clear()
   jest.spyOn(Storage.prototype, 'getItem').mockImplementation((k) => {
     if (k === STORAGE_KEY) return localStorageMock[k as keyof typeof localStorageMock] ?? null
@@ -75,6 +74,16 @@ describe('useSimulacao', () => {
     act(() => result.current.setPlacar('j1', 3, 0))
     act(() => result.current.clear())
     expect(result.current.simulacao).toEqual({})
+    expect(localStorageMock[STORAGE_KEY]).toBeUndefined()
+  })
+
+  it('isolates state between tests', () => {
+    const first = renderHook(() => useSimulacao(jogos))
+    act(() => first.result.current.setPlacar('j1', 2, 1))
+    first.unmount()
+  })
+
+  it('localStorageMock é limpo entre tests', () => {
     expect(localStorageMock[STORAGE_KEY]).toBeUndefined()
   })
 })

@@ -3,7 +3,7 @@ import { useState, useMemo, useEffect, useCallback } from 'react'
 import { aplicarSimulacao } from '@/lib/services/bracket/simulator'
 import type { JogoComTimes } from '@/lib/services/bracket/types'
 
-const STORAGE_KEY = 'copa_sim'
+export const STORAGE_KEY = 'copa_sim'
 
 type Simulacao = Record<string, { placarA: number; placarB: number }>
 
@@ -29,7 +29,6 @@ export function useSimulacao(jogos: JogoComTimes[]): UseSimulacaoReturn {
   const [simulacao, setSimulacao] = useState<Simulacao>(loadFromStorage)
 
   useEffect(() => {
-    if (typeof window === 'undefined') return
     if (Object.keys(simulacao).length === 0) {
       window.localStorage.removeItem(STORAGE_KEY)
     } else {
