@@ -44,11 +44,7 @@ export function CopaTabs({ classificacao, bracket, jogos }: Props) {
       </TabsContent>
 
       <TabsContent value="simulador" className="mt-6">
-        <SimulatorTab
-          classificacaoInicial={classificacao}
-          bracketInicial={bracket}
-          jogos={jogos}
-        />
+        <SimulatorTab jogos={jogos} />
       </TabsContent>
     </Tabs>
   )

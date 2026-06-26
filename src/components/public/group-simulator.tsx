@@ -1,4 +1,5 @@
 'use client'
+import { useEffect, useState } from 'react'
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet'
 import { JogoSimulatorRow } from './jogo-simulator-row'
 import type { JogoComTimes, ClassificacaoGrupo } from '@/lib/services/bracket/types'
@@ -12,13 +13,22 @@ type Props = {
 }
 
 export function GroupSimulator({ grupo, jogos, open, onOpenChange, onPlacarChange }: Props) {
+  const [isDesktop, setIsDesktop] = useState(false)
+
+  useEffect(() => {
+    const mq = window.matchMedia('(min-width: 768px)')
+    const onChange = () => setIsDesktop(mq.matches)
+    onChange()
+    mq.addEventListener('change', onChange)
+    return () => mq.removeEventListener('change', onChange)
+  }, [])
+
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
-        side="right"
+        side={isDesktop ? 'right' : 'bottom'}
         onOpenChange={onOpenChange}
         className="flex flex-col gap-4"
-        aria-label={`Simulador do grupo ${grupo.grupo}`}
       >
         <SheetHeader>
           <SheetTitle>Grupo {grupo.grupo}</SheetTitle>

@@ -1,6 +1,6 @@
 'use client'
 import { useState, useMemo } from 'react'
-import type { ClassificacaoGrupo, BracketSlot, JogoComTimes } from '@/lib/services/bracket/types'
+import type { JogoComTimes } from '@/lib/services/bracket/types'
 import { useSimulacao } from '@/lib/hooks/use-simulacao'
 import { getClassificacaoGrupos } from '@/lib/services/bracket/standings'
 import { getMelhores8Terceiros } from '@/lib/services/bracket/best-thirds'
@@ -12,8 +12,6 @@ import { GroupSimulator } from './group-simulator'
 import { SimulatorBanner } from './simulator-banner'
 
 type Props = {
-  classificacaoInicial: ClassificacaoGrupo[]
-  bracketInicial: BracketSlot[]
   jogos: JogoComTimes[]
 }
 
