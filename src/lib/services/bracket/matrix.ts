@@ -1,97 +1,68 @@
 /**
- * Matriz oficial FIFA 2026 de pareamento R32 baseada em quais 3rds avançam.
+ * Matriz oficial FIFA 2026 — pareamento R32 (M73-M88).
  *
- * A chave é a combinação de 8 grupos cujos 3rds passam (ordenada alfabeticamente).
- * O valor é um array de 16 pares `[referênciaA, referênciaB]` indicando os confrontos
- * do R32. Referência: "1A" = 1º do grupo A, "2B" = 2º do grupo B, "3X" = 3º de X
- * (entre os 8 que avançam), "3A/C/E" = 3ºs de A, C ou E (escolha condicional).
+ * A FIFA fixou a estrutura dos 16 jogos do R32. 8 são "1X vs 2Y" puros;
+ * os outros 8 envolvem um "3Y" escolhido de um SET específico de 5 grupos
+ * (ex: "3ABCDF" = melhor 3º colocado entre A, B, C, D, F que avançar).
  *
- * Fonte: estrutura adaptada do bracket FIFA 2018 (6 de 8 3rds) para o formato
- * FIFA 2026 (8 de 12 3rds). A matriz completa tem 495 combinações (12 choose 8);
- * implementamos apenas as mais comuns + fallback. A matriz completa deve ser
- * populada em uma task separada quando a FIFA publicar a versão final.
+ * Esta matriz cobre as 495 combinações possíveis de 8 3rds classificados
+ * sem precisar de variantes — o set "3ABCDF" sempre significa "o melhor
+ * 3º colocado entre esses 5 grupos" e se nenhum deles avançar, o slot
+ * fica como TBD (placeholder descritivo).
  *
- * Cada chave lista os 16 jogos R32 (M1-M16) onde:
- * - 12 jogos são "1X vs 2Y" (cruzamento entre 1º/2º de grupos diferentes)
- * - 4 jogos são "1X vs 3Y" ou "2X vs 3Y" (envolvem os 3rds promovidos)
- *
- * Restrições respeitadas:
- * - Cada time joga no máximo uma vez
+ * Restrições respeitadas (verificadas nos testes):
+ * - Cada 1º aparece exatamente uma vez (12 grupos × 1 = 12)
+ * - Cada 2º aparece exatamente uma vez (4 grupos × 2 = 8, com 4 grupos
+ *   tendo 2 como 1X no R32)
  * - Nenhum confronto é entre times do mesmo grupo
- * - Os 8 3rds são distribuídos 4+4 entre as metades top/bottom do bracket
+ * - 3rds são distribuídos 4+4 entre metades top/bottom do bracket
+ *
+ * Fonte: Wikipedia "2026 FIFA World Cup knockout stage" + FIFA.com.
+ * Mapeamento: M73 → R32-M1, M74 → R32-M2, ..., M88 → R32-M16.
  */
 
-type Ref = string
+export type Ref = string
 
 /**
- * Caso mais comum: 3rds de A-H avançam.
- * Top half (grupos A-F, 3rds A-D): 8 jogos R32 M1-M8
- * Bottom half (grupos G-L, 3rds E-H): 8 jogos R32 M9-M16
+ * 16 pares R32 oficiais. Cada par é `[refA, refB]` onde ref pode ser:
+ * - "1A".."2L" → 1º/2º do grupo X
+ * - "3ABCDF" → melhor 3º entre os grupos A, B, C, D, F
  */
-const MATRIX_ABCDEFGH: Array<[Ref, Ref]> = [
-  // Top half - R32-M1 to M8
-  ['1A', '2C'],   // M1
-  ['1B', '2D'],   // M2
-  ['1E', '2A'],   // M3 (1E vs 2A para evitar mesmo-grupo)
-  ['1F', '2B'],   // M4
-  ['1C', '3A'],   // M5 (1C vs 3A, não 1A vs 3A pelo mesmo-grupo)
-  ['1D', '3B'],   // M6
-  ['2E', '3C'],   // M7
-  ['2F', '3D'],   // M8
-  // Bottom half - R32-M9 to M16
-  ['1G', '2I'],   // M9
-  ['1H', '2J'],   // M10
-  ['1K', '2G'],   // M11
-  ['1L', '2H'],   // M12
-  ['1I', '3E'],   // M13
-  ['1J', '3F'],   // M14
-  ['2K', '3G'],   // M15
-  ['2L', '3H'],   // M16
+export const PARES_R32_OFICIAL: Array<[Ref, Ref]> = [
+  ['2A', '2B'],   // R32-M1 (M73) — 2X vs 2Y
+  ['1E', '3ABCDF'], // R32-M2 (M74) — 1X vs 3º de 5 grupos
+  ['1F', '2C'],   // R32-M3 (M75) — 1X vs 2Y
+  ['1C', '2F'],   // R32-M4 (M76) — 1X vs 2Y
+  ['1I', '3CDFGH'], // R32-M5 (M77) — 1X vs 3º de 5 grupos
+  ['2E', '2I'],   // R32-M6 (M78) — 2X vs 2Y
+  ['1A', '3CEFHI'], // R32-M7 (M79) — 1X vs 3º de 5 grupos
+  ['1L', '3EHIJK'], // R32-M8 (M80) — 1X vs 3º de 5 grupos
+  ['1D', '3BEFIJ'], // R32-M9 (M81) — 1X vs 3º de 5 grupos
+  ['1G', '3AEHIJ'], // R32-M10 (M82) — 1X vs 3º de 5 grupos
+  ['2K', '2L'],   // R32-M11 (M83) — 2X vs 2Y
+  ['1H', '2J'],   // R32-M12 (M84) — 1X vs 2Y
+  ['1B', '3EFGIJ'], // R32-M13 (M85) — 1X vs 3º de 5 grupos
+  ['1J', '2H'],   // R32-M14 (M86) — 1X vs 2Y
+  ['1K', '3DEIJL'], // R32-M15 (M87) — 1X vs 3º de 5 grupos
+  ['2D', '2G'],   // R32-M16 (M88) — 2X vs 2Y
 ]
 
 /**
- * 3rds de A-G avançam (7 grupos — placeholder).
- * Estrutura similar ao ABCDEFGH mas com 1 slot a menos.
+ * Detecta se a ref é um set de 3rds (3 grupos ou mais) ou ref simples.
+ * "3A" → set de 1 grupo (também conta como set)
+ * "3ABCDF" → set de 5 grupos
+ * "1A", "2L" → não é set
  */
-const MATRIX_ABCDEFG: Array<[Ref, Ref]> = [
-  // Top half - R32-M1 to M8 (mesma estrutura)
-  ['1A', '2C'], ['1B', '2D'], ['1E', '2A'], ['1F', '2B'],
-  ['1C', '3A'], ['1D', '3B'], ['2E', '3C'], ['2F', '3D'],
-  // Bottom half - R32-M9 to M16 (3rds E, F, G)
-  ['1G', '2I'], ['1H', '2J'], ['1K', '2G'], ['1L', '2H'],
-  ['1I', '3E'], ['2K', '3F'], ['2L', '3G'],
-  // Placeholders (mesmo padrão) - faltam 2 jogos
-  ['1A', '2B'], ['1C', '2D'],
-]
-
-/**
- * 3rds de A-F + I avançam (8 grupos com I no lugar de H — placeholder).
- */
-const MATRIX_ABCDEFI: Array<[Ref, Ref]> = [
-  // Top half - R32-M1 to M8 (3rds A-D)
-  ['1A', '2C'], ['1B', '2D'], ['1E', '2A'], ['1F', '2B'],
-  ['1C', '3A'], ['1D', '3B'], ['2E', '3C'], ['2F', '3D'],
-  // Bottom half - R32-M9 to M16 (3rds E, F, I)
-  ['1G', '2I'], ['1H', '2J'], ['1K', '2G'], ['1L', '2H'],
-  ['1I', '3E'], ['1J', '3F'], ['2K', '3I'], ['2L', '2J'],
-]
-
-export const MATRIX_TERCEIROS: Record<string, Array<[Ref, Ref]>> = {
-  'ABCDEFGH': MATRIX_ABCDEFGH,
-  'ABCDEFG': MATRIX_ABCDEFG,
-  'ABCDEFI': MATRIX_ABCDEFI,
+export function isRefSet(ref: string): boolean {
+  return ref.startsWith('3') && ref.length >= 2
 }
 
 /**
- * Fallback usado quando os 8 terceiros não batem com nenhuma chave conhecida.
- * 16 pares genéricos: 1X vs 2Y alternados (sem 3rds, sem mesmo-grupo).
- * Pode produzir emparelhamentos incorretos em casos raros. Loga warning.
+ * Extrai a lista de letras de grupos de uma ref de set.
+ * "3ABCDF" → ['A', 'B', 'C', 'D', 'F']
+ * "3A" → ['A']
  */
-export const PARES_R32_FALLBACK: Array<[Ref, Ref]> = [
-  // Top half (grupos A-F)
-  ['1A', '2B'], ['1C', '2D'], ['1E', '2F'], ['1A', '2C'],
-  ['1B', '2A'], ['1D', '2C'], ['1E', '2A'], ['1F', '2B'],
-  // Bottom half (grupos G-L)
-  ['1G', '2H'], ['1I', '2J'], ['1K', '2L'], ['1G', '2I'],
-  ['1H', '2G'], ['1J', '2I'], ['1K', '2G'], ['1L', '2H'],
-]
+export function gruposDoRefSet(ref: string): string[] {
+  if (!isRefSet(ref)) return []
+  return ref.slice(1).split('')
+}
