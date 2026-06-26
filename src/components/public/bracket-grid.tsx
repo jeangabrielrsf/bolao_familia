@@ -21,6 +21,19 @@ export function BracketGrid({ slots }: Props) {
 
   return (
     <div className="overflow-x-auto pb-4">
+      {/* Phase titles — header row no topo com contagem de jogos */}
+      <div
+        className="grid gap-x-6 mb-3 min-w-max text-xs font-display tracking-wide text-muted-foreground"
+        style={{ gridTemplateColumns: 'repeat(6, 180px)' }}
+      >
+        <div className="text-center">R32 (16 jogos)</div>
+        <div className="text-center">Oitavas (8 jogos)</div>
+        <div className="text-center">Quartas (4 jogos)</div>
+        <div className="text-center">Semi (2 jogos)</div>
+        <div className="text-center">Final (1 jogo)</div>
+        <div></div>
+      </div>
+
       <div
         className="grid gap-x-6 min-w-max"
         style={{
@@ -34,7 +47,7 @@ export function BracketGrid({ slots }: Props) {
           if (!slot) return null
           return (
             <div key={`r32-${i}`} style={{ gridRow: i, gridColumn: 1 }} className="flex items-center">
-              <BracketMatch slot={slot} size="sm" />
+              <BracketMatch slot={slot} size="sm" href={`/jogos/${slot.jogoId}`} />
             </div>
           )
         })}
@@ -49,7 +62,7 @@ export function BracketGrid({ slots }: Props) {
               style={{ gridRow: `${(i - 1) * 2 + 1} / span 2`, gridColumn: 2 }}
               className="flex items-center"
             >
-              <BracketMatch slot={slot} size="sm" />
+              <BracketMatch slot={slot} size="sm" href={`/jogos/${slot.jogoId}`} />
             </div>
           )
         })}
@@ -64,7 +77,7 @@ export function BracketGrid({ slots }: Props) {
               style={{ gridRow: `${(i - 1) * 4 + 1} / span 4`, gridColumn: 3 }}
               className="flex items-center"
             >
-              <BracketMatch slot={slot} size="sm" />
+              <BracketMatch slot={slot} size="sm" href={`/jogos/${slot.jogoId}`} />
             </div>
           )
         })}
@@ -79,7 +92,7 @@ export function BracketGrid({ slots }: Props) {
               style={{ gridRow: `${(i - 1) * 8 + 1} / span 8`, gridColumn: 4 }}
               className="flex items-center"
             >
-              <BracketMatch slot={slot} size="sm" />
+              <BracketMatch slot={slot} size="sm" href={`/jogos/${slot.jogoId}`} />
             </div>
           )
         })}
@@ -94,7 +107,7 @@ export function BracketGrid({ slots }: Props) {
               style={{ gridRow: '1 / span 16', gridColumn: 5 }}
               className="flex items-center"
             >
-              <BracketMatch slot={slot} size="md" />
+              <BracketMatch slot={slot} size="md" href={`/jogos/${slot.jogoId}`} />
             </div>
           )
         })()}
@@ -112,23 +125,10 @@ export function BracketGrid({ slots }: Props) {
               <div className="text-xs font-display tracking-wide text-muted-foreground mb-1">
                 {FASE_LABEL.terceiro}
               </div>
-              <BracketMatch slot={slot} size="sm" />
+              <BracketMatch slot={slot} size="sm" href={`/jogos/${slot.jogoId}`} />
             </div>
           )
         })()}
-      </div>
-
-      {/* Fase labels — header row */}
-      <div
-        className="grid gap-x-6 mt-3 min-w-max text-xs font-display tracking-wide text-muted-foreground text-center"
-        style={{ gridTemplateColumns: 'repeat(6, 180px)' }}
-      >
-        <div>R32</div>
-        <div>Oitavas</div>
-        <div>Quartas</div>
-        <div>Semi</div>
-        <div>Final</div>
-        <div></div>
       </div>
     </div>
   )

@@ -1,5 +1,5 @@
 import type { BracketSlot, ClassificacaoGrupo, JogoComTimes } from './types'
-import { MATRIX_TERCEIROS, PARES_R32_FALLBACK } from './matrix'
+import { PARES_R32_OFICIAL, isRefSet, gruposDoRefSet } from './matrix'
 
 type Input = {
   classificacao: ClassificacaoGrupo[]
@@ -10,31 +10,29 @@ type Input = {
 export function projetarChaveamento(input: Input): BracketSlot[] {
   const slots: BracketSlot[] = []
 
-  const matrixKey = input.melhoresTerceiros.length === 8
-    ? input.melhoresTerceiros.map(t => t.grupo).sort().join('')
-    : ''
-  const pares = MATRIX_TERCEIROS[matrixKey] || PARES_R32_FALLBACK
-
   for (let i = 0; i < 16; i++) {
     const jogo = input.jogosMataMata.find(j => j.sofascoreId === `R32-M${i + 1}`)
     if (!jogo) continue
-    const par = pares[i] || ['1A', '2B']
+    const par = PARES_R32_OFICIAL[i]
     const [refA, refB] = par
+    const resA = resolverReferencia(refA, input)
+    const resB = resolverReferencia(refB, input)
     slots.push({
       jogoId: jogo.id,
       fase: 'dezesseis_avos',
       slot: i + 1,
-      timeA: resolverReferencia(refA, input),
-      timeB: resolverReferencia(refB, input),
+      timeA: resA.time,
+      timeB: resB.time,
       placarA: jogo.resultadoA,
       placarB: jogo.resultadoB,
       placarPenaltisA: jogo.placarPenaltisA,
       placarPenaltisB: jogo.placarPenaltisB,
       status: jogo.status,
       vencedor: jogo.vencedor === 1 ? 'A' : jogo.vencedor === 2 ? 'B' : null,
+      dataHora: jogo.dataHora,
       sourceGrupo: {
-        timeA: extrairOrigem(refA),
-        timeB: extrairOrigem(refB),
+        timeA: extrairOrigem(refA, resA.grupo),
+        timeB: extrairOrigem(refB, resB.grupo),
       },
     })
   }
@@ -62,6 +60,7 @@ export function projetarChaveamento(input: Input): BracketSlot[] {
         placarPenaltisB: jogo.placarPenaltisB,
         status: jogo.status,
         vencedor: jogo.vencedor === 1 ? 'A' : jogo.vencedor === 2 ? 'B' : null,
+        dataHora: jogo.dataHora,
       })
     }
   }
@@ -82,6 +81,7 @@ export function projetarChaveamento(input: Input): BracketSlot[] {
       placarPenaltisB: final.placarPenaltisB,
       status: final.status,
       vencedor: final.vencedor === 1 ? 'A' : final.vencedor === 2 ? 'B' : null,
+      dataHora: final.dataHora,
     })
   }
 
@@ -99,31 +99,47 @@ export function projetarChaveamento(input: Input): BracketSlot[] {
       placarPenaltisB: terceiro.placarPenaltisB,
       status: terceiro.status,
       vencedor: terceiro.vencedor === 1 ? 'A' : terceiro.vencedor === 2 ? 'B' : null,
+      dataHora: terceiro.dataHora,
     })
   }
 
   return slots
 }
 
-function resolverReferencia(ref: string, input: Input): string | null {
-  if (!ref) return null
-  const pos = ref[0] as '1' | '2' | '3'
-  const grupoLetra = ref[1]
+type ResolverResult = { time: string | null; grupo: string | null }
 
-  if (pos === '1' || pos === '2') {
-    const grupo = input.classificacao.find(g => g.grupo === grupoLetra)
-    if (!grupo) return null
-    return grupo.times[pos === '1' ? 0 : 1]?.time || null
+function resolverReferencia(ref: string, input: Input): ResolverResult {
+  if (!ref) return { time: null, grupo: null }
+
+  // Set de 3rds (ex: "3ABCDF"): pega o melhor 3rd do set
+  if (isRefSet(ref)) {
+    const grupos = gruposDoRefSet(ref)
+    const candidatos = input.melhoresTerceiros
+      .filter(t => grupos.includes(t.grupo))
+      .sort((a, b) => b.pontos - a.pontos)  // getMelhores8Terceiros já ordena, mas garante
+    const escolhido = candidatos[0]
+    return { time: escolhido?.time || null, grupo: escolhido?.grupo || null }
   }
 
-  if (ref.includes('/')) return null
-  const terceiro = input.melhoresTerceiros.find(t => t.grupo === grupoLetra)
-  return terceiro?.time || null
+  // 1X ou 2X de grupo único
+  const pos = ref[0] as '1' | '2'
+  const grupoLetra = ref[1]
+  const grupo = input.classificacao.find(g => g.grupo === grupoLetra)
+  if (!grupo) return { time: null, grupo: grupoLetra }
+  return { time: grupo.times[pos === '1' ? 0 : 1]?.time || null, grupo: grupoLetra }
 }
 
-function extrairOrigem(ref: string): { grupo: string; posicao: 1 | 2 | 3 } {
+function extrairOrigem(ref: string, grupoResolvido: string | null): { grupo: string; posicao: 1 | 2 | 3; gruposAlternativos?: string[] } {
+  if (isRefSet(ref)) {
+    const grupos = gruposDoRefSet(ref)
+    return {
+      grupo: grupoResolvido || grupos[0] || '?',
+      posicao: 3,
+      gruposAlternativos: grupos,
+    }
+  }
   const pos = ref[0] as '1' | '2' | '3'
-  const grupo = ref.match(/[A-L]/)![0]
+  const grupo = ref.slice(1)
   return { grupo, posicao: pos === '1' ? 1 : pos === '2' ? 2 : 3 }
 }
 

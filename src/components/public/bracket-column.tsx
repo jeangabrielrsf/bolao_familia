@@ -22,7 +22,7 @@ export function BracketColumn({ fase, slots }: Props) {
         {FASE_LABEL[fase]}
       </h4>
       {slots.map(slot => (
-        <BracketMatch key={slot.jogoId} slot={slot} size="sm" />
+        <BracketMatch key={slot.jogoId} slot={slot} size="sm" href={`/jogos/${slot.jogoId}`} />
       ))}
     </div>
   )

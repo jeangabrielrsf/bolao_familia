@@ -265,8 +265,8 @@ describe('Sheet', () => {
 
   it('aplica classes de side="bottom" quando especificado', () => {
     render(
-      <Sheet open onOpenChange={() => {}} side="bottom">
-        <SheetContent>
+      <Sheet open onOpenChange={() => {}}>
+        <SheetContent side="bottom">
           <SheetTitle>Bottom</SheetTitle>
         </SheetContent>
       </Sheet>
@@ -503,7 +503,8 @@ Criar `src/components/public/jogo-simulator-row.tsx`:
 ```tsx
 'use client'
 import { Input } from '@/components/ui/input'
-import { Flag } from './flag'
+import { Flag } from '@/components/ui/flag'
+import { getTimeFlag } from '@/lib/utils/flags'
 import type { JogoComTimes } from '@/lib/services/bracket/types'
 
 type Props = {
@@ -517,18 +518,26 @@ export function JogoSimulatorRow({ jogo, onPlacarChange }: Props) {
   if (finalizado && jogo.resultadoA !== null && jogo.resultadoB !== null) {
     return (
       <div className="flex items-center gap-3 py-2 opacity-60">
-        <Flag team={jogo.timeA ?? ''} size="sm" />
+        {jogo.timeA && getTimeFlag(jogo.timeA) && (
+          <Flag codigoIso={getTimeFlag(jogo.timeA)!} size={20} />
+        )}
         <span className="flex-1 font-medium">{jogo.timeA}</span>
-        <span className="font-mono tabular-nums">{jogo.resultadoA} × {jogo.resultadoB}</span>
+        <span className="font-mono tabular-nums">{jogo.resultadoA}</span>
+        <span className="text-muted-foreground">×</span>
+        <span className="font-mono tabular-nums">{jogo.resultadoB}</span>
         <span className="flex-1 font-medium text-right">{jogo.timeB}</span>
-        <Flag team={jogo.timeB ?? ''} size="sm" />
+        {jogo.timeB && getTimeFlag(jogo.timeB) && (
+          <Flag codigoIso={getTimeFlag(jogo.timeB)!} size={20} />
+        )}
       </div>
     )
   }
 
   return (
     <div className="flex items-center gap-3 py-2">
-      <Flag team={jogo.timeA ?? ''} size="sm" />
+      {jogo.timeA && getTimeFlag(jogo.timeA) && (
+        <Flag codigoIso={getTimeFlag(jogo.timeA)!} size={20} />
+      )}
       <span className="flex-1 font-medium">{jogo.timeA}</span>
       <Input
         type="number"
@@ -550,7 +559,9 @@ export function JogoSimulatorRow({ jogo, onPlacarChange }: Props) {
         className="w-16 text-center"
       />
       <span className="flex-1 font-medium text-right">{jogo.timeB}</span>
-      <Flag team={jogo.timeB ?? ''} size="sm" />
+      {jogo.timeB && getTimeFlag(jogo.timeB) && (
+        <Flag codigoIso={getTimeFlag(jogo.timeB)!} size={20} />
+      )}
     </div>
   )
 }
@@ -593,13 +604,16 @@ import { render, screen, fireEvent } from '@testing-library/react'
 import { GroupCard } from '../group-card'
 import type { ClassificacaoGrupo } from '@/lib/services/bracket/types'
 
+// Nota: `terceiro: null` é workaround histórico — o tipo atual exige `ClassificacaoTime` não-null.
+// Em produção o implementador precisou construir um ClassificacaoTime válido (ex: 3º colocado do grupo).
+// Para o plano, mantemos a forma antiga; testes que precisarem de `terceiro` válido devem montar um.
 const makeGrupo = (overrides: Partial<ClassificacaoGrupo> = {}): ClassificacaoGrupo => ({
   grupo: 'A',
-  posicoes: [
-    { time: 'México', posicao: 1, pontos: 6, jogos: 2, vitorias: 2, empates: 0, derrotas: 0, golsPro: 4, golsContra: 1, saldo: 3 },
-    { time: 'Coreia do Sul', posicao: 2, pontos: 3, jogos: 2, vitorias: 1, empates: 0, derrotas: 1, golsPro: 2, golsContra: 2, saldo: 0 },
-    { time: 'África do Sul', posicao: 3, pontos: 3, jogos: 2, vitorias: 1, empates: 0, derrotas: 1, golsPro: 1, golsContra: 2, saldo: -1 },
-    { time: 'Alemanha', posicao: 4, pontos: 0, jogos: 2, vitorias: 0, empates: 0, derrotas: 2, golsPro: 0, golsContra: 2, saldo: -2 },
+  times: [
+    { time: 'México', posicao: 1, pontos: 6, jogos: 2, vitorias: 2, empates: 0, derrotas: 0, golsPro: 4, golsContra: 1, saldo: 3, jogosDetalhe: [] },
+    { time: 'Coreia do Sul', posicao: 2, pontos: 3, jogos: 2, vitorias: 1, empates: 0, derrotas: 1, golsPro: 2, golsContra: 2, saldo: 0, jogosDetalhe: [] },
+    { time: 'África do Sul', posicao: 3, pontos: 3, jogos: 2, vitorias: 1, empates: 0, derrotas: 1, golsPro: 1, golsContra: 2, saldo: -1, jogosDetalhe: [] },
+    { time: 'Alemanha', posicao: 4, pontos: 0, jogos: 2, vitorias: 0, empates: 0, derrotas: 2, golsPro: 0, golsContra: 2, saldo: -2, jogosDetalhe: [] },
   ],
   classificados: [],
   terceiro: null,
@@ -713,9 +727,11 @@ const makeJogo = (id: string, overrides: Partial<JogoComTimes> = {}): JogoComTim
   ...overrides,
 })
 
+// Nota: `terceiro: null` é workaround — o tipo atual exige `ClassificacaoTime` não-null.
+// O implementador precisará construir um ClassificacaoTime válido quando o componente for usar esse campo.
 const makeGrupo = (): ClassificacaoGrupo => ({
   grupo: 'A',
-  posicoes: [],
+  times: [],
   classificados: [],
   terceiro: null,
 })
