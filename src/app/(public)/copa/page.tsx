@@ -4,6 +4,7 @@ import { getMelhores8Terceiros } from '@/lib/services/bracket/best-thirds'
 import { projetarChaveamento } from '@/lib/services/bracket/projector'
 import { atualizarBracket } from '@/lib/services/bracket/updater'
 import { CopaTabs } from '@/components/public/copa-tabs'
+import { Badge } from '@/components/ui/badge'
 import type { JogoComTimes } from '@/lib/services/bracket/types'
 
 export const dynamic = 'force-dynamic'
@@ -23,7 +24,15 @@ export default async function CopaPage() {
 
   return (
     <main className="container mx-auto px-4 py-8">
-      <h1 className="font-display text-3xl tracking-wide mb-6">Copa do Mundo 2026</h1>
+      <div className="mb-6">
+        <div className="flex items-center gap-3 mb-1 flex-wrap">
+          <h1 className="font-display text-3xl tracking-wide">Copa do Mundo 2026</h1>
+          <Badge variant="outline" className="text-xs">Fase de grupos</Badge>
+        </div>
+        <p className="text-sm text-muted-foreground">
+          11 jun – 19 jul · EUA 🇺🇸 · México 🇲🇽 · Canadá 🇨🇦
+        </p>
+      </div>
       <CopaTabs classificacao={classificacao} bracket={bracket} jogos={jogosGrupos} />
     </main>
   )
