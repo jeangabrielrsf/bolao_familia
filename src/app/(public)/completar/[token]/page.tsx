@@ -13,6 +13,8 @@ import { getTimeFlag } from '@/lib/utils/flags'
 import { formatarData, formatarHora } from '@/lib/utils/date'
 import { toast } from 'sonner'
 import { Save, XCircle, Calendar, Lock, AlertCircle, RotateCcw, CheckCircle } from 'lucide-react'
+import { PhaseSelector } from '@/components/public/phase-selector'
+import { QuemPassaCard } from '@/components/public/quem-passa-card'
 
 interface TokenInfo {
   valido: boolean
@@ -21,6 +23,7 @@ interface TokenInfo {
   fotoUrl?: string | null
   prazo?: string
   habilitado?: boolean
+  fasesHabilitadas?: Record<string, boolean>
   erro?: string
 }
 
@@ -33,15 +36,18 @@ interface PalpiteGrupo {
 interface JogoComPalpite {
   id: string
   grupo: string | null
+  fase?: string
   dataHora: string
-  timeA: string
-  timeB: string
-  palpite: { placarA: number; placarB: number } | null
+  timeA: string | null
+  timeB: string | null
+  cidade?: string
+  palpite: { placarA: number; placarB: number; vencedorPalpite?: number | null } | null
 }
 
 interface PalpiteInput {
   placarA: string
   placarB: string
+  vencedorPalpite?: number | null
 }
 
 interface ExtraInput {
@@ -56,14 +62,15 @@ interface GrupoComModo extends PalpiteGrupo {
 type Status = 'loading' | 'invalido' | 'prazo_encerrado' | 'desabilitado' | 'pronto'
 type PalpitesPorAba = Map<string, Map<string, PalpiteInput>>
 
-function getDraftKey(token: string, grupoId: string): string {
+function getDraftKey(token: string, grupoId: string, fase: string | null = null): string {
+  if (fase) return `bolao_draft_${token}_${fase}`
   return `bolao_draft_${token}_${grupoId}`
 }
 
-function loadDraft(token: string, grupoId: string): Map<string, PalpiteInput> | null {
+function loadDraft(token: string, grupoId: string, fase: string | null = null): Map<string, PalpiteInput> | null {
   if (typeof window === 'undefined') return null
   try {
-    const key = getDraftKey(token, grupoId)
+    const key = getDraftKey(token, grupoId, fase)
     const data = localStorage.getItem(key)
     if (!data) return null
     const parsed = JSON.parse(data) as Record<string, PalpiteInput>
@@ -73,10 +80,10 @@ function loadDraft(token: string, grupoId: string): Map<string, PalpiteInput> | 
   }
 }
 
-function saveDraft(token: string, grupoId: string, inputs: Map<string, PalpiteInput>): void {
+function saveDraft(token: string, grupoId: string, inputs: Map<string, PalpiteInput>, fase: string | null = null): void {
   if (typeof window === 'undefined') return
   try {
-    const key = getDraftKey(token, grupoId)
+    const key = getDraftKey(token, grupoId, fase)
     const data = Object.fromEntries(inputs)
     localStorage.setItem(key, JSON.stringify(data))
   } catch {
@@ -84,10 +91,10 @@ function saveDraft(token: string, grupoId: string, inputs: Map<string, PalpiteIn
   }
 }
 
-function clearDraft(token: string, grupoId: string): void {
+function clearDraft(token: string, grupoId: string, fase: string | null = null): void {
   if (typeof window === 'undefined') return
   try {
-    const key = getDraftKey(token, grupoId)
+    const key = getDraftKey(token, grupoId, fase)
     localStorage.removeItem(key)
   } catch {
     // ignore
@@ -98,7 +105,11 @@ function inputsFromJogos(jogos: JogoComPalpite[]): Map<string, PalpiteInput> {
   const map = new Map<string, PalpiteInput>()
   for (const j of jogos) {
     if (j.palpite) {
-      map.set(j.id, { placarA: String(j.palpite.placarA), placarB: String(j.palpite.placarB) })
+      map.set(j.id, {
+        placarA: String(j.palpite.placarA),
+        placarB: String(j.palpite.placarB),
+        vencedorPalpite: j.palpite.vencedorPalpite ?? null,
+      })
     }
   }
   return map
@@ -161,6 +172,12 @@ export default function CompletarBolaoPage() {
   const [modo, setModo] = useState<'completo' | 'restante'>('restante')
   const [extras, setExtras] = useState<ExtraInput[]>([])
   const [extrasOriginais, setExtrasOriginais] = useState<ExtraInput[]>([])
+  const [fase, setFase] = useState<string | null>(null)
+  const [fasesHabilitadas, setFasesHabilitadas] = useState<Record<string, boolean>>({})
+  const [mataMataJogos, setMataMataJogos] = useState<JogoComPalpite[]>([])
+  const [mataMataInputs, setMataMataInputs] = useState<Map<string, PalpiteInput>>(new Map())
+  const [mataMataOriginais, setMataMataOriginais] = useState<Map<string, PalpiteInput>>(new Map())
+  const [mataMataEditavel, setMataMataEditavel] = useState(false)
 
   const carregarDados = useCallback(async () => {
     try {
@@ -216,6 +233,10 @@ export default function CompletarBolaoPage() {
       .then((r) => r.json())
       .then((info: TokenInfo) => {
         setTokenInfo(info)
+
+        if (info.fasesHabilitadas) {
+          setFasesHabilitadas(info.fasesHabilitadas)
+        }
 
         if (!info.valido) {
           setStatus('invalido')
@@ -307,8 +328,94 @@ export default function CompletarBolaoPage() {
     toast.success('Alterações descartadas')
   }
 
+  const trocarFase = async (novaFase: string | null) => {
+    setFase(novaFase)
+    if (novaFase) {
+      try {
+        const res = await fetch(`/api/completar/${token}/jogos?fase=${novaFase}&grupoId=${grupoAtivo ?? ''}`)
+        const data = await res.json()
+        const jogosFase = data.jogos ?? []
+        setMataMataJogos(jogosFase)
+        setMataMataEditavel(data.editavel ?? false)
+
+        const inputs = inputsFromJogos(jogosFase)
+        const draft = loadDraft(token, '', novaFase)
+        const inputsComDraft = draft ?? inputs
+        setMataMataInputs(inputsComDraft)
+        setMataMataOriginais(inputs)
+      } catch {
+        toast.error('Erro ao carregar jogos da fase')
+      }
+    }
+  }
+
+  const atualizarMataMata = (jogoId: string, campo: 'placarA' | 'placarB', valor: string) => {
+    const cleaned = valor.replace(/[^0-9]/g, '')
+    const limited = cleaned.length > 2 ? cleaned.slice(0, 2) : cleaned
+
+    setMataMataInputs((prev) => {
+      const novo = new Map(prev)
+      const atual = novo.get(jogoId) ?? { placarA: '', placarB: '' }
+      novo.set(jogoId, { ...atual, [campo]: limited })
+      saveDraft(token, '', novo, fase)
+      return novo
+    })
+  }
+
+  const atualizarVencedorPalpite = (jogoId: string, vencedor: number) => {
+    setMataMataInputs((prev) => {
+      const novo = new Map(prev)
+      const atual = novo.get(jogoId) ?? { placarA: '', placarB: '' }
+      novo.set(jogoId, { ...atual, vencedorPalpite: atual.vencedorPalpite === vencedor ? null : vencedor })
+      saveDraft(token, '', novo, fase)
+      return novo
+    })
+  }
+
   const salvar = async () => {
-    if (!token || !grupoAtivo) return
+    if (!token) return
+
+    if (fase) {
+      const palpitesArray: { jogoId: string; placarA: number; placarB: number; vencedorPalpite: number | null }[] = []
+      for (const [jogoId, placar] of mataMataInputs.entries()) {
+        if (placar.placarA !== '' && placar.placarB !== '') {
+          const pA = parseInt(placar.placarA)
+          const pB = parseInt(placar.placarB)
+          const isDraw = pA === pB
+          if (isDraw && !placar.vencedorPalpite) {
+            toast.error('Para empates, selecione quem passa')
+            return
+          }
+          palpitesArray.push({
+            jogoId,
+            placarA: pA,
+            placarB: pB,
+            vencedorPalpite: isDraw ? placar.vencedorPalpite ?? null : null,
+          })
+        }
+      }
+      if (palpitesArray.length === 0) {
+        toast.error('Preencha pelo menos um palpite')
+        return
+      }
+      setSalvando(true)
+      try {
+        const res = await fetch(`/api/completar/${token}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ palpites: palpitesArray, fase, palpiteGrupoId: grupoAtivo }),
+        })
+        const data = await res.json()
+        if (!res.ok) { toast.error(data.error || 'Erro ao salvar'); return }
+        setMataMataOriginais(new Map(mataMataInputs))
+        clearDraft(token, '', fase)
+        toast.success(`Palpites salvos! (${data.totalSalvos} jogos)`)
+      } catch { toast.error('Erro ao salvar') }
+      finally { setSalvando(false) }
+      return
+    }
+
+    if (!grupoAtivo) return
 
     const inputs = todasAbas.get(grupoAtivo) ?? new Map()
     const palpitesArray: { jogoId: string; placarA: number; placarB: number }[] = []
@@ -497,7 +604,54 @@ export default function CompletarBolaoPage() {
         </div>
       </div>
 
-      {estaCompleto && (
+      {(fasesHabilitadas && Object.values(fasesHabilitadas).some(Boolean)) && (
+        <PhaseSelector
+          fasesHabilitadas={fasesHabilitadas}
+          faseAtual={fase}
+          onFaseChange={trocarFase}
+        />
+      )}
+
+      {fase && (
+        <>
+          {!mataMataEditavel && (
+            <Card className="border-warning/50">
+              <CardContent className="p-4 flex items-center gap-3">
+                <Lock className="w-5 h-5 text-warning shrink-0" />
+                <p className="text-sm">Esta fase já começou ou o prazo encerrou. Palpites não podem ser alterados.</p>
+              </CardContent>
+            </Card>
+          )}
+          <MataMataJogosLista
+            jogos={mataMataJogos}
+            inputs={mataMataInputs}
+            atualizarPalpite={atualizarMataMata}
+            atualizarVencedor={atualizarVencedorPalpite}
+            desabilitado={!mataMataEditavel}
+          />
+          {mataMataEditavel && (
+            <div className="sticky bottom-4">
+              <Button
+                onClick={salvar}
+                disabled={salvando || countFilled(mataMataInputs) !== mataMataJogos.length}
+                size="lg"
+                className="w-full shadow-lg"
+              >
+                {salvando ? 'Salvando...' : (
+                  <>
+                    <Save className="w-4 h-4" />
+                    Salvar ({countFilled(mataMataInputs)}/{mataMataJogos.length})
+                  </>
+                )}
+              </Button>
+            </div>
+          )}
+        </>
+      )}
+
+      {!fase && (
+        <>
+          {estaCompleto && (
         <Card className="border-green-500/50 bg-green-50 dark:bg-green-950/20">
           <CardContent className="p-4">
             <div className="flex items-start gap-3">
@@ -636,6 +790,8 @@ export default function CompletarBolaoPage() {
           </Button>
         </div>
       )}
+        </>
+      )}
     </div>
   )
 }
@@ -690,7 +846,7 @@ function JogosLista({
                       </div>
                       <div className="flex items-center justify-between gap-2">
                         <div className="flex-1 flex items-center justify-end gap-2">
-                          {getTimeFlag(jogo.timeA) && <Flag codigoIso={getTimeFlag(jogo.timeA)!} size={20} />}
+                          {jogo.timeA && getTimeFlag(jogo.timeA) && <Flag codigoIso={getTimeFlag(jogo.timeA)!} size={20} />}
                           <span className="font-display text-base tracking-wide text-right">{jogo.timeA}</span>
                         </div>
                         <div className="flex items-center gap-1">
@@ -718,7 +874,7 @@ function JogosLista({
                         </div>
                         <div className="flex-1 flex items-center gap-2">
                           <span className="font-display text-base tracking-wide">{jogo.timeB}</span>
-                          {getTimeFlag(jogo.timeB) && <Flag codigoIso={getTimeFlag(jogo.timeB)!} size={20} />}
+                          {jogo.timeB && getTimeFlag(jogo.timeB) && <Flag codigoIso={getTimeFlag(jogo.timeB)!} size={20} />}
                         </div>
                       </div>
                     </CardContent>
@@ -727,6 +883,108 @@ function JogosLista({
               })}
             </div>
           </section>
+        )
+      })}
+    </div>
+  )
+}
+
+function MataMataJogosLista({
+  jogos,
+  inputs,
+  atualizarPalpite,
+  atualizarVencedor,
+  desabilitado = false,
+}: {
+  jogos: JogoComPalpite[]
+  inputs: Map<string, PalpiteInput>
+  atualizarPalpite: (jogoId: string, campo: 'placarA' | 'placarB', valor: string) => void
+  atualizarVencedor: (jogoId: string, vencedor: number) => void
+  desabilitado?: boolean
+}) {
+  if (jogos.length === 0) {
+    return (
+      <Card>
+        <CardContent className="flex flex-col items-center justify-center py-8">
+          <p className="text-muted-foreground">Nenhum jogo disponível para esta fase.</p>
+        </CardContent>
+      </Card>
+    )
+  }
+
+  return (
+    <div className="space-y-3">
+      {jogos.map((jogo) => {
+        const dataHora = new Date(jogo.dataHora)
+        const dataFormatada = formatarData(dataHora)
+        const horaFormatada = formatarHora(dataHora)
+        const palpiteAtual = inputs.get(jogo.id)
+        const pA = palpiteAtual?.placarA !== '' && palpiteAtual?.placarA !== undefined ? parseInt(palpiteAtual.placarA) : null
+        const pB = palpiteAtual?.placarB !== '' && palpiteAtual?.placarB !== undefined ? parseInt(palpiteAtual.placarB) : null
+        const isDraw = pA !== null && pB !== null && pA === pB
+
+        return (
+          <Card key={jogo.id} className="overflow-hidden">
+            <CardContent className="p-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                  <Calendar className="w-3 h-3" />
+                  {dataFormatada} · {horaFormatada}
+                  {jogo.cidade && <span className="ml-1">· {jogo.cidade}</span>}
+                </div>
+              </div>
+              {jogo.timeA && jogo.timeB ? (
+                <>
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex-1 flex items-center justify-end gap-2">
+                      {getTimeFlag(jogo.timeA) && <Flag codigoIso={getTimeFlag(jogo.timeA)!} size={20} />}
+                      <span className="font-display text-base tracking-wide text-right">{jogo.timeA}</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <Input
+                        type="text"
+                        inputMode="numeric"
+                        pattern="[0-9]*"
+                        value={palpiteAtual?.placarA ?? ''}
+                        onChange={(e) => atualizarPalpite(jogo.id, 'placarA', e.target.value)}
+                        disabled={desabilitado}
+                        className="w-14 h-10 text-center text-lg font-bold"
+                        placeholder="-"
+                      />
+                      <span className="text-muted-foreground font-bold">×</span>
+                      <Input
+                        type="text"
+                        inputMode="numeric"
+                        pattern="[0-9]*"
+                        value={palpiteAtual?.placarB ?? ''}
+                        onChange={(e) => atualizarPalpite(jogo.id, 'placarB', e.target.value)}
+                        disabled={desabilitado}
+                        className="w-14 h-10 text-center text-lg font-bold"
+                        placeholder="-"
+                      />
+                    </div>
+                    <div className="flex-1 flex items-center gap-2">
+                      <span className="font-display text-base tracking-wide">{jogo.timeB}</span>
+                      {getTimeFlag(jogo.timeB) && <Flag codigoIso={getTimeFlag(jogo.timeB)!} size={20} />}
+                    </div>
+                  </div>
+                  {isDraw && (
+                    <QuemPassaCard
+                      timeA={jogo.timeA}
+                      timeB={jogo.timeB}
+                      selecionado={palpiteAtual?.vencedorPalpite ?? null}
+                      onSelecionar={(v) => atualizarVencedor(jogo.id, v)}
+                      disabled={desabilitado}
+                    />
+                  )}
+                </>
+              ) : (
+                <div className="text-center py-4 text-muted-foreground text-sm">
+                  Times a definir
+                </div>
+              )}
+            </CardContent>
+          </Card>
         )
       })}
     </div>
