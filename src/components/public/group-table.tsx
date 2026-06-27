@@ -1,5 +1,6 @@
 import type { ClassificacaoGrupo } from '@/lib/services/bracket/types'
 import { Flag } from '@/components/ui/flag'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { getTimeFlag } from '@/lib/utils/flags'
 
 type Props = {
@@ -35,19 +36,19 @@ export function GroupTable({ grupo, qualificadosTerceiros }: Props) {
             const isEliminado = pos > 3 || (isTerceiro && !terceiroQualificado)
 
             const rowBg = isClassificado
-              ? 'bg-green-50 dark:bg-green-950/40'
+              ? 'bg-emerald-100 dark:bg-emerald-900/60'
               : terceiroQualificado
-              ? 'bg-amber-50 dark:bg-amber-950/40'
+              ? 'bg-amber-100 dark:bg-amber-900/60'
               : isEliminado
-              ? 'bg-red-50 dark:bg-red-950/40'
+              ? 'bg-rose-100 dark:bg-rose-900/60'
               : ''
 
             const borderAccent = isClassificado
-              ? 'border-l-4 border-green-500 dark:border-l-green-400'
+              ? 'border-l-4 border-emerald-500 dark:border-l-emerald-400'
               : terceiroQualificado
               ? 'border-l-4 border-amber-500 dark:border-l-amber-400'
               : isEliminado
-              ? 'border-l-4 border-red-500 dark:border-l-red-400'
+              ? 'border-l-4 border-rose-500 dark:border-l-rose-400'
               : ''
 
             return (
@@ -58,7 +59,12 @@ export function GroupTable({ grupo, qualificadosTerceiros }: Props) {
                     {getTimeFlag(time.time) && <Flag codigoIso={getTimeFlag(time.time)!} size={20} />}
                     <span>{time.time}</span>
                     {time.posicao === null && (
-                      <span className="text-xs text-amber-600 dark:text-amber-400" title="Desempate exige fair play / ranking FIFA">⚠</span>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <span className="text-xs text-amber-600 dark:text-amber-400 cursor-help">⚠</span>
+                        </TooltipTrigger>
+                        <TooltipContent>Desempate exige fair play / ranking FIFA</TooltipContent>
+                      </Tooltip>
                     )}
                   </div>
                 </td>

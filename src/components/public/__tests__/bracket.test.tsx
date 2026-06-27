@@ -32,3 +32,36 @@ describe('Bracket', () => {
     expect(screen.getByText(/Final.*1 jogo/)).toBeInTheDocument()
   })
 })
+
+describe('Bracket tab selector mobile', () => {
+  const slots: BracketSlot[] = [{
+    jogoId: 'j1', fase: 'dezesseis_avos', slot: 1,
+    timeA: 'A', timeB: 'B', placarA: 0, placarB: 0,
+    status: 'agendado', vencedor: null,
+    placarPenaltisA: null, placarPenaltisB: null, dataHora: null,
+  }]
+
+  it('fase ativa tem aria-current="page"', () => {
+    render(<Bracket slots={slots} />)
+    const activeTab = screen.getByRole('button', { name: 'R32' })
+    expect(activeTab.getAttribute('aria-current')).toBe('page')
+  })
+
+  it('fase inativa NÃO tem aria-current', () => {
+    render(<Bracket slots={slots} />)
+    const inactiveTab = screen.getByRole('button', { name: 'Oitavas' })
+    expect(inactiveTab.getAttribute('aria-current')).toBeNull()
+  })
+
+  it('fase ativa NÃO tem bg-primary sólido', () => {
+    render(<Bracket slots={slots} />)
+    const activeTab = screen.getByRole('button', { name: 'R32' })
+    expect(activeTab.className).not.toMatch(/bg-primary/)
+  })
+
+  it('fase ativa tem underline indicator (h-0.5 bg-primary)', () => {
+    const { container } = render(<Bracket slots={slots} />)
+    const underline = container.querySelector('.h-0\\.5.bg-primary')
+    expect(underline).toBeInTheDocument()
+  })
+})

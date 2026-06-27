@@ -80,8 +80,9 @@ describe('BracketMatch', () => {
     const placeholder = screen.getByText('3º de A, B, C, D ou F')
     expect(placeholder).toBeInTheDocument()
     expect(placeholder.tagName).toBe('SPAN')
-    expect(placeholder.className).toMatch(/italic/)
-    expect(placeholder.className).toMatch(/muted-foreground/)
+    const wrapper = placeholder.parentElement
+    expect(wrapper?.className).toMatch(/italic/)
+    expect(wrapper?.className).toMatch(/muted-foreground/)
   })
 
   it('renderiza nome do time quando 3rd já resolvido', () => {
@@ -118,5 +119,40 @@ describe('BracketMatch', () => {
   it('não renderiza link quando href não é fornecido', () => {
     render(<BracketMatch slot={slotFuturo} />)
     expect(screen.queryByRole('link')).not.toBeInTheDocument()
+  })
+})
+
+describe('BracketMatch vencedor destaque', () => {
+  const slotFinalizado: BracketSlot = {
+    jogoId: 'j1',
+    fase: 'final' as const,
+    slot: 1,
+    timeA: 'Brasil',
+    timeB: 'Argentina',
+    placarA: 2,
+    placarB: 0,
+    status: 'finalizado' as const,
+    vencedor: 'A' as const,
+    placarPenaltisA: null,
+    placarPenaltisB: null,
+    dataHora: new Date('2026-07-19T19:00:00Z'),
+  }
+
+  it('vencedor (lado A) tem background emerald', () => {
+    const { container } = render(<BracketMatch slot={slotFinalizado} size="md" />)
+    const winnerRow = container.querySelector('.bg-emerald-100, .dark\\:bg-emerald-900\\/40')
+    expect(winnerRow).toBeInTheDocument()
+  })
+
+  it('vencedor tem nome com text-emerald-700', () => {
+    const { container } = render(<BracketMatch slot={slotFinalizado} size="md" />)
+    const winnerName = container.querySelector('.text-emerald-700, .dark\\:text-emerald-300')
+    expect(winnerName).toBeInTheDocument()
+  })
+
+  it('perdedor (lado B) NÃO tem background emerald', () => {
+    const { container } = render(<BracketMatch slot={slotFinalizado} size="md" />)
+    const emeraldRows = container.querySelectorAll('.bg-emerald-100, .dark\\:bg-emerald-900\\/40')
+    expect(emeraldRows.length).toBe(1)
   })
 })
