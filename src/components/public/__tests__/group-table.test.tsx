@@ -34,15 +34,15 @@ describe('GroupTable', () => {
   it('pinta 1º e 2º com bg verde (classificado)', () => {
     const { container } = render(<GroupTable grupo={mockClassificacao} />)
     const rows = container.querySelectorAll('tbody tr')
-    expect(rows[0].className).toContain('bg-green-50')
-    expect(rows[1].className).toContain('bg-green-50')
+    expect(rows[0].className).toContain('bg-emerald-100')
+    expect(rows[1].className).toContain('bg-emerald-100')
   })
 
   it('pinta 1º e 2º com dark mode bg (classificado)', () => {
     const { container } = render(<GroupTable grupo={mockClassificacao} />)
     const rows = container.querySelectorAll('tbody tr')
-    expect(rows[0].className).toContain('dark:bg-green-950/40')
-    expect(rows[1].className).toContain('dark:bg-green-950/40')
+    expect(rows[0].className).toContain('dark:bg-emerald-900/60')
+    expect(rows[1].className).toContain('dark:bg-emerald-900/60')
   })
 
   it('pinta 3º com bg amarelo se qualificado entre os 8 melhores', () => {
@@ -50,8 +50,8 @@ describe('GroupTable', () => {
       <GroupTable grupo={mockClassificacao} qualificadosTerceiros={new Set(['A'])} />
     )
     const rows = container.querySelectorAll('tbody tr')
-    expect(rows[2].className).toContain('bg-amber-50')
-    expect(rows[2].className).toContain('dark:bg-amber-950/40')
+    expect(rows[2].className).toContain('bg-amber-100')
+    expect(rows[2].className).toContain('dark:bg-amber-900/60')
   })
 
   it('pinta 3º com bg vermelho se NÃO qualificado entre os 8 melhores', () => {
@@ -59,14 +59,14 @@ describe('GroupTable', () => {
       <GroupTable grupo={mockClassificacao} qualificadosTerceiros={new Set(['B'])} />
     )
     const rows = container.querySelectorAll('tbody tr')
-    expect(rows[2].className).toContain('bg-red-50')
-    expect(rows[2].className).toContain('dark:bg-red-950/40')
+    expect(rows[2].className).toContain('bg-rose-100')
+    expect(rows[2].className).toContain('dark:bg-rose-900/60')
   })
 
   it('pinta 4º com bg vermelho (eliminado)', () => {
     const { container } = render(<GroupTable grupo={mockClassificacao} />)
     const rows = container.querySelectorAll('tbody tr')
-    expect(rows[3].className).toContain('bg-red-50')
-    expect(rows[3].className).toContain('dark:bg-red-950/40')
+    expect(rows[3].className).toContain('bg-rose-100')
+    expect(rows[3].className).toContain('dark:bg-rose-900/60')
   })
 })

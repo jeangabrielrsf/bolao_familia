@@ -11,21 +11,21 @@ export function GroupLegend() {
       <div className="flex items-center gap-2">
         <span
           aria-hidden
-          className="inline-block w-5 h-5 rounded bg-green-50 dark:bg-green-950/40 border-l-4 border-green-500 dark:border-l-green-400"
+          className="inline-block w-5 h-5 rounded bg-emerald-100 dark:bg-emerald-900/60 border-l-4 border-emerald-500 dark:border-l-emerald-400"
         />
         <span>Classificado (1º e 2º)</span>
       </div>
       <div className="flex items-center gap-2">
         <span
           aria-hidden
-          className="inline-block w-5 h-5 rounded bg-amber-50 dark:bg-amber-950/40 border-l-4 border-amber-500 dark:border-l-amber-400"
+          className="inline-block w-5 h-5 rounded bg-amber-100 dark:bg-amber-900/60 border-l-4 border-amber-500 dark:border-l-amber-400"
         />
         <span>Melhor 8 terceiros</span>
       </div>
       <div className="flex items-center gap-2">
         <span
           aria-hidden
-          className="inline-block w-5 h-5 rounded bg-red-50 dark:bg-red-950/40 border-l-4 border-red-500 dark:border-l-red-400"
+          className="inline-block w-5 h-5 rounded bg-rose-100 dark:bg-rose-900/60 border-l-4 border-rose-500 dark:border-l-rose-400"
         />
         <span>Eliminado</span>
       </div>
