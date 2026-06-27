@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getParticipanteByToken, getConfigCompletarBolao } from '@/lib/db/queries/completar-bolao'
+import { getParticipanteByToken, getConfigCompletarBolao, getFasesHabilitadas } from '@/lib/db/queries/completar-bolao'
 
 export async function GET(
   _request: NextRequest,
@@ -15,10 +15,13 @@ export async function GET(
     const participante = await getParticipanteByToken(token)
 
     if (!participante) {
-      return NextResponse.json({ valido: false, erro: 'Token inválido' }, { status: 404 })
+      return NextResponse.json({ error: 'Token inválido', valido: false }, { status: 404 })
     }
 
-    const config = await getConfigCompletarBolao()
+    const [config, fasesHabilitadas] = await Promise.all([
+      getConfigCompletarBolao(),
+      getFasesHabilitadas(),
+    ])
 
     return NextResponse.json({
       valido: true,
@@ -27,6 +30,7 @@ export async function GET(
       fotoUrl: participante.fotoUrl,
       prazo: config.prazo.toISOString(),
       habilitado: config.habilitado,
+      fasesHabilitadas,
     })
   } catch {
     return NextResponse.json({ error: 'Erro interno do servidor' }, { status: 500 })
