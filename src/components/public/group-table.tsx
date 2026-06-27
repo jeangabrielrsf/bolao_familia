@@ -1,5 +1,6 @@
 import type { ClassificacaoGrupo } from '@/lib/services/bracket/types'
 import { Flag } from '@/components/ui/flag'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { getTimeFlag } from '@/lib/utils/flags'
 
 type Props = {
@@ -58,7 +59,12 @@ export function GroupTable({ grupo, qualificadosTerceiros }: Props) {
                     {getTimeFlag(time.time) && <Flag codigoIso={getTimeFlag(time.time)!} size={20} />}
                     <span>{time.time}</span>
                     {time.posicao === null && (
-                      <span className="text-xs text-amber-600 dark:text-amber-400" title="Desempate exige fair play / ranking FIFA">⚠</span>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <span className="text-xs text-amber-600 dark:text-amber-400 cursor-help">⚠</span>
+                        </TooltipTrigger>
+                        <TooltipContent>Desempate exige fair play / ranking FIFA</TooltipContent>
+                      </Tooltip>
                     )}
                   </div>
                 </td>
