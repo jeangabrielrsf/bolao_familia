@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireAdmin } from '@/lib/auth/middleware'
-import { getFasesHabilitadas, setConfigFaseMataMata, getConfigFaseMataMata } from '@/lib/db/queries/completar-bolao'
+import { setConfigFaseMataMata, getConfigFaseMataMata } from '@/lib/db/queries/completar-bolao'
 import { FASES_MATA_MATA } from '@/lib/utils/constants'
 
 export async function GET(request: NextRequest) {

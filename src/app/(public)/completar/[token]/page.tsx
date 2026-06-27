@@ -176,7 +176,7 @@ export default function CompletarBolaoPage() {
   const [fasesHabilitadas, setFasesHabilitadas] = useState<Record<string, boolean>>({})
   const [mataMataJogos, setMataMataJogos] = useState<JogoComPalpite[]>([])
   const [mataMataInputs, setMataMataInputs] = useState<Map<string, PalpiteInput>>(new Map())
-  const [mataMataOriginais, setMataMataOriginais] = useState<Map<string, PalpiteInput>>(new Map())
+  const [, setMataMataOriginais] = useState<Map<string, PalpiteInput>>(new Map())
   const [mataMataEditavel, setMataMataEditavel] = useState(false)
 
   const carregarDados = useCallback(async () => {

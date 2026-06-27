@@ -1,3 +1,4 @@
+import { type Fase } from '@prisma/client'
 import { prisma } from '../client'
 import { CONFIG_CHAVES, FASES_MATA_MATA } from '@/lib/utils/constants'
 
@@ -505,7 +506,7 @@ export async function setConfigFaseMataMata(
 
 export async function getJogosFase(fase: string) {
   return prisma.jogo.findMany({
-    where: { fase: fase as any },
+    where: { fase: fase as Fase },
     orderBy: { dataHora: 'asc' },
   })
 }
@@ -574,7 +575,7 @@ export async function isFaseEditavel(fase: string): Promise<boolean> {
   if (!config.habilitado) return false
 
   const primeiroJogo = await prisma.jogo.findFirst({
-    where: { fase: fase as any },
+    where: { fase: fase as Fase },
     orderBy: { dataHora: 'asc' },
     select: { dataHora: true, status: true },
   })
