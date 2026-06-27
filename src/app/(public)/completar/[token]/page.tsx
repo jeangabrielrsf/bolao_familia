@@ -13,6 +13,7 @@ import { getTimeFlag } from '@/lib/utils/flags'
 import { formatarData, formatarHora } from '@/lib/utils/date'
 import { toast } from 'sonner'
 import { Save, XCircle, Calendar, Lock, AlertCircle, RotateCcw, CheckCircle } from 'lucide-react'
+import { FASE_LABELS, FASES_MATA_MATA } from '@/lib/utils/constants'
 import { PhaseSelector } from '@/components/public/phase-selector'
 import { QuemPassaCard } from '@/components/public/quem-passa-card'
 
@@ -169,6 +170,13 @@ export default function CompletarBolaoPage() {
   const [salvando, setSalvando] = useState(false)
   const [carregandoInicial, setCarregandoInicial] = useState(true)
   const initializedRef = useRef(false)
+  const todasAbasRef = useRef(todasAbas)
+  const grupoAtivoRef = useRef(grupoAtivo)
+  const jogosRef = useRef(jogos)
+
+  useEffect(() => { todasAbasRef.current = todasAbas }, [todasAbas])
+  useEffect(() => { grupoAtivoRef.current = grupoAtivo }, [grupoAtivo])
+  useEffect(() => { jogosRef.current = jogos }, [jogos])
   const [modo, setModo] = useState<'completo' | 'restante'>('restante')
   const [extras, setExtras] = useState<ExtraInput[]>([])
   const [extrasOriginais, setExtrasOriginais] = useState<ExtraInput[]>([])
@@ -176,7 +184,7 @@ export default function CompletarBolaoPage() {
   const [fasesHabilitadas, setFasesHabilitadas] = useState<Record<string, boolean>>({})
   const [mataMataJogos, setMataMataJogos] = useState<JogoComPalpite[]>([])
   const [mataMataInputs, setMataMataInputs] = useState<Map<string, PalpiteInput>>(new Map())
-  const [, setMataMataOriginais] = useState<Map<string, PalpiteInput>>(new Map())
+  const [mataMataOriginais, setMataMataOriginais] = useState<Map<string, PalpiteInput>>(new Map())
   const [mataMataEditavel, setMataMataEditavel] = useState(false)
 
   const carregarDados = useCallback(async () => {
@@ -255,7 +263,32 @@ export default function CompletarBolaoPage() {
 
         setStatus('pronto')
         initializedRef.current = true
-        carregarDados()
+        carregarDados().then(() => {
+          const enabledMataMata = info.fasesHabilitadas
+            ? FASES_MATA_MATA.filter((f: string) => info.fasesHabilitadas![f])
+            : []
+          if (enabledMataMata.length === 0) return
+
+          const grupoInputs = todasAbasRef.current.get(grupoAtivoRef.current ?? '') ?? new Map()
+          const totalPreenchidos = countFilled(grupoInputs)
+          if (totalPreenchidos < jogosRef.current.length || jogosRef.current.length === 0) return
+
+          const primeiraFase = enabledMataMata[0]
+          setFase(primeiraFase)
+          fetch(`/api/completar/${token}/jogos?fase=${primeiraFase}&grupoId=${grupoAtivoRef.current ?? ''}`)
+            .then((r) => r.json())
+            .then((data) => {
+              const jogosFase = data.jogos ?? []
+              setMataMataJogos(jogosFase)
+              setMataMataEditavel(data.editavel ?? false)
+              const inputs = inputsFromJogos(jogosFase)
+              const draft = loadDraft(token, '', primeiraFase)
+              const inputsComDraft = draft ?? inputs
+              setMataMataInputs(inputsComDraft)
+              setMataMataOriginais(inputs)
+            })
+            .catch(() => toast.error('Erro ao carregar jogos da fase'))
+        })
       })
       .catch(() => {
         setStatus('invalido')
@@ -573,29 +606,38 @@ export default function CompletarBolaoPage() {
     return hasUnsavedChanges(abaInputs, abaOriginal)
   }
 
+  const faseLabel = fase ? FASE_LABELS[fase] ?? fase : null
+  const mataMataPreenchidos = countFilled(mataMataInputs)
+  const mataMataTotal = mataMataJogos.length
+  const mataMataCompleto = mataMataPreenchidos === mataMataTotal && !hasUnsavedChanges(mataMataInputs, mataMataOriginais)
+
   return (
     <div className="max-w-2xl mx-auto px-4 py-8 space-y-6">
       <div className="space-y-2">
         <h1 className="text-3xl font-display tracking-wide">Complete seu Bolão</h1>
         <p className="text-muted-foreground">
           Olá, <span className="font-semibold text-foreground">{tokenInfo?.nome}</span>!{' '}
-          {modo === 'completo'
-            ? `Preencha seus palpites para os ${totalJogos} jogos da fase de grupos e os 5 extras.`
-            : `Preencha seus palpites para os ${totalJogos} jogos restantes.`}
+          {fase
+            ? `Preencha seus palpites para os ${mataMataTotal} jogos da ${faseLabel}.`
+            : modo === 'completo'
+              ? `Preencha seus palpites para os ${totalJogos} jogos da fase de grupos e os 5 extras.`
+              : `Preencha seus palpites para os ${totalJogos} jogos restantes.`}
         </p>
         <div className="flex items-center gap-2 flex-wrap">
-          {modo === 'completo' ? (
+          {fase ? (
+            <Badge variant="info">{mataMataPreenchidos}/{mataMataTotal} preenchidos</Badge>
+          ) : modo === 'completo' ? (
             <Badge variant="info">{totalPreenchidos}/{totalJogos} jogos + {extrasPreenchidos}/5 extras</Badge>
           ) : (
             <Badge variant="info">{totalPreenchidos}/{totalJogos} preenchidos</Badge>
           )}
-          {temAlteracoes && (
+          {(fase ? hasUnsavedChanges(mataMataInputs, new Map()) : temAlteracoes) && (
             <Badge variant="warning">
               <AlertCircle className="w-3 h-3 mr-1" />
               Não salvo
             </Badge>
           )}
-          {estaCompleto && (
+          {(fase ? mataMataCompleto : estaCompleto) && (
             <Badge variant="success">
               <CheckCircle className="w-3 h-3 mr-1" />
               Palpites computados
