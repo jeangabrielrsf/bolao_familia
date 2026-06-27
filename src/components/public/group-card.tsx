@@ -34,7 +34,7 @@ export function GroupCard({ grupo, qualificadosTerceiros, onClick, variant = 'fu
         aria-label={`Editar jogos do grupo ${grupo.grupo}`}
         className={cn(
           'block w-full text-left rounded-lg border-l-4 bg-card',
-          'hover:bg-muted/50 active:bg-muted transition-colors',
+          'hover:bg-muted/50 active:bg-muted dark:hover:bg-muted/80 transition-colors',
           'focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2',
           getStatusClass(grupo, qualificadosTerceiros),
         )}
@@ -62,7 +62,7 @@ export function GroupCard({ grupo, qualificadosTerceiros, onClick, variant = 'fu
     <button
       onClick={onClick}
       aria-label={`Editar jogos do grupo ${grupo.grupo}`}
-      className="block w-full text-left rounded-lg hover:bg-muted/50 transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+      className="block w-full text-left rounded-lg hover:bg-muted/50 dark:hover:bg-muted/80 transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
     >
       <div className="flex items-center gap-2 p-3">
         <div className="flex-1 pointer-events-none">

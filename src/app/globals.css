@@ -34,11 +34,11 @@
 .dark {
   --background: #0a0e1a;
   --foreground: #e2e8f0;
-  --card: rgba(26, 31, 46, 0.7);
+  --card: #131826;
   --card-foreground: #e2e8f0;
-  --border: rgba(255, 255, 255, 0.1);
-  --muted: #151b2e;
-  --muted-foreground: #8892a8;
+  --border: rgba(255, 255, 255, 0.08);
+  --muted: #1a2030;
+  --muted-foreground: #94a3b8;
   --primary: #00A651;
   --primary-foreground: #ffffff;
   --primary-light: #4caf50;
