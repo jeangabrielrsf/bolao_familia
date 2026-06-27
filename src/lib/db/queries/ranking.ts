@@ -1,6 +1,6 @@
 import { prisma } from '../client'
 import { getConfiguracao } from './config'
-import { calcularPontosJogo, calcularPontosExtra } from '@/lib/utils/helpers'
+import { calcularPontosJogo, calcularPontosExtra, calcularPontosMataMata } from '@/lib/utils/helpers'
 import type { RankingEntry } from '@/lib/utils/types'
 
 export async function getRanking(): Promise<RankingEntry[]> {
@@ -29,15 +29,28 @@ export async function getRanking(): Promise<RankingEntry[]> {
       if (palpite.jogo.status !== 'finalizado') continue
       if (palpite.jogo.resultadoA === null || palpite.jogo.resultadoB === null) continue
 
-      const resultado = calcularPontosJogo(
-        palpite.placarA, palpite.placarB,
-        palpite.jogo.resultadoA, palpite.jogo.resultadoB,
-        config
-      )
+      const isMataMata = palpite.jogo.fase !== 'grupos'
 
-      pontos += resultado.pontos
-      if (resultado.tipo === 'exato') placaresExatos++
-      if (resultado.tipo === 'vencedor' || resultado.tipo === 'exato') vencedoresCorretos++
+      if (isMataMata) {
+        const resultado = calcularPontosMataMata(
+          palpite.placarA, palpite.placarB, palpite.vencedorPalpite,
+          palpite.jogo.resultadoA, palpite.jogo.resultadoB, palpite.jogo.vencedor,
+          config
+        )
+        pontos += resultado.pontos
+        if (resultado.tipo === 'exato') placaresExatos++
+        if (resultado.tipo === 'vencedor' || resultado.tipo === 'exato') vencedoresCorretos++
+        if (resultado.quemPassa) quemPassaAcertos++
+      } else {
+        const resultado = calcularPontosJogo(
+          palpite.placarA, palpite.placarB,
+          palpite.jogo.resultadoA, palpite.jogo.resultadoB,
+          config
+        )
+        pontos += resultado.pontos
+        if (resultado.tipo === 'exato') placaresExatos++
+        if (resultado.tipo === 'vencedor' || resultado.tipo === 'exato') vencedoresCorretos++
+      }
     }
 
     for (const extra of g.extras) {
@@ -64,6 +77,7 @@ export async function getRanking(): Promise<RankingEntry[]> {
   return ranking.sort((a, b) => {
     if (b.pontos !== a.pontos) return b.pontos - a.pontos
     if (b.placaresExatos !== a.placaresExatos) return b.placaresExatos - a.placaresExatos
-    return b.vencedoresCorretos - a.vencedoresCorretos
+    if (b.vencedoresCorretos !== a.vencedoresCorretos) return b.vencedoresCorretos - a.vencedoresCorretos
+    return b.quemPassaAcertos - a.quemPassaAcertos
   })
 }
