@@ -1,6 +1,6 @@
 import { PrismaClient } from '@prisma/client'
 import { PrismaPg } from '@prisma/adapter-pg'
-import { PONTUACAO_PADRAO, CONFIG_CHAVES } from '../src/lib/utils/constants'
+import { PONTUACAO_PADRAO, CONFIG_CHAVES, FASES_MATA_MATA, FASE_LABELS } from '../src/lib/utils/constants'
 
 const adapter = new PrismaPg(process.env.DATABASE_URL!)
 const prisma = new PrismaClient({ adapter })
@@ -274,6 +274,40 @@ async function main() {
   })
 
   console.log('Pontuação padrão configurada com sucesso')
+
+  console.log('Configurando fases do mata-mata...')
+
+  const faseDeadlines: Record<string, string> = {
+    dezesseis_avos: '2026-06-28T16:00:00.000Z',
+    oitavas: '2026-07-04T20:00:00.000Z',
+    quartas: '2026-07-09T20:00:00.000Z',
+    semifinal: '2026-07-14T20:00:00.000Z',
+    terceiro: '2026-07-18T16:00:00.000Z',
+    final: '2026-07-19T16:00:00.000Z',
+  }
+
+  for (const fase of FASES_MATA_MATA) {
+    await prisma.configuracao.upsert({
+      where: { chave: `prazo_${fase}` },
+      update: {},
+      create: {
+        chave: `prazo_${fase}`,
+        valor: faseDeadlines[fase],
+        descricao: `Prazo para palpites da fase ${FASE_LABELS[fase] ?? fase} (ISO 8601)`,
+      },
+    })
+    await prisma.configuracao.upsert({
+      where: { chave: `habilitado_${fase}` },
+      update: {},
+      create: {
+        chave: `habilitado_${fase}`,
+        valor: 'false',
+        descricao: `Habilita/desabilita palpites da fase ${FASE_LABELS[fase] ?? fase}`,
+      },
+    })
+  }
+
+  console.log(`${FASES_MATA_MATA.length} fases configuradas (prazo + habilitado)`)
 }
 
 main()

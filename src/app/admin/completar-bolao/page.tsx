@@ -38,10 +38,26 @@ interface Resumo {
   totalJogosFaltando: number
 }
 
+const faseLabels: Record<string, string> = {
+  dezesseis_avos: '16avos de Final',
+  oitavas: 'Oitavas de Final',
+  quartas: 'Quartas de Final',
+  semifinal: 'Semifinais',
+  terceiro: 'Disputa do 3º',
+  final: 'Final',
+}
+
+interface FaseStatus {
+  fase: string
+  habilitado: boolean
+  prazo: string | null
+}
+
 export default function AdminCompletarBolaoPage() {
   const [participantes, setParticipantes] = useState<ParticipanteStatus[]>([])
   const [config, setConfig] = useState<Config | null>(null)
   const [resumo, setResumo] = useState<Resumo | null>(null)
+  const [fases, setFases] = useState<FaseStatus[]>([])
   const [loading, setLoading] = useState(true)
   const [sorteando, setSorteando] = useState<string | null>(null)
   const [sorteandoTodos, setSorteandoTodos] = useState(false)
@@ -57,9 +73,12 @@ export default function AdminCompletarBolaoPage() {
   const fetchData = useCallback(async () => {
     try {
       setLoading(true)
-      const res = await fetch('/api/admin/completar-bolao/status')
-      if (!res.ok) throw new Error('Erro ao carregar')
-      const data = await res.json()
+      const [statusRes, fasesRes] = await Promise.all([
+        fetch('/api/admin/completar-bolao/status'),
+        fetch('/api/admin/completar-bolao/fases'),
+      ])
+      if (!statusRes.ok) throw new Error('Erro ao carregar')
+      const data = await statusRes.json()
       setParticipantes(data.participantes)
       setConfig(data.config)
       setResumo(data.resumo)
@@ -67,6 +86,10 @@ export default function AdminCompletarBolaoPage() {
         const d = new Date(data.config.prazo)
         const local = new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16)
         setPrazoInput(local)
+      }
+      if (fasesRes.ok) {
+        const fasesData = await fasesRes.json()
+        setFases(fasesData.fases ?? [])
       }
     } catch {
       toast.error('Erro ao carregar dados')
@@ -308,6 +331,54 @@ export default function AdminCompletarBolaoPage() {
                 </div>
               )}
             </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardContent className="p-4 space-y-4">
+          <div className="flex items-center gap-2">
+            <Settings className="w-5 h-5" />
+            <h2 className="text-lg font-semibold">Fases do Mata-Mata</h2>
+          </div>
+          <div className="space-y-3">
+            {fases.map((f) => {
+              const label = faseLabels[f.fase] ?? f.fase
+              const prazoStr = f.prazo ? formatarDataHoraCompleta(new Date(f.prazo)) : 'Não definido'
+              return (
+                <div key={f.fase} className="flex items-center justify-between gap-4 p-3 rounded-lg border">
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-sm">{label}</p>
+                    <p className="text-xs text-muted-foreground">{prazoStr}</p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Badge variant={f.habilitado ? 'success' : 'secondary'}>
+                      {f.habilitado ? 'Habilitada' : 'Desabilitada'}
+                    </Badge>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={async () => {
+                        try {
+                          const res = await fetch('/api/admin/completar-bolao/fases', {
+                            method: 'PUT',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ fase: f.fase, habilitado: !f.habilitado }),
+                          })
+                          if (!res.ok) throw new Error('Erro')
+                          setFases((prev) => prev.map((x) => x.fase === f.fase ? { ...x, habilitado: !x.habilitado } : x))
+                          toast.success(`${label}: ${f.habilitado ? 'desabilitada' : 'habilitada'}`)
+                        } catch {
+                          toast.error('Erro ao atualizar')
+                        }
+                      }}
+                    >
+                      {f.habilitado ? 'Desabilitar' : 'Habilitar'}
+                    </Button>
+                  </div>
+                </div>
+              )
+            })}
           </div>
         </CardContent>
       </Card>
