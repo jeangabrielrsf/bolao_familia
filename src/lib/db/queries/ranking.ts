@@ -23,6 +23,7 @@ export async function getRanking(): Promise<RankingEntry[]> {
     let pontos = 0
     let placaresExatos = 0
     let vencedoresCorretos = 0
+    let quemPassaAcertos = 0
 
     for (const palpite of g.palpites) {
       if (palpite.jogo.status !== 'finalizado') continue
@@ -56,6 +57,7 @@ export async function getRanking(): Promise<RankingEntry[]> {
       pontos,
       placaresExatos,
       vencedoresCorretos,
+      quemPassaAcertos,
     }
   })
 

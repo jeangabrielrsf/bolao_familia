@@ -44,6 +44,7 @@ export interface RankingEntry {
   pontos: number
   placaresExatos: number
   vencedoresCorretos: number
+  quemPassaAcertos: number
 }
 
 export interface ResultadoJogo {
@@ -55,6 +56,7 @@ export interface ResultadoJogo {
 export interface ConfiguracaoPontuacao {
   placarExato: number
   vencedorCorreto: number
+  quemPassa?: number
   campeao: number
   vice: number
   terceiro: number

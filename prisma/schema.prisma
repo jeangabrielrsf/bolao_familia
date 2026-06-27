@@ -104,6 +104,7 @@ model Palpite {
   jogoId          String      @map("jogo_id")
   placarA         Int         @map("placar_a")
   placarB         Int         @map("placar_b")
+  vencedorPalpite Int?        @map("vencedor_palpite")
   fonte           Fonte       @default(excel)
   criadoEm        DateTime    @default(now()) @map("criado_em")
 
