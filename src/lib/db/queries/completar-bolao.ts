@@ -1,5 +1,5 @@
 import { prisma } from '../client'
-import { CONFIG_CHAVES } from '@/lib/utils/constants'
+import { CONFIG_CHAVES, FASES_MATA_MATA } from '@/lib/utils/constants'
 
 export async function getParticipanteByToken(token: string) {
   return prisma.participante.findUnique({
@@ -86,10 +86,10 @@ export async function getPalpitesParticipante(participanteId: string) {
     include: { palpites: true },
   })
 
-  const palpitesMap = new Map<string, { placarA: number; placarB: number }>()
+  const palpitesMap = new Map<string, { placarA: number; placarB: number; vencedorPalpite: number | null }>()
   for (const grupo of grupos) {
     for (const palpite of grupo.palpites) {
-      palpitesMap.set(palpite.jogoId, { placarA: palpite.placarA, placarB: palpite.placarB })
+      palpitesMap.set(palpite.jogoId, { placarA: palpite.placarA, placarB: palpite.placarB, vencedorPalpite: palpite.vencedorPalpite })
     }
   }
 
@@ -102,10 +102,10 @@ export async function getPalpitesPorGrupo(palpiteGrupoId: string) {
     include: { palpites: true },
   })
 
-  const palpitesMap = new Map<string, { placarA: number; placarB: number }>()
+  const palpitesMap = new Map<string, { placarA: number; placarB: number; vencedorPalpite: number | null }>()
   if (grupo) {
     for (const palpite of grupo.palpites) {
-      palpitesMap.set(palpite.jogoId, { placarA: palpite.placarA, placarB: palpite.placarB })
+      palpitesMap.set(palpite.jogoId, { placarA: palpite.placarA, placarB: palpite.placarB, vencedorPalpite: palpite.vencedorPalpite })
     }
   }
 
@@ -433,4 +433,157 @@ export async function criarNovoPalpite(participanteId: string, apelido?: string)
       fonte: 'excel',
     },
   })
+}
+
+export function isFaseMataMata(fase: string): boolean {
+  return (FASES_MATA_MATA as readonly string[]).includes(fase)
+}
+
+export async function getFasesHabilitadas(): Promise<Record<string, boolean>> {
+  const configs = await prisma.configuracao.findMany({
+    where: {
+      chave: {
+        in: FASES_MATA_MATA.map((f) => `habilitado_${f}`),
+      },
+    },
+  })
+
+  const result: Record<string, boolean> = {}
+  for (const fase of FASES_MATA_MATA) {
+    const config = configs.find((c) => c.chave === `habilitado_${fase}`)
+    result[fase] = config?.valor === 'true'
+  }
+  return result
+}
+
+export async function getConfigFaseMataMata(fase: string): Promise<{ prazo: Date | null; habilitado: boolean }> {
+  const configs = await prisma.configuracao.findMany({
+    where: {
+      chave: {
+        in: [`prazo_${fase}`, `habilitado_${fase}`],
+      },
+    },
+  })
+
+  const prazo = configs.find((c) => c.chave === `prazo_${fase}`)
+  const habilitado = configs.find((c) => c.chave === `habilitado_${fase}`)
+
+  return {
+    prazo: prazo?.valor ? new Date(prazo.valor) : null,
+    habilitado: habilitado?.valor === 'true',
+  }
+}
+
+export async function setConfigFaseMataMata(
+  fase: string,
+  config: { prazo?: string; habilitado?: boolean }
+): Promise<void> {
+  if (config.prazo !== undefined) {
+    await prisma.configuracao.upsert({
+      where: { chave: `prazo_${fase}` },
+      update: { valor: config.prazo },
+      create: {
+        chave: `prazo_${fase}`,
+        valor: config.prazo,
+        descricao: `Prazo para palpites da fase ${fase} (ISO 8601)`,
+      },
+    })
+  }
+
+  if (config.habilitado !== undefined) {
+    await prisma.configuracao.upsert({
+      where: { chave: `habilitado_${fase}` },
+      update: { valor: String(config.habilitado) },
+      create: {
+        chave: `habilitado_${fase}`,
+        valor: String(config.habilitado),
+        descricao: `Habilita/desabilita palpites da fase ${fase}`,
+      },
+    })
+  }
+}
+
+export async function getJogosFase(fase: string) {
+  return prisma.jogo.findMany({
+    where: { fase: fase as any },
+    orderBy: { dataHora: 'asc' },
+  })
+}
+
+export async function getJogosFaseComPalpites(
+  fase: string,
+  participanteId: string,
+  palpiteGrupoId?: string
+) {
+  const jogos = await getJogosFase(fase)
+  const palpitesMap = palpiteGrupoId
+    ? await getPalpitesPorGrupo(palpiteGrupoId)
+    : await getPalpitesParticipante(participanteId)
+
+  return jogos.map((j) => ({
+    id: j.id,
+    fase: j.fase,
+    dataHora: j.dataHora,
+    timeA: j.timeA,
+    timeB: j.timeB,
+    local: j.local,
+    cidade: j.cidade,
+    palpite: palpitesMap.get(j.id) ?? null,
+  }))
+}
+
+export async function salvarPalpitesFase(
+  participanteId: string,
+  palpites: { jogoId: string; placarA: number; placarB: number; vencedorPalpite?: number | null }[],
+  palpiteGrupoId: string
+) {
+  const grupo = await prisma.palpiteGrupo.findFirst({
+    where: { id: palpiteGrupoId, participanteId },
+    select: { id: true },
+  })
+
+  if (!grupo) {
+    throw new Error('Grupo de palpites não encontrado')
+  }
+
+  const jogoIds = palpites.map((p) => p.jogoId)
+
+  await prisma.palpite.deleteMany({
+    where: {
+      palpiteGrupoId: grupo.id,
+      jogoId: { in: jogoIds },
+    },
+  })
+
+  await prisma.palpite.createMany({
+    data: palpites.map((p) => ({
+      palpiteGrupoId: grupo.id,
+      jogoId: p.jogoId,
+      placarA: p.placarA,
+      placarB: p.placarB,
+      vencedorPalpite: p.vencedorPalpite ?? null,
+      fonte: 'excel' as const,
+    })),
+  })
+
+  return { totalSalvos: palpites.length, palpiteGrupoId: grupo.id }
+}
+
+export async function isFaseEditavel(fase: string): Promise<boolean> {
+  const config = await getConfigFaseMataMata(fase)
+  if (!config.habilitado) return false
+
+  const primeiroJogo = await prisma.jogo.findFirst({
+    where: { fase: fase as any },
+    orderBy: { dataHora: 'asc' },
+    select: { dataHora: true, status: true },
+  })
+
+  if (!primeiroJogo) return true
+  if (primeiroJogo.status === 'finalizado' || primeiroJogo.status === 'em_andamento') return false
+
+  const prazo = config.prazo
+  if (prazo && new Date() > prazo) return false
+
+  return new Date() < primeiroJogo.dataHora
 }
