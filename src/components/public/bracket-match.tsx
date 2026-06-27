@@ -51,25 +51,51 @@ export function BracketMatch({ slot, size = 'md', href }: Props) {
   const textoB = slot.timeB ?? placeholderB ?? 'A definir'
   const italicA = !!placeholderA
   const italicB = !!placeholderB
+  const isWinnerA = isFinalizado && slot.vencedor === 'A'
+  const isWinnerB = isFinalizado && slot.vencedor === 'B'
   const dataHoraTexto = slot.dataHora ? formatarDataHora(slot.dataHora) : null
 
-  const cardClasses = `block bg-card border rounded ${SIZE_CLASSES[size]} ${isTBD ? 'opacity-50' : ''} ${href ? 'hover:bg-muted/50 transition-colors cursor-pointer' : ''}`
+  const cardClasses = `block bg-card border rounded ${SIZE_CLASSES[size]} ${isTBD ? 'opacity-50' : ''} ${href ? 'hover:bg-muted/50 dark:hover:bg-muted/80 transition-colors cursor-pointer' : ''}`
+
+  const rowClassesA = isWinnerA
+    ? 'flex items-center justify-between gap-2 bg-emerald-100 dark:bg-emerald-900/40 -mx-3 px-3 rounded'
+    : 'flex items-center justify-between gap-2'
+
+  const rowClassesB = isWinnerB
+    ? 'flex items-center justify-between gap-2 bg-emerald-100 dark:bg-emerald-900/40 -mx-3 px-3 rounded'
+    : 'flex items-center justify-between gap-2 mt-1'
+
+  const nameClassesA = isWinnerA
+    ? 'truncate flex items-center gap-1.5 font-bold text-emerald-700 dark:text-emerald-300'
+    : `truncate flex items-center gap-1.5 ${italicA ? 'italic text-muted-foreground' : ''} ${slot.vencedor === 'A' ? 'font-bold' : ''}`
+
+  const nameClassesB = isWinnerB
+    ? 'truncate flex items-center gap-1.5 font-bold text-emerald-700 dark:text-emerald-300'
+    : `truncate flex items-center gap-1.5 ${italicB ? 'italic text-muted-foreground' : ''} ${slot.vencedor === 'B' ? 'font-bold' : ''}`
+
+  const scoreClassesA = isWinnerA
+    ? 'tabular-nums font-mono font-bold text-emerald-700 dark:text-emerald-300'
+    : 'tabular-nums font-mono'
+
+  const scoreClassesB = isWinnerB
+    ? 'tabular-nums font-mono font-bold text-emerald-700 dark:text-emerald-300'
+    : 'tabular-nums font-mono'
 
   const inner = (
     <>
-      <div className="flex items-center justify-between gap-2">
-        <span className={`flex-1 truncate flex items-center gap-1.5 ${slot.vencedor === 'A' ? 'font-bold' : ''}`}>
+      <div className={rowClassesA}>
+        <span className={nameClassesA}>
           {slot.timeA && getTimeFlag(slot.timeA) && <Flag codigoIso={getTimeFlag(slot.timeA)!} size={size === 'sm' ? 14 : 18} />}
-          <span className={`truncate ${italicA ? 'italic text-muted-foreground' : ''}`}>{textoA}</span>
+          <span className="truncate">{textoA}</span>
         </span>
-        <span className="tabular-nums font-mono">{slot.placarA ?? '-'}</span>
+        <span className={scoreClassesA}>{slot.placarA ?? '-'}</span>
       </div>
-      <div className="flex items-center justify-between gap-2 mt-1">
-        <span className={`flex-1 truncate flex items-center gap-1.5 ${slot.vencedor === 'B' ? 'font-bold' : ''}`}>
+      <div className={rowClassesB}>
+        <span className={nameClassesB}>
           {slot.timeB && getTimeFlag(slot.timeB) && <Flag codigoIso={getTimeFlag(slot.timeB)!} size={size === 'sm' ? 14 : 18} />}
-          <span className={`truncate ${italicB ? 'italic text-muted-foreground' : ''}`}>{textoB}</span>
+          <span className="truncate">{textoB}</span>
         </span>
-        <span className="tabular-nums font-mono">{slot.placarB ?? '-'}</span>
+        <span className={scoreClassesB}>{slot.placarB ?? '-'}</span>
       </div>
       {comPenaltes && (
         <div className="text-xs text-muted-foreground mt-1 text-center">
