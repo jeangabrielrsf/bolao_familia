@@ -2,7 +2,6 @@ import { prisma } from '@/lib/db/client'
 import { getClassificacaoGrupos } from '@/lib/services/bracket/standings'
 import { getMelhores8Terceiros } from '@/lib/services/bracket/best-thirds'
 import { projetarChaveamento } from '@/lib/services/bracket/projector'
-import { atualizarBracket } from '@/lib/services/bracket/updater'
 import { CopaTabs } from '@/components/public/copa-tabs'
 import { Badge } from '@/components/ui/badge'
 import type { JogoComTimes } from '@/lib/services/bracket/types'
@@ -11,8 +10,6 @@ export const dynamic = 'force-dynamic'
 export const revalidate = 60
 
 export default async function CopaPage() {
-  await atualizarBracket()
-
   const jogos = await prisma.jogo.findMany({ orderBy: { dataHora: 'asc' } })
 
   const jogosGrupos = jogos.filter(j => j.fase === 'grupos') as JogoComTimes[]
