@@ -724,9 +724,9 @@ export default function CompletarBolaoPage() {
             inputs={mataMataInputs}
             atualizarPalpite={atualizarMataMata}
             atualizarVencedor={atualizarVencedorPalpite}
-            desabilitado={!mataMataEditavel}
+            desabilitado={!mataMataEditavel || mataMataCompleto}
           />
-          {mataMataEditavel && (
+          {mataMataEditavel && !mataMataCompleto && (
             <div className="sticky bottom-4">
               <Button
                 onClick={salvar}
@@ -742,6 +742,23 @@ export default function CompletarBolaoPage() {
                 )}
               </Button>
             </div>
+          )}
+          {mataMataCompleto && (
+            <Card className="border-green-500/50 bg-green-50 dark:bg-green-950/20">
+              <CardContent className="p-4">
+                <div className="flex items-start gap-3">
+                  <CheckCircle className="w-5 h-5 text-green-600 dark:text-green-500 mt-0.5 shrink-0" />
+                  <div className="space-y-1">
+                    <p className="font-medium text-green-900 dark:text-green-100">
+                      Seus palpites foram computados com sucesso!
+                    </p>
+                    <p className="text-sm text-green-700 dark:text-green-300">
+                      Caso precise alterar, entre em contato com o administrador do bolão.
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
           )}
         </>
       )}

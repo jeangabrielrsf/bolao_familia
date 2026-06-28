@@ -4,7 +4,7 @@ import Image from 'next/image'
 import { getJogoById } from '@/lib/db/queries/jogos'
 import { getConfiguracao } from '@/lib/db/queries/config'
 import { getRanking } from '@/lib/db/queries/ranking'
-import { calcularPontosJogo } from '@/lib/utils/helpers'
+import { calcularPontosJogo, calcularPontosMataMata } from '@/lib/utils/helpers'
 import { getTimeFlag } from '@/lib/utils/flags'
 import { FASE_LABELS } from '@/lib/utils/constants'
 import { formatarData, formatarHora } from '@/lib/utils/date'
@@ -51,23 +51,41 @@ export default async function JogoDetailPage({
   const palpitesComPontos = jogo.palpites.map((palpite) => {
     let pontos = 0
     let tipo: 'exato' | 'vencedor' | 'erro' = 'erro'
+    let quemPassa = false
 
     if (jogo.status === 'finalizado' && jogo.resultadoA !== null && jogo.resultadoB !== null) {
-      const resultado = calcularPontosJogo(
-        palpite.placarA,
-        palpite.placarB,
-        jogo.resultadoA,
-        jogo.resultadoB,
-        config
-      )
-      pontos = resultado.pontos
-      tipo = resultado.tipo
+      const isMataMata = jogo.fase !== 'grupos'
+
+      if (isMataMata) {
+        const resultado = calcularPontosMataMata(
+          palpite.placarA,
+          palpite.placarB,
+          palpite.vencedorPalpite,
+          jogo.resultadoA,
+          jogo.resultadoB,
+          jogo.vencedor,
+          config
+        )
+        pontos = resultado.pontos
+        tipo = resultado.tipo
+        quemPassa = resultado.quemPassa
+      } else {
+        const resultado = calcularPontosJogo(
+          palpite.placarA,
+          palpite.placarB,
+          jogo.resultadoA,
+          jogo.resultadoB,
+          config
+        )
+        pontos = resultado.pontos
+        tipo = resultado.tipo
+      }
     }
 
     const rankingEntry = rankingMap.get(palpite.palpiteGrupoId)
     const posicaoRanking = rankingEntry?.posicao ?? null
 
-    return { ...palpite, pontos, tipo, posicaoRanking }
+    return { ...palpite, pontos, tipo, posicaoRanking, quemPassa }
   })
 
   palpitesComPontos.sort((a, b) => {
@@ -180,7 +198,29 @@ export default async function JogoDetailPage({
                           </div>
                         </Link>
                     </TableCell>
-                    <TableCell><span className="font-semibold tabular-nums text-sm sm:text-base">{palpite.placarA} x {palpite.placarB}</span></TableCell>
+                    <TableCell>
+                      {jogo.fase !== 'grupos' && palpite.placarA === palpite.placarB && palpite.vencedorPalpite ? (
+                        <div className="flex flex-col">
+                          <span className="font-semibold tabular-nums text-sm sm:text-base">{palpite.placarA} x {palpite.placarB}</span>
+                          <span className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
+                            <span>→</span>
+                            {palpite.vencedorPalpite === 1 ? (
+                              <>
+                                {jogo.timeA && getTimeFlag(jogo.timeA) && <Flag codigoIso={getTimeFlag(jogo.timeA)!} size={14} />}
+                                <span>{jogo.timeA} passa</span>
+                              </>
+                            ) : (
+                              <>
+                                {jogo.timeB && getTimeFlag(jogo.timeB) && <Flag codigoIso={getTimeFlag(jogo.timeB)!} size={14} />}
+                                <span>{jogo.timeB} passa</span>
+                              </>
+                            )}
+                          </span>
+                        </div>
+                      ) : (
+                        <span className="font-semibold tabular-nums text-sm sm:text-base">{palpite.placarA} x {palpite.placarB}</span>
+                      )}
+                    </TableCell>
                     <TableCell className="text-right">
                       {jogo.status === 'finalizado' ? (
                         <div className="flex items-center justify-end gap-2">
@@ -188,6 +228,7 @@ export default async function JogoDetailPage({
                           {palpite.tipo === 'exato' && <Badge variant="success">Exato</Badge>}
                           {palpite.tipo === 'vencedor' && <Badge variant="info">Vencedor</Badge>}
                           {palpite.tipo === 'erro' && <Badge variant="destructive">Erro</Badge>}
+                          {palpite.quemPassa && <Badge variant="default" className="bg-purple-100 text-purple-700 hover:bg-purple-100">+QP</Badge>}
                         </div>
                       ) : (
                         <span className="text-muted-foreground">—</span>
