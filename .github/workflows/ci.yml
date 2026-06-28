@@ -40,6 +40,7 @@ jobs:
       - run: npm ci
       - run: npx prisma generate
       - run: npx prisma migrate deploy
+      - run: npx tsx --env-file=.env scripts/seed.ts
       - run: npm run lint
       - run: npm test
       - run: npm run build
