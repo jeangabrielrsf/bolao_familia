@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 import { FilterBar } from "@/components/public/filter-bar"
-import { FASE_LABELS } from "@/lib/utils/constants"
+import { FASES, FASE_LABELS } from "@/lib/utils/constants"
 import { formatarData } from "@/lib/utils/date"
 
 interface Jogo {
@@ -27,12 +27,13 @@ interface Jogo {
   rankingTimeB: number | null
 }
 
-const faseOrder = ["grupos", "oitavas", "quartas", "semifinal", "terceiro", "final"]
+const faseOrder = [...FASES]
 
 export default function JogosPage() {
   const [jogos, setJogos] = useState<Jogo[]>([])
   const [loading, setLoading] = useState(true)
   const [diaFilter, setDiaFilter] = useState("")
+  const [faseFilter, setFaseFilter] = useState("")
   const [grupoFilter, setGrupoFilter] = useState("")
   const [selecaoFilter, setSelecaoFilter] = useState("")
 
@@ -49,6 +50,7 @@ export default function JogosPage() {
       const dataJogo = formatarData(new Date(jogo.dataHora))
       if (dataJogo !== diaFilter) return false
     }
+    if (faseFilter && jogo.fase !== faseFilter) return false
     if (grupoFilter && jogo.grupo !== grupoFilter) return false
     if (selecaoFilter && jogo.timeA !== selecaoFilter && jogo.timeB !== selecaoFilter) return false
     return true
@@ -81,9 +83,11 @@ export default function JogosPage() {
       <FilterBar
         jogos={jogos}
         diaFilter={diaFilter}
+        faseFilter={faseFilter}
         grupoFilter={grupoFilter}
         selecaoFilter={selecaoFilter}
         onDiaChange={setDiaFilter}
+        onFaseChange={setFaseFilter}
         onGrupoChange={setGrupoFilter}
         onSelecaoChange={setSelecaoFilter}
       />

@@ -3,7 +3,7 @@
 import { useMemo } from "react"
 import { Select } from "@/components/ui/select"
 import { SearchableSelect } from "@/components/public/searchable-select"
-import { GRUPOS } from "@/lib/utils/constants"
+import { GRUPOS, FASES, FASE_LABELS } from "@/lib/utils/constants"
 import { formatarData } from "@/lib/utils/date"
 import { Calendar, Filter } from "lucide-react"
 
@@ -12,14 +12,17 @@ interface Jogo {
   timeB: string
   dataHora: string
   grupo: string | null
+  fase: string
 }
 
 interface FilterBarProps {
   jogos: Jogo[]
   diaFilter: string
+  faseFilter: string
   grupoFilter: string
   selecaoFilter: string
   onDiaChange: (value: string) => void
+  onFaseChange: (value: string) => void
   onGrupoChange: (value: string) => void
   onSelecaoChange: (value: string) => void
 }
@@ -27,9 +30,11 @@ interface FilterBarProps {
 export function FilterBar({
   jogos,
   diaFilter,
+  faseFilter,
   grupoFilter,
   selecaoFilter,
   onDiaChange,
+  onFaseChange,
   onGrupoChange,
   onSelecaoChange,
 }: FilterBarProps) {
@@ -55,7 +60,7 @@ export function FilterBar({
     return Array.from(seen).sort((a, b) => a.localeCompare(b, "pt-BR"))
   }, [jogos])
 
-  const hasFilters = diaFilter || grupoFilter || selecaoFilter
+  const hasFilters = diaFilter || faseFilter || grupoFilter || selecaoFilter
 
   return (
     <div className="space-y-3">
@@ -74,6 +79,25 @@ export function FilterBar({
             {datas.map((data) => (
               <option key={data} value={data}>
                 {data}
+              </option>
+            ))}
+          </Select>
+        </div>
+
+        <div className="flex flex-col gap-1.5 min-w-[140px] flex-1 max-w-[180px]">
+          <label className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
+            <Filter className="h-3 w-3" />
+            Fase
+          </label>
+          <Select
+            value={faseFilter}
+            onChange={(e) => onFaseChange(e.target.value)}
+            className="h-9 text-sm"
+          >
+            <option value="">Todas as fases</option>
+            {FASES.map((f) => (
+              <option key={f} value={f}>
+                {FASE_LABELS[f]}
               </option>
             ))}
           </Select>
@@ -116,6 +140,7 @@ export function FilterBar({
         <button
           onClick={() => {
             onDiaChange("")
+            onFaseChange("")
             onGrupoChange("")
             onSelecaoChange("")
           }}

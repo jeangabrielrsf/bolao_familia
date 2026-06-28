@@ -187,21 +187,26 @@ export default function CompletarBolaoPage() {
   const [mataMataOriginais, setMataMataOriginais] = useState<Map<string, PalpiteInput>>(new Map())
   const [mataMataEditavel, setMataMataEditavel] = useState(false)
 
-  const carregarDados = useCallback(async () => {
+  const carregarDados = useCallback(async (): Promise<{ totalJogos: number; grupoAtivoId: string | null; todasAbas: PalpitesPorAba }> => {
+    let totalJogos = 0
+    let grupoAtivoId: string | null = null
+    let todasAbasData: PalpitesPorAba = new Map()
     try {
       const res = await fetch(`/api/completar/${token}/jogos`)
       const data = await res.json()
 
       if (data.grupos) {
         setGrupos(data.grupos)
+        grupoAtivoId = data.grupos[0]?.id ?? null
         if (data.grupos.length > 0 && !grupoAtivo) {
-          setGrupoAtivo(data.grupos[0].id)
+          setGrupoAtivo(grupoAtivoId)
         }
         const primeiroModo = data.grupos[0]?.modo ?? 'restante'
         setModo(primeiroModo)
       }
 
       setJogos(data.jogos)
+      totalJogos = data.jogos?.length ?? 0
 
       if (data.extras) {
         const extrasData = data.extras.map((e: ExtraInput) => ({ ...e }))
@@ -210,29 +215,29 @@ export default function CompletarBolaoPage() {
       }
 
       const inputs = inputsFromJogos(data.jogos)
-      const abaId = grupoAtivo ?? data.grupos?.[0]?.id
+      const abaId = grupoAtivo ?? grupoAtivoId
 
       if (abaId) {
         const draft = loadDraft(token, abaId)
         const inputsComDraft = draft ?? inputs
 
-        setTodasAbas((prev) => {
-          const novo = new Map(prev)
-          novo.set(abaId, inputsComDraft)
-          return novo
-        })
-        setAbasOriginais((prev) => {
-          const novo = new Map(prev)
-          novo.set(abaId, inputs)
-          return novo
-        })
+        const novoTodasAbas = new Map(todasAbas)
+        novoTodasAbas.set(abaId, inputsComDraft)
+        setTodasAbas(novoTodasAbas)
+        todasAbasData = novoTodasAbas
+
+        const novoAbasOriginais = new Map(abasOriginais)
+        novoAbasOriginais.set(abaId, inputs)
+        setAbasOriginais(novoAbasOriginais)
       }
     } catch {
       toast.error('Erro ao carregar jogos')
+      return { totalJogos: 0, grupoAtivoId: null, todasAbas: new Map() }
     } finally {
       setCarregandoInicial(false)
     }
-  }, [token, grupoAtivo])
+    return { totalJogos, grupoAtivoId, todasAbas: todasAbasData }
+  }, [token, grupoAtivo, todasAbas, abasOriginais])
 
   useEffect(() => {
     if (!token || initializedRef.current) return
@@ -263,19 +268,19 @@ export default function CompletarBolaoPage() {
 
         setStatus('pronto')
         initializedRef.current = true
-        carregarDados().then(() => {
+        carregarDados().then(({ totalJogos, grupoAtivoId, todasAbas }) => {
           const enabledMataMata = info.fasesHabilitadas
             ? FASES_MATA_MATA.filter((f: string) => info.fasesHabilitadas![f])
             : []
           if (enabledMataMata.length === 0) return
 
-          const grupoInputs = todasAbasRef.current.get(grupoAtivoRef.current ?? '') ?? new Map()
+          const grupoInputs = todasAbas.get(grupoAtivoId ?? '') ?? new Map()
           const totalPreenchidos = countFilled(grupoInputs)
-          if (totalPreenchidos < jogosRef.current.length || jogosRef.current.length === 0) return
+          if (totalPreenchidos < totalJogos || totalJogos === 0) return
 
           const primeiraFase = enabledMataMata[0]
           setFase(primeiraFase)
-          fetch(`/api/completar/${token}/jogos?fase=${primeiraFase}&grupoId=${grupoAtivoRef.current ?? ''}`)
+          fetch(`/api/completar/${token}/jogos?fase=${primeiraFase}&grupoId=${grupoAtivoId ?? ''}`)
             .then((r) => r.json())
             .then((data) => {
               const jogosFase = data.jogos ?? []
