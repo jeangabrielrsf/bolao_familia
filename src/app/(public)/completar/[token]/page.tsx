@@ -12,7 +12,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { getTimeFlag } from '@/lib/utils/flags'
 import { formatarData, formatarHora } from '@/lib/utils/date'
 import { toast } from 'sonner'
-import { Save, XCircle, Calendar, Lock, AlertCircle, RotateCcw, CheckCircle, Info } from 'lucide-react'
+import { Save, XCircle, Calendar, Lock, AlertCircle, RotateCcw, CheckCircle, Info, Award } from 'lucide-react'
 import { FASE_LABELS, FASES_MATA_MATA } from '@/lib/utils/constants'
 import { PhaseSelector } from '@/components/public/phase-selector'
 import { QuemPassaCard } from '@/components/public/quem-passa-card'
@@ -663,6 +663,38 @@ export default function CompletarBolaoPage() {
                   <li>Se o placar for empate, aparecem dois botões com as bandeiras — toque no time que você acha que passa.</li>
                   <li>Quando todos os jogos estiverem preenchidos, toque em Salvar.</li>
                 </ol>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {fase && (
+        <Card className="bg-muted/50 border-muted">
+          <CardContent className="p-4">
+            <div className="flex items-start gap-3">
+              <Award className="w-5 h-5 text-muted-foreground mt-0.5 shrink-0" />
+              <div className="space-y-2">
+                <p className="font-medium text-sm">Pontuação do Mata-Mata</p>
+                <div className="text-sm text-muted-foreground space-y-1">
+                  <p>Placar exato — 10 pts</p>
+                  <p>Vencedor correto — 6 pts</p>
+                  <div className="border-b border-border my-2" />
+                  <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                    Se arriscar o empate
+                  </p>
+                  <p>Acertar o empate — 6 pts</p>
+                  <p className="pl-4 text-xs text-muted-foreground/70">
+                    (cravar o placar = 10 pts)
+                  </p>
+                  <p>
+                    + Acertar quem passa —{' '}
+                    <span className="font-semibold text-success">+6 pts</span>
+                  </p>
+                  <p className="font-semibold text-sm text-foreground border-t border-border pt-2 mt-2">
+                    Máximo por jogo: 16 pts
+                  </p>
+                </div>
               </div>
             </div>
           </CardContent>
