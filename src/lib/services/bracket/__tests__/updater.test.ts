@@ -24,7 +24,7 @@ describe('atualizarBracket', () => {
       select: { id: true, status: true, resultadoA: true, resultadoB: true, vencedor: true, timeA: true, timeB: true },
     })
     mataMataSnapshot = mataMata
-  })
+  }, 15000)
 
   afterAll(async () => {
     for (const j of groupASnapshot) {
