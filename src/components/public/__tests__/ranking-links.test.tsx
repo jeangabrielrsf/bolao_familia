@@ -38,6 +38,7 @@ function makeEntry(overrides: Partial<RankingEntry> = {}): RankingEntry {
     pontos: 120,
     placaresExatos: 10,
     vencedoresCorretos: 8,
+    quemPassaAcertos: 0,
     ...overrides,
   }
 }

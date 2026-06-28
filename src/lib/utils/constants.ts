@@ -3,6 +3,7 @@ import type { ConfiguracaoPontuacao } from './types'
 export const PONTUACAO_PADRAO: ConfiguracaoPontuacao = {
   placarExato: 10,
   vencedorCorreto: 6,
+  quemPassa: 6,
   campeao: 10,
   vice: 10,
   terceiro: 10,
@@ -14,6 +15,18 @@ export const CONFIG_CHAVES = {
   PONTUACAO: 'pontuacao',
   PRAZO_COMPLETAR_BOLAO: 'prazo_completar_bolao',
   COMPLETAR_BOLAO_HABILITADO: 'completar_bolao_habilitado',
+  PRAZO_DEZESSEIS_AVOS: 'prazo_dezesseis_avos',
+  HABILITADO_DEZESSEIS_AVOS: 'habilitado_dezesseis_avos',
+  PRAZO_OITAVAS: 'prazo_oitavas',
+  HABILITADO_OITAVAS: 'habilitado_oitavas',
+  PRAZO_QUARTAS: 'prazo_quartas',
+  HABILITADO_QUARTAS: 'habilitado_quartas',
+  PRAZO_SEMIFINAL: 'prazo_semifinal',
+  HABILITADO_SEMIFINAL: 'habilitado_semifinal',
+  PRAZO_TERCEIRO: 'prazo_terceiro',
+  HABILITADO_TERCEIRO: 'habilitado_terceiro',
+  PRAZO_FINAL: 'prazo_final',
+  HABILITADO_FINAL: 'habilitado_final',
 } as const
 
 export const TIMES_VALIDOS = [
@@ -35,9 +48,11 @@ export const GRUPOS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L
 
 export const FASES = ['grupos', 'dezesseis_avos', 'oitavas', 'quartas', 'semifinal', 'terceiro', 'final'] as const
 
+export const FASES_MATA_MATA = ['dezesseis_avos', 'oitavas', 'quartas', 'semifinal', 'terceiro', 'final'] as const
+
 export const FASE_LABELS: Record<string, string> = {
   grupos: 'Fase de Grupos',
-  dezerveis_avos: '16avos de Final',
+  dezesseis_avos: '16avos de Final',
   oitavas: 'Oitavas de Final',
   quartas: 'Quartas de Final',
   semifinal: 'Semifinal',

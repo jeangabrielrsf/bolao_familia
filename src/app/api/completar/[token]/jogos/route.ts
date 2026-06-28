@@ -6,6 +6,10 @@ import {
   getGruposParticipante,
   getExtrasPorGrupo,
   detectarModoGrupo,
+  isFaseMataMata,
+  getJogosFaseComPalpites,
+  getConfigFaseMataMata,
+  isFaseEditavel,
 } from '@/lib/db/queries/completar-bolao'
 
 export async function GET(
@@ -22,11 +26,28 @@ export async function GET(
     const participante = await getParticipanteByToken(token)
 
     if (!participante) {
-      return NextResponse.json({ error: 'Token inválido' }, { status: 404 })
+      return NextResponse.json({ error: 'Token inválido', valido: false }, { status: 404 })
     }
 
     const { searchParams } = new URL(request.url)
     const palpiteGrupoId = searchParams.get('grupoId') ?? undefined
+    const fase = searchParams.get('fase')
+
+    if (fase && isFaseMataMata(fase)) {
+      const [jogos, config, editavel] = await Promise.all([
+        getJogosFaseComPalpites(fase, participante.id, palpiteGrupoId),
+        getConfigFaseMataMata(fase),
+        isFaseEditavel(fase),
+      ])
+
+      return NextResponse.json({
+        fase,
+        jogos,
+        habilitado: config.habilitado,
+        editavel,
+        prazo: config.prazo?.toISOString() ?? null,
+      })
+    }
 
     const gruposRaw = await getGruposParticipante(participante.id)
 

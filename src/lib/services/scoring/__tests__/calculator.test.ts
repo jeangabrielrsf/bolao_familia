@@ -1,4 +1,4 @@
-import { calcularPontosJogo, calcularPontosExtra } from '@/lib/utils/helpers'
+import { calcularPontosJogo, calcularPontosExtra, calcularPontosMataMata } from '@/lib/utils/helpers'
 import { PONTUACAO_PADRAO } from '@/lib/utils/constants'
 
 describe('calcularPontosJogo', () => {
@@ -49,5 +49,64 @@ describe('calcularPontosExtra', () => {
   it('ignora acentos', () => {
     expect(calcularPontosExtra('Brasíl', 'Brasil', PONTUACAO_PADRAO, 'campeao')).toBe(10)
     expect(calcularPontosExtra('Argentina', 'Argentiná', PONTUACAO_PADRAO, 'vice')).toBe(10)
+  })
+})
+
+describe('calcularPontosMataMata', () => {
+  const config = PONTUACAO_PADRAO
+
+  it('placar exato, resultado NÃO é empate → 10 pts', () => {
+    expect(calcularPontosMataMata(2, 1, null, 2, 1, 1, config))
+      .toEqual({ pontos: 10, tipo: 'exato', quemPassa: false })
+  })
+
+  it('vencedor correto, resultado NÃO é empate → 6 pts', () => {
+    expect(calcularPontosMataMata(3, 1, null, 2, 0, 1, config))
+      .toEqual({ pontos: 6, tipo: 'vencedor', quemPassa: false })
+  })
+
+  it('palpite errado (vencedor errado) → 0 pts', () => {
+    expect(calcularPontosMataMata(1, 2, null, 2, 0, 1, config))
+      .toEqual({ pontos: 0, tipo: 'erro', quemPassa: false })
+  })
+
+  it('empate exato + quem passa correto → 16 pts', () => {
+    expect(calcularPontosMataMata(1, 1, 1, 1, 1, 1, config))
+      .toEqual({ pontos: 16, tipo: 'exato', quemPassa: true })
+  })
+
+  it('empate exato + quem passa errado → 10 pts', () => {
+    expect(calcularPontosMataMata(1, 1, 2, 1, 1, 1, config))
+      .toEqual({ pontos: 10, tipo: 'exato', quemPassa: false })
+  })
+
+  it('empate não-exato + quem passa correto → 12 pts', () => {
+    expect(calcularPontosMataMata(2, 2, 1, 1, 1, 1, config))
+      .toEqual({ pontos: 12, tipo: 'vencedor', quemPassa: true })
+  })
+
+  it('empate não-exato + quem passa errado → 6 pts', () => {
+    expect(calcularPontosMataMata(2, 2, 2, 1, 1, 1, config))
+      .toEqual({ pontos: 6, tipo: 'vencedor', quemPassa: false })
+  })
+
+  it('palpite NÃO é empate, resultado É empate → 0 pts (erro)', () => {
+    expect(calcularPontosMataMata(2, 1, null, 1, 1, 1, config))
+      .toEqual({ pontos: 0, tipo: 'erro', quemPassa: false })
+  })
+
+  it('palpite NÃO é empate (lado errado), resultado É empate → 0 pts', () => {
+    expect(calcularPontosMataMata(1, 2, null, 1, 1, 1, config))
+      .toEqual({ pontos: 0, tipo: 'erro', quemPassa: false })
+  })
+
+  it('empate 0x0 + quem passa correto → 16 pts', () => {
+    expect(calcularPontosMataMata(0, 0, 2, 0, 0, 2, config))
+      .toEqual({ pontos: 16, tipo: 'exato', quemPassa: true })
+  })
+
+  it('vencedorPalpite null com resultado empate → sem bonus', () => {
+    expect(calcularPontosMataMata(1, 1, null, 1, 1, 1, config))
+      .toEqual({ pontos: 10, tipo: 'exato', quemPassa: false })
   })
 })

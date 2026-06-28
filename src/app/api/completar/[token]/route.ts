@@ -8,6 +8,11 @@ import {
   getJogosCompletos,
   detectarModoGrupo,
   getGruposParticipante,
+  isFaseMataMata,
+  getJogosFase,
+  salvarPalpitesFase,
+  getConfigFaseMataMata,
+  isFaseEditavel,
 } from '@/lib/db/queries/completar-bolao'
 
 export async function POST(
@@ -24,7 +29,87 @@ export async function POST(
     const participante = await getParticipanteByToken(token)
 
     if (!participante) {
-      return NextResponse.json({ error: 'Token inválido' }, { status: 404 })
+      return NextResponse.json({ error: 'Token inválido', valido: false }, { status: 404 })
+    }
+
+    const body = await request.json()
+    const { palpites, extras, palpiteGrupoId, fase } = body as {
+      palpites: { jogoId: string; placarA: number; placarB: number; vencedorPalpite?: number | null }[]
+      extras?: { tipo: string; valor: string }[]
+      palpiteGrupoId?: string
+      fase?: string
+    }
+
+    if (!Array.isArray(palpites) || palpites.length === 0) {
+      return NextResponse.json({ error: 'Palpites inválidos' }, { status: 400 })
+    }
+
+    for (const p of palpites) {
+      if (!p.jogoId || typeof p.placarA !== 'number' || typeof p.placarB !== 'number') {
+        return NextResponse.json({ error: 'Formato de palpite inválido' }, { status: 400 })
+      }
+      if (p.placarA < 0 || p.placarB < 0 || p.placarA > 99 || p.placarB > 99) {
+        return NextResponse.json({ error: 'Placar inválido' }, { status: 400 })
+      }
+    }
+
+    if (fase && isFaseMataMata(fase)) {
+      const [config, editavel] = await Promise.all([
+        getConfigFaseMataMata(fase),
+        isFaseEditavel(fase),
+      ])
+
+      if (!config.habilitado) {
+        return NextResponse.json(
+          { error: `Palpites para esta fase estão desabilitados` },
+          { status: 403 }
+        )
+      }
+
+      if (!editavel) {
+        return NextResponse.json(
+          { error: `Esta fase já começou ou o prazo encerrou` },
+          { status: 403 }
+        )
+      }
+
+      const jogosFase = await getJogosFase(fase)
+      const jogosFaseIds = new Set(jogosFase.map((j) => j.id))
+
+      for (const p of palpites) {
+        if (!jogosFaseIds.has(p.jogoId)) {
+          return NextResponse.json(
+            { error: `Jogo ${p.jogoId} não pertence a esta fase` },
+            { status: 400 }
+          )
+        }
+      }
+
+      if (palpites.length > jogosFase.length) {
+        return NextResponse.json(
+          { error: `Máximo de ${jogosFase.length} palpites permitidos para esta fase` },
+          { status: 400 }
+        )
+      }
+
+      const grupos = await getGruposParticipante(participante.id)
+      const targetGrupoId = palpiteGrupoId ?? grupos[0]?.id
+      if (!targetGrupoId) {
+        return NextResponse.json({ error: 'Grupo de palpites não encontrado' }, { status: 400 })
+      }
+
+      const resultado = await salvarPalpitesFase(
+        participante.id,
+        palpites.map((p) => ({
+          jogoId: p.jogoId,
+          placarA: p.placarA,
+          placarB: p.placarB,
+          vencedorPalpite: p.vencedorPalpite ?? null,
+        })),
+        targetGrupoId
+      )
+
+      return NextResponse.json({ success: true, ...resultado })
     }
 
     const config = await getConfigCompletarBolao()
@@ -43,17 +128,6 @@ export async function POST(
       )
     }
 
-    const body = await request.json()
-    const { palpites, extras, palpiteGrupoId } = body as {
-      palpites: { jogoId: string; placarA: number; placarB: number }[]
-      extras?: { tipo: string; valor: string }[]
-      palpiteGrupoId?: string
-    }
-
-    if (!Array.isArray(palpites) || palpites.length === 0) {
-      return NextResponse.json({ error: 'Palpites inválidos' }, { status: 400 })
-    }
-
     const grupos = await getGruposParticipante(participante.id)
     const targetGrupoId = palpiteGrupoId ?? grupos[0]?.id
     const modo = targetGrupoId ? await detectarModoGrupo(targetGrupoId) : 'restante'
@@ -64,15 +138,6 @@ export async function POST(
         { error: `Máximo de ${maxPalpites} palpites permitidos` },
         { status: 400 }
       )
-    }
-
-    for (const p of palpites) {
-      if (!p.jogoId || typeof p.placarA !== 'number' || typeof p.placarB !== 'number') {
-        return NextResponse.json({ error: 'Formato de palpite inválido' }, { status: 400 })
-      }
-      if (p.placarA < 0 || p.placarB < 0 || p.placarA > 99 || p.placarB > 99) {
-        return NextResponse.json({ error: 'Placar inválido' }, { status: 400 })
-      }
     }
 
     const jogosValidos = modo === 'completo' ? await getJogosCompletos() : await getJogosRestantes()
@@ -87,7 +152,11 @@ export async function POST(
       }
     }
 
-    const resultado = await salvarPalpitesCompletar(participante.id, palpites, palpiteGrupoId)
+    const resultado = await salvarPalpitesCompletar(participante.id, palpites.map(p => ({
+      jogoId: p.jogoId,
+      placarA: p.placarA,
+      placarB: p.placarB,
+    })), palpiteGrupoId)
 
     if (modo === 'completo' && Array.isArray(extras) && extras.length > 0) {
       const tiposValidos = ['artilheiro', 'campeao', 'vice', 'terceiro', 'quarto']
