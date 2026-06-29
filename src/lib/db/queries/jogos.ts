@@ -44,11 +44,13 @@ export async function getJogoById(id: string) {
 }
 
 export async function updateResultado(id: string, resultadoA: number, resultadoB: number) {
+  const vencedor = resultadoA > resultadoB ? 1 : resultadoB > resultadoA ? 2 : 3
   return prisma.jogo.update({
     where: { id },
     data: {
       resultadoA,
       resultadoB,
+      vencedor,
       status: 'finalizado',
     },
   })
