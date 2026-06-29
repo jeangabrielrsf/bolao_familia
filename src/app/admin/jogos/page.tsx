@@ -15,12 +15,12 @@ import { formatarDataHoraCompleta } from '@/lib/utils/date'
 import { toast } from 'sonner'
 import { Loader2, ChevronLeft } from 'lucide-react'
 
-type Fase = 'grupos' | 'oitavas' | 'quartas' | 'semifinal' | 'terceiro' | 'final'
+type Fase = 'grupos' | 'dezesseis_avos' | 'oitavas' | 'quartas' | 'semifinal' | 'terceiro' | 'final'
 type StatusJogo = 'agendado' | 'em_andamento' | 'finalizado'
 interface Jogo { id: string; grupo: string | null; fase: Fase; dataHora: string; timeA: string; timeB: string; resultadoA: number | null; resultadoB: number | null; status: StatusJogo; local: string | null; cidade: string | null; vencedor: number | null }
 interface JogoSaveState { resultadoA: string; resultadoB: string; saving: boolean }
 
-const FASE_ORDER: Fase[] = ['grupos', 'oitavas', 'quartas', 'semifinal', 'terceiro', 'final']
+const FASE_ORDER: Fase[] = ['grupos', 'dezesseis_avos', 'oitavas', 'quartas', 'semifinal', 'terceiro', 'final']
 const STATUS_BADGE: Record<StatusJogo, { variant: 'default' | 'warning' | 'success'; label: string }> = {
   agendado: { variant: 'default', label: 'Agendado' },
   em_andamento: { variant: 'warning', label: 'Em Andamento' },
@@ -192,7 +192,7 @@ function AdminJogosContent() {
                             {jogo.fase === 'grupos' && jogo.grupo && <Badge variant="info">Grupo {jogo.grupo}</Badge>}
                             <Badge variant={statusInfo.variant}>{statusInfo.label}</Badge>
                           </div>
-                          <p className="font-medium">{jogo.timeA} vs {jogo.timeB}</p>
+                          <p className="font-medium">{jogo.timeA || 'A definir'} vs {jogo.timeB || 'A definir'}</p>
                           <p className="text-sm text-muted-foreground">{formatDateTime(jogo.dataHora)}</p>
                           {jogo.local && (
                             <p className="text-xs text-muted-foreground">
@@ -206,12 +206,12 @@ function AdminJogosContent() {
                         </div>
                         <div className="flex items-end gap-2">
                           <div className="flex flex-col gap-1">
-                            <label className="text-xs text-muted-foreground">{jogo.timeA}</label>
+                            <label className="text-xs text-muted-foreground">{jogo.timeA || 'Time A'}</label>
                             <Input type="number" min="0" aria-label={`Resultado ${jogo.timeA}`} className="w-16 text-center" value={state.resultadoA} onChange={(e) => updateSaveState(jogo.id, { resultadoA: e.target.value })} disabled={state.saving} />
                           </div>
                           <span className="pb-2 text-muted-foreground font-bold">x</span>
                           <div className="flex flex-col gap-1">
-                            <label className="text-xs text-muted-foreground">{jogo.timeB}</label>
+                            <label className="text-xs text-muted-foreground">{jogo.timeB || 'Time B'}</label>
                             <Input type="number" min="0" aria-label={`Resultado ${jogo.timeB}`} className="w-16 text-center" value={state.resultadoB} onChange={(e) => updateSaveState(jogo.id, { resultadoB: e.target.value })} disabled={state.saving} />
                           </div>
                           <Button size="sm" onClick={() => handleSave(jogo)} disabled={state.saving}>
