@@ -40,10 +40,14 @@ class ResultadoResponse(BaseModel):
 @router.get("/health")
 async def health_check() -> dict[str, str]:
     from app import scheduler
+    from app.config import settings
+    from app.main import APP_VERSION
 
     return {
         "status": "ok",
         "scheduler": "running" if scheduler.is_running() else "stopped",
+        "version": APP_VERSION,
+        "football_data_key": "set" if settings.FOOTBALL_DATA_API_KEY else "MISSING",
     }
 
 

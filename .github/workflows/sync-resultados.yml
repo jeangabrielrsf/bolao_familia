@@ -7,22 +7,27 @@ name: Sync Resultados Copa
 #   MICROSERVICE_URL — ex: https://bolao-copa-microservice.fly.dev
 #   CRON_SECRET      — mesmo valor configurado em `fly secrets set CRON_SECRET`
 #
-# Schedule: cobre janelas de jogos BRT com folga:
-#   UTC 16-23 = BRT 13-20 (jogos diurnos)
-#   UTC 0-4   = BRT 21-01 (jogos noturnos)
-#   */15 = 4 invocações/hora (max ~25 min entre API atualizar e sync pegar)
+# Schedule: 3 tipos de trigger
+#   1. Frequente (15min) durante janelas de jogos BRT — janela 36h pega
+#      mata-mata que terminou na noite anterior
+#   2. Diário de catch-up (05:00 UTC = 02:00 BRT) — janela 168h varrre a
+#      semana toda, recupera qualquer jogo que tenha escapado
+#   3. Manual via workflow_dispatch
 #
 # Para disparar manualmente: Actions > Sync Resultados Copa > Run workflow
 on:
   schedule:
+    # Frequente em janelas ativas (UTC 16-23 e 0-4 = BRT 13-20 e 21-01)
     - cron: '*/15 16-23 * * *'
     - cron: '*/15 0-4 * * *'
+    # Catch-up diário (UTC 05 = BRT 02), fora de janelas de jogo
+    - cron: '0 5 * * *'
   workflow_dispatch:
     inputs:
       window_hours:
         description: 'Janela de jogos ativos (horas)'
         required: false
-        default: '12'
+        default: '36'
         type: string
 
 concurrency:
@@ -34,11 +39,26 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 6
     steps:
+      - name: Determinar janela de sync
+        id: window
+        run: |
+          # Manual dispatch: usa input (default 36)
+          # Cron '0 5 * * *' (catch-up diário): 168h (varrer a semana)
+          # Cron '*/15 ...' (frequente): 36h
+          if [ "${{ github.event_name }}" = "schedule" ] && [ "${{ github.event.schedule }}" = "0 5 * * *" ]; then
+            echo "window=168" >> $GITHUB_OUTPUT
+            echo "→ Catch-up diário (168h = 7 dias)" >&2
+          else
+            W="${{ github.event.inputs.window_hours || '36' }}"
+            echo "window=$W" >> $GITHUB_OUTPUT
+            echo "→ Sync frequente (janela ${W}h)" >&2
+          fi
+
       - name: Disparar sync no microserviço
         env:
           MICROSERVICE_URL: ${{ secrets.MICROSERVICE_URL }}
           CRON_SECRET: ${{ secrets.CRON_SECRET }}
-          WINDOW_HOURS: ${{ github.event.inputs.window_hours || '12' }}
+          WINDOW_HOURS: ${{ steps.window.outputs.window }}
         run: |
           if [ -z "$MICROSERVICE_URL" ] || [ -z "$CRON_SECRET" ]; then
             echo "::error::Secrets MICROSERVICE_URL e/ou CRON_SECRET não configurados"
