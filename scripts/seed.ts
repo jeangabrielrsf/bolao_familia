@@ -154,6 +154,18 @@ const jogosData: Array<{
 // SF: 2 jogos (15/jul)
 // 3º: 1 jogo (18/jul)
 // F: 1 jogo (19/jul)
+// Chaveamento mata-mata — Copa 2026 oficial
+// R32: 16 jogos (28/jun - 03/jul)
+// R16: 8 jogos (04-07/jul)
+// QF: 4 jogos (11-12/jul)
+// SF: 2 jogos (15/jul)
+// 3º: 1 jogo (18/jul)
+// F: 1 jogo (19/jul)
+//
+// sofascoreId usa os IDs REAIS do football-data.org (não placeholders).
+// Source: https://api.football-data.org/v4/competitions/WC/matches
+// Migration de prod: scripts/fix_sofascore_ids_mata_mata.py
+// (idempotente — pula se já existe por sofascoreId)
 const mataMataData: Array<{
   fase: 'dezesseis_avos' | 'oitavas' | 'quartas' | 'semifinal' | 'terceiro' | 'final'
   slot: number
@@ -162,43 +174,43 @@ const mataMataData: Array<{
   sofascoreId: string
 }> = [
   // Round of 32
-  { fase: 'dezesseis_avos', slot: 1, dataHora: '2026-06-28T19:00:00.000Z', cidade: 'Inglewood', sofascoreId: 'R32-M1' },
-  { fase: 'dezesseis_avos', slot: 2, dataHora: '2026-06-29T20:30:00.000Z', cidade: 'Foxborough', sofascoreId: 'R32-M2' },
-  { fase: 'dezesseis_avos', slot: 3, dataHora: '2026-06-30T03:00:00.000Z', cidade: 'Monterrey', sofascoreId: 'R32-M3' },
-  { fase: 'dezesseis_avos', slot: 4, dataHora: '2026-06-29T17:00:00.000Z', cidade: 'Houston', sofascoreId: 'R32-M4' },
-  { fase: 'dezesseis_avos', slot: 5, dataHora: '2026-06-30T21:00:00.000Z', cidade: 'East Rutherford', sofascoreId: 'R32-M5' },
-  { fase: 'dezesseis_avos', slot: 6, dataHora: '2026-06-30T17:00:00.000Z', cidade: 'Dallas', sofascoreId: 'R32-M6' },
-  { fase: 'dezesseis_avos', slot: 7, dataHora: '2026-07-01T03:00:00.000Z', cidade: 'Mexico City', sofascoreId: 'R32-M7' },
-  { fase: 'dezesseis_avos', slot: 8, dataHora: '2026-07-01T16:00:00.000Z', cidade: 'Atlanta', sofascoreId: 'R32-M8' },
-  { fase: 'dezesseis_avos', slot: 9, dataHora: '2026-07-02T00:00:00.000Z', cidade: 'Santa Clara', sofascoreId: 'R32-M9' },
-  { fase: 'dezesseis_avos', slot: 10, dataHora: '2026-07-01T20:00:00.000Z', cidade: 'Seattle', sofascoreId: 'R32-M10' },
-  { fase: 'dezesseis_avos', slot: 11, dataHora: '2026-07-02T23:00:00.000Z', cidade: 'Toronto', sofascoreId: 'R32-M11' },
-  { fase: 'dezesseis_avos', slot: 12, dataHora: '2026-07-02T19:00:00.000Z', cidade: 'Miami Gardens', sofascoreId: 'R32-M12' },
-  { fase: 'dezesseis_avos', slot: 13, dataHora: '2026-07-03T03:00:00.000Z', cidade: 'Vancouver', sofascoreId: 'R32-M13' },
-  { fase: 'dezesseis_avos', slot: 14, dataHora: '2026-07-03T22:00:00.000Z', cidade: 'Miami Gardens', sofascoreId: 'R32-M14' },
-  { fase: 'dezesseis_avos', slot: 15, dataHora: '2026-07-04T01:30:00.000Z', cidade: 'Kansas City', sofascoreId: 'R32-M15' },
-  { fase: 'dezesseis_avos', slot: 16, dataHora: '2026-07-03T18:00:00.000Z', cidade: 'Dallas', sofascoreId: 'R32-M16' },
+  { fase: 'dezesseis_avos', slot: 1, dataHora: '2026-06-28T19:00:00.000Z', cidade: 'Inglewood', sofascoreId: '537417' },
+  { fase: 'dezesseis_avos', slot: 2, dataHora: '2026-06-29T20:30:00.000Z', cidade: 'Foxborough', sofascoreId: '537415' },
+  { fase: 'dezesseis_avos', slot: 3, dataHora: '2026-06-30T03:00:00.000Z', cidade: 'Monterrey', sofascoreId: '537418' },
+  { fase: 'dezesseis_avos', slot: 4, dataHora: '2026-06-29T17:00:00.000Z', cidade: 'Houston', sofascoreId: '537423' },
+  { fase: 'dezesseis_avos', slot: 5, dataHora: '2026-06-30T21:00:00.000Z', cidade: 'East Rutherford', sofascoreId: '537416' },
+  { fase: 'dezesseis_avos', slot: 6, dataHora: '2026-06-30T17:00:00.000Z', cidade: 'Dallas', sofascoreId: '537424' },
+  { fase: 'dezesseis_avos', slot: 7, dataHora: '2026-07-01T03:00:00.000Z', cidade: 'Mexico City', sofascoreId: '537425' },
+  { fase: 'dezesseis_avos', slot: 8, dataHora: '2026-07-01T16:00:00.000Z', cidade: 'Atlanta', sofascoreId: '537426' },
+  { fase: 'dezesseis_avos', slot: 9, dataHora: '2026-07-02T00:00:00.000Z', cidade: 'Santa Clara', sofascoreId: '537421' },
+  { fase: 'dezesseis_avos', slot: 10, dataHora: '2026-07-01T20:00:00.000Z', cidade: 'Seattle', sofascoreId: '537422' },
+  { fase: 'dezesseis_avos', slot: 11, dataHora: '2026-07-02T23:00:00.000Z', cidade: 'Toronto', sofascoreId: '537419' },
+  { fase: 'dezesseis_avos', slot: 12, dataHora: '2026-07-02T19:00:00.000Z', cidade: 'Miami Gardens', sofascoreId: '537420' },
+  { fase: 'dezesseis_avos', slot: 13, dataHora: '2026-07-03T03:00:00.000Z', cidade: 'Vancouver', sofascoreId: '537429' },
+  { fase: 'dezesseis_avos', slot: 14, dataHora: '2026-07-03T22:00:00.000Z', cidade: 'Miami Gardens', sofascoreId: '537427' },
+  { fase: 'dezesseis_avos', slot: 15, dataHora: '2026-07-04T01:30:00.000Z', cidade: 'Kansas City', sofascoreId: '537430' },
+  { fase: 'dezesseis_avos', slot: 16, dataHora: '2026-07-03T18:00:00.000Z', cidade: 'Dallas', sofascoreId: '537428' },
   // Round of 16
-  { fase: 'oitavas', slot: 1, dataHora: '2026-07-04T17:00:00.000Z', cidade: 'Philadelphia', sofascoreId: 'R16-M1' },
-  { fase: 'oitavas', slot: 2, dataHora: '2026-07-04T21:00:00.000Z', cidade: 'Houston', sofascoreId: 'R16-M2' },
-  { fase: 'oitavas', slot: 3, dataHora: '2026-07-05T20:00:00.000Z', cidade: 'East Rutherford', sofascoreId: 'R16-M3' },
-  { fase: 'oitavas', slot: 4, dataHora: '2026-07-06T02:00:00.000Z', cidade: 'Mexico City', sofascoreId: 'R16-M4' },
-  { fase: 'oitavas', slot: 5, dataHora: '2026-07-06T19:00:00.000Z', cidade: 'Dallas', sofascoreId: 'R16-M5' },
-  { fase: 'oitavas', slot: 6, dataHora: '2026-07-07T00:00:00.000Z', cidade: 'Seattle', sofascoreId: 'R16-M6' },
-  { fase: 'oitavas', slot: 7, dataHora: '2026-07-07T16:00:00.000Z', cidade: 'Kansas City', sofascoreId: 'R16-M7' },
-  { fase: 'oitavas', slot: 8, dataHora: '2026-07-07T20:00:00.000Z', cidade: 'Atlanta', sofascoreId: 'R16-M8' },
+  { fase: 'oitavas', slot: 1, dataHora: '2026-07-04T17:00:00.000Z', cidade: 'Philadelphia', sofascoreId: '537376' },
+  { fase: 'oitavas', slot: 2, dataHora: '2026-07-04T21:00:00.000Z', cidade: 'Houston', sofascoreId: '537375' },
+  { fase: 'oitavas', slot: 3, dataHora: '2026-07-05T20:00:00.000Z', cidade: 'East Rutherford', sofascoreId: '537377' },
+  { fase: 'oitavas', slot: 4, dataHora: '2026-07-06T02:00:00.000Z', cidade: 'Mexico City', sofascoreId: '537378' },
+  { fase: 'oitavas', slot: 5, dataHora: '2026-07-06T19:00:00.000Z', cidade: 'Dallas', sofascoreId: '537379' },
+  { fase: 'oitavas', slot: 6, dataHora: '2026-07-07T00:00:00.000Z', cidade: 'Seattle', sofascoreId: '537380' },
+  { fase: 'oitavas', slot: 7, dataHora: '2026-07-07T16:00:00.000Z', cidade: 'Kansas City', sofascoreId: '537381' },
+  { fase: 'oitavas', slot: 8, dataHora: '2026-07-07T20:00:00.000Z', cidade: 'Atlanta', sofascoreId: '537382' },
   // Quarter-finals
-  { fase: 'quartas', slot: 1, dataHora: '2026-07-09T20:00:00.000Z', cidade: 'East Rutherford', sofascoreId: 'QF-M1' },
-  { fase: 'quartas', slot: 2, dataHora: '2026-07-10T19:00:00.000Z', cidade: 'Dallas', sofascoreId: 'QF-M2' },
-  { fase: 'quartas', slot: 3, dataHora: '2026-07-11T21:00:00.000Z', cidade: 'Mexico City', sofascoreId: 'QF-M3' },
-  { fase: 'quartas', slot: 4, dataHora: '2026-07-12T01:00:00.000Z', cidade: 'Atlanta', sofascoreId: 'QF-M4' },
+  { fase: 'quartas', slot: 1, dataHora: '2026-07-09T20:00:00.000Z', cidade: 'East Rutherford', sofascoreId: '537383' },
+  { fase: 'quartas', slot: 2, dataHora: '2026-07-10T19:00:00.000Z', cidade: 'Dallas', sofascoreId: '537384' },
+  { fase: 'quartas', slot: 3, dataHora: '2026-07-11T21:00:00.000Z', cidade: 'Mexico City', sofascoreId: '537385' },
+  { fase: 'quartas', slot: 4, dataHora: '2026-07-12T01:00:00.000Z', cidade: 'Atlanta', sofascoreId: '537386' },
   // Semi-finals
-  { fase: 'semifinal', slot: 1, dataHora: '2026-07-14T19:00:00.000Z', cidade: 'Dallas', sofascoreId: 'SF-M1' },
-  { fase: 'semifinal', slot: 2, dataHora: '2026-07-15T19:00:00.000Z', cidade: 'East Rutherford', sofascoreId: 'SF-M2' },
+  { fase: 'semifinal', slot: 1, dataHora: '2026-07-14T19:00:00.000Z', cidade: 'Dallas', sofascoreId: '537387' },
+  { fase: 'semifinal', slot: 2, dataHora: '2026-07-15T19:00:00.000Z', cidade: 'East Rutherford', sofascoreId: '537388' },
   // Third place
-  { fase: 'terceiro', slot: 1, dataHora: '2026-07-18T21:00:00.000Z', cidade: 'Miami Gardens', sofascoreId: 'TP-M1' },
+  { fase: 'terceiro', slot: 1, dataHora: '2026-07-18T21:00:00.000Z', cidade: 'Miami Gardens', sofascoreId: '537389' },
   // Final
-  { fase: 'final', slot: 1, dataHora: '2026-07-19T19:00:00.000Z', cidade: 'East Rutherford', sofascoreId: 'F-M1' },
+  { fase: 'final', slot: 1, dataHora: '2026-07-19T19:00:00.000Z', cidade: 'East Rutherford', sofascoreId: '537390' },
 ]
 
 // Idempotente: pula se já existe por sofascoreId.
