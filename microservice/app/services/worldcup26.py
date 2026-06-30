@@ -205,18 +205,6 @@ def match_game(
         home_score = 0
         away_score = 0
 
-    # placar_penaltis: worldcup26 expõe `home_penalty_score` / `away_penalty_score`
-    # quando o jogo foi pra shootout. Usado pelo merger para decidir vencedor
-    # em jogos com placar pré-pênaltis empatado.
-    try:
-        home_pen = match.get("home_penalty_score")
-        away_pen = match.get("away_penalty_score")
-        home_penalty = int(home_pen) if home_pen not in (None, "") else None
-        away_penalty = int(away_pen) if away_pen not in (None, "") else None
-    except (ValueError, TypeError):
-        home_penalty = None
-        away_penalty = None
-
     stadium_id = int(match.get("stadium_id", 0))
     stadium = stadiums.get(stadium_id, {})
 
@@ -231,15 +219,14 @@ def match_game(
         "status": status,
         "local": stadium.get("name_en"),
         "cidade": stadium.get("city_en"),
-        "vencedor": None,
-        "placarPenaltisA": home_penalty,
-        "placarPenaltisB": away_penalty,
+        "vencedor": _derive_winner(home_score, away_score) if status == "finished" else None,
+        "placarPenaltisA": None,
+        "placarPenaltisB": None,
     }
     logger.info(
         f"worldcup26 match_game OK: grupo={group} pt={time_a_pt}x{time_b_pt} "
         f"en_api={match.get('home_team_name_en')}x{match.get('away_team_name_en')} "
         f"status={status} placar={result['resultadoA']}x{result['resultadoB']}"
-        f"{' (pen ' + str(home_penalty) + '-' + str(away_penalty) + ')' if home_penalty is not None else ''}"
     )
     return result
 

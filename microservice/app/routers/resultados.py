@@ -91,12 +91,24 @@ async def get_resultados_lote(req: LoteRequestV2) -> list[ResultadoResponse]:
                 time_b_pt=jogo.timeB,
             )
 
-        from app.services.sync_runner import combinar_resultados
-        result = combinar_resultados(fd_result, wc_result)
-        result["sofascoreId"] = jogo.sofascoreId
-        # _fd_score_winner é detalhe interno do merger; não vai pra response
-        result.pop("_fd_score_winner", None)
-        results.append(ResultadoResponse(**result))
+        if fd_result is not None:
+            result = fd_result
+            if not result.get("local") and wc_result is not None:
+                result["local"] = wc_result.get("local")
+            if not result.get("cidade") and wc_result is not None:
+                result["cidade"] = wc_result.get("cidade")
+            results.append(ResultadoResponse(sofascoreId=jogo.sofascoreId, **result))
+        elif wc_result is not None:
+            results.append(ResultadoResponse(sofascoreId=jogo.sofascoreId, **wc_result))
+        else:
+            results.append(
+                ResultadoResponse(
+                    sofascoreId=jogo.sofascoreId,
+                    resultadoA=0,
+                    resultadoB=0,
+                    status="not_found",
+                )
+            )
 
     return results
 

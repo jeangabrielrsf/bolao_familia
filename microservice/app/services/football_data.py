@@ -192,24 +192,29 @@ def match_game(
 
     match = candidatos[0]
     score = match.get("score", {})
+    full_time = score.get("fullTime", {})
     regular = score.get("regularTime") or {}
     extra = score.get("extraTime") or {}
     penalties = score.get("penalties") or {}
-    # football-data.org v4 tem 3 placares sobrepostos:
-    # - regularTime: placar dos 90min
-    # - extraTime: placar da prorrogação
-    # - fullTime: running score cumulativo (regular + extra + penalties)
-    # - penalties: placar do shootout (só pra mata-mata com pen)
+    # football-data.org v4 retorna campos diferentes por tipo de jogo:
+    # - GRUPO: só fullTime populado (regularTime/extraTime/penalties = null)
+    # - MATA-MATA sem pen: fullTime populado, regularTime/extraTime populados
+    #   com mesmo valor (foi decidido no tempo regulamentar ou na ET)
+    # - MATA-MATA com pen: fullTime = regularTime + extraTime + penalties
+    #   (running score cumulativo, com pen virando "gol" no total)
     #
-    # Para o bolao, o placar que importa é "regularTime + extraTime" (o
-    # placar regulamentar+prorrogação). É o que o usuário vê em sites de
-    # esporte e o que determina placar exato / vencedor correto.
-    # `fullTime` é derivado de penalties na API, e a API tem dados errados
-    # de penalties em alguns jogos (ex: GER×PAR fd058594 retorna 4-4 quando
-    # foi 3-4), então calcular placar por `fullTime - penalties` propagaria
-    # o erro. `regularTime + extraTime` é direto da fonte.
-    home_score = (regular.get("home") or 0) + (extra.get("home") or 0)
-    away_score = (regular.get("away") or 0) + (extra.get("away") or 0)
+    # Para o placar pré-pênaltis (o que importa para o bolao):
+    # 1. Se regularTime populado → placar = regularTime + extraTime (direto
+    #    da fonte, ignora fullTime bagunçado pelos penalties)
+    # 2. Senão → placar = fullTime (não tem pen, então fullTime já é o placar)
+    regular_home = regular.get("home")
+    regular_away = regular.get("away")
+    if regular_home is not None and regular_away is not None:
+        home_score = regular_home + (extra.get("home") or 0)
+        away_score = regular_away + (extra.get("away") or 0)
+    else:
+        home_score = full_time.get("home") or 0
+        away_score = full_time.get("away") or 0
     has_penalties = (
         penalties.get("home") is not None
         or penalties.get("away") is not None
@@ -223,10 +228,9 @@ def match_game(
         "status": status,
         "local": match.get("venue"),
         "cidade": None,
-        "vencedor": None,
+        "vencedor": _derive_winner(home_score, away_score, score_winner) if status == "finished" else None,
         "placarPenaltisA": penalties.get("home"),
         "placarPenaltisB": penalties.get("away"),
-        "_fd_score_winner": score_winner,
     }
     pen_suffix = (
         f" (pen {result['placarPenaltisA']}-{result['placarPenaltisB']})"

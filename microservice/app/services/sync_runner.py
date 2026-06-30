@@ -18,120 +18,6 @@ from app.services import db, football_data, sync_writer, teams, worldcup26
 logger = logging.getLogger(__name__)
 
 
-def combinar_resultados(
-    fd_result: dict[str, Any] | None,
-    wc_result: dict[str, Any] | None,
-) -> dict[str, Any]:
-    """Combina resultados das APIs football_data e worldcup26 em um único dict.
-
-    Estratégia de merge:
-    - `resultadoA/B` (placar pré-pênaltis) → vem do football_data (primário)
-    - `placarPenaltisA/B` → worldcup26 se disponível (mais preciso), senão fd
-    - `vencedor` → chain de fallback: placar decide; empate → worldcup26 pen;
-      empate → football_data score.winner; sem dados → None
-    - `local`/`cidade` → football_data com fallback worldcup26
-
-    Args:
-        fd_result: dict de football_data.match_game, ou None
-        wc_result: dict de worldcup26.match_game, ou None
-
-    Returns:
-        Dict no formato esperado por sync_writer (com placar, status, vencedor, etc.)
-        Se ambos são None, retorna dict de "not_found".
-    """
-    if fd_result is None and wc_result is None:
-        return {
-            "resultadoA": 0,
-            "resultadoB": 0,
-            "status": "not_found",
-        }
-
-    if fd_result is None:
-        # Só worldcup26 retornou dados. Vencedor = chain de fallback.
-        vencedor = _resolver_vencedor(
-            resultado_a=wc_result["resultadoA"],
-            resultado_b=wc_result["resultadoB"],
-            wc_pen_a=wc_result.get("placarPenaltisA"),
-            wc_pen_b=wc_result.get("placarPenaltisB"),
-            fd_winner=None,
-            status=wc_result["status"],
-        )
-        wc_result = dict(wc_result)
-        wc_result["vencedor"] = vencedor
-        return wc_result
-
-    if wc_result is None:
-        # Só football_data retornou dados. Sem worldcup26 penalties.
-        vencedor = _resolver_vencedor(
-            resultado_a=fd_result["resultadoA"],
-            resultado_b=fd_result["resultadoB"],
-            wc_pen_a=None,
-            wc_pen_b=None,
-            fd_winner=fd_result.get("_fd_score_winner"),
-            status=fd_result["status"],
-        )
-        fd_result = dict(fd_result)
-        fd_result["vencedor"] = vencedor
-        return fd_result
-
-    # Ambos retornaram. Merge.
-    fd = dict(fd_result)
-    fd["cidade"] = fd.get("cidade") or wc_result.get("cidade")
-    fd["local"] = fd.get("local") or wc_result.get("local")
-    # placar_penaltis: worldcup26 é mais preciso (football-data tem bugs).
-    wc_pen_a = wc_result.get("placarPenaltisA")
-    wc_pen_b = wc_result.get("placarPenaltisB")
-    if wc_pen_a is not None and wc_pen_b is not None:
-        fd["placarPenaltisA"] = wc_pen_a
-        fd["placarPenaltisB"] = wc_pen_b
-    # vencedor: chain de fallback
-    fd["vencedor"] = _resolver_vencedor(
-        resultado_a=fd["resultadoA"],
-        resultado_b=fd["resultadoB"],
-        wc_pen_a=wc_pen_a,
-        wc_pen_b=wc_pen_b,
-        fd_winner=fd.get("_fd_score_winner"),
-        status=fd["status"],
-    )
-    return fd
-
-
-def _resolver_vencedor(
-    *,
-    resultado_a: int,
-    resultado_b: int,
-    wc_pen_a: int | None,
-    wc_pen_b: int | None,
-    fd_winner: str | None,
-    status: str,
-) -> int | None:
-    """Decide vencedor (1=home, 2=away, 3=draw) com chain de fallback.
-
-    Ordem de prioridade:
-    1. Se placar não-empatado → placar decide (1 ou 2)
-    2. Se placar empatado e worldcup26 tem penalties → pen decide (1 ou 2)
-    3. Se football_data score.winner disponível → usa (HOME_TEAM=1, AWAY_TEAM=2)
-    4. Sem dados → None (admin seta manual)
-    """
-    if status != "finished":
-        return None
-
-    if resultado_a != resultado_b:
-        return 1 if resultado_a > resultado_b else 2
-
-    if wc_pen_a is not None and wc_pen_b is not None and wc_pen_a != wc_pen_b:
-        return 1 if wc_pen_a > wc_pen_b else 2
-
-    if fd_winner == "HOME_TEAM":
-        return 1
-    if fd_winner == "AWAY_TEAM":
-        return 2
-    if fd_winner == "DRAW":
-        return 3
-
-    return None
-
-
 async def run(window_hours: int = 12, origem: str = "auto") -> dict[str, Any]:
     """Sincroniza resultados das APIs externas com o DB.
 
@@ -231,8 +117,21 @@ async def run(window_hours: int = 12, origem: str = "auto") -> dict[str, Any]:
                     )
 
                 if fd_result is not None:
-                    fd_result["cidade"] = fd_result.get("cidade") or None
-                result = combinar_resultados(fd_result, wc_result)
+                    result = fd_result
+                    if not result.get("local") and wc_result is not None:
+                        result["local"] = wc_result.get("local")
+                    if not result.get("cidade") and wc_result is not None:
+                        result["cidade"] = wc_result.get("cidade")
+                elif wc_result is not None:
+                    result = wc_result
+                else:
+                    result = {
+                        "sofascoreId": jogo["sofascore_id"],
+                        "resultadoA": 0,
+                        "resultadoB": 0,
+                        "status": "not_found",
+                    }
+
                 result["sofascoreId"] = jogo["sofascore_id"]
                 resultados.append(result)
 
