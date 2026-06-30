@@ -144,8 +144,15 @@ async def sincronizar_jogos(
         status_mudou = jogo.get("status") != novo_status
         local_mudou = jogo.get("local") != novo_local
         cidade_mudou = jogo.get("cidade") != nova_cidade
+        vencedor_mudou = jogo.get("vencedor") != novo_vencedor
 
-        realmente_mudou = placar_mudou or status_mudou or local_mudou or cidade_mudou
+        realmente_mudou = (
+            placar_mudou
+            or status_mudou
+            or local_mudou
+            or cidade_mudou
+            or vencedor_mudou
+        )
 
         if not realmente_mudou:
             continue
@@ -165,6 +172,8 @@ async def sincronizar_jogos(
             logger.info(f"  Local: {jogo.get('local')} → {novo_local}")
         if cidade_mudou:
             logger.info(f"  Cidade: {jogo.get('cidade')} → {nova_cidade}")
+        if vencedor_mudou:
+            logger.info(f"  Vencedor: {jogo.get('vencedor')} → {novo_vencedor}")
 
         mudancas.append(
             MudancaJogo(

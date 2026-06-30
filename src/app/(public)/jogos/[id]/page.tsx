@@ -4,7 +4,7 @@ import Image from 'next/image'
 import { getJogoById } from '@/lib/db/queries/jogos'
 import { getConfiguracao } from '@/lib/db/queries/config'
 import { getRanking } from '@/lib/db/queries/ranking'
-import { calcularPontosJogo, calcularPontosMataMata } from '@/lib/utils/helpers'
+import { calcularPontosJogo, calcularPontosMataMata, statusBonusQuemPassa } from '@/lib/utils/helpers'
 import { getTimeFlag } from '@/lib/utils/flags'
 import { FASE_LABELS } from '@/lib/utils/constants'
 import { formatarData, formatarHora } from '@/lib/utils/date'
@@ -52,6 +52,7 @@ export default async function JogoDetailPage({
     let pontos = 0
     let tipo: 'exato' | 'vencedor' | 'erro' = 'erro'
     let quemPassa = false
+    let bonus: 'acertou' | 'errou' | 'nao-aplicavel' = 'nao-aplicavel'
 
     if (jogo.status === 'finalizado' && jogo.resultadoA !== null && jogo.resultadoB !== null) {
       const isMataMata = jogo.fase !== 'grupos'
@@ -69,6 +70,10 @@ export default async function JogoDetailPage({
         pontos = resultado.pontos
         tipo = resultado.tipo
         quemPassa = resultado.quemPassa
+        bonus = statusBonusQuemPassa(
+          { placarA: palpite.placarA, placarB: palpite.placarB, vencedorPalpite: palpite.vencedorPalpite },
+          { resultadoA: jogo.resultadoA, resultadoB: jogo.resultadoB, vencedor: jogo.vencedor, fase: jogo.fase }
+        )
       } else {
         const resultado = calcularPontosJogo(
           palpite.placarA,
@@ -85,7 +90,7 @@ export default async function JogoDetailPage({
     const rankingEntry = rankingMap.get(palpite.palpiteGrupoId)
     const posicaoRanking = rankingEntry?.posicao ?? null
 
-    return { ...palpite, pontos, tipo, posicaoRanking, quemPassa }
+    return { ...palpite, pontos, tipo, posicaoRanking, quemPassa, bonus }
   })
 
   palpitesComPontos.sort((a, b) => {
@@ -223,12 +228,19 @@ export default async function JogoDetailPage({
                     </TableCell>
                     <TableCell className="text-right">
                       {jogo.status === 'finalizado' ? (
-                        <div className="flex items-center justify-end gap-2">
-                          <span className="font-display text-lg text-primary">{palpite.pontos}</span>
-                          {palpite.tipo === 'exato' && <Badge variant="success">Exato</Badge>}
-                          {palpite.tipo === 'vencedor' && <Badge variant="info">Vencedor</Badge>}
-                          {palpite.tipo === 'erro' && <Badge variant="destructive">Erro</Badge>}
-                          {palpite.quemPassa && <Badge variant="default" className="bg-purple-100 text-purple-700 hover:bg-purple-100">+QP</Badge>}
+                        <div className="flex flex-col items-end gap-1">
+                          <div className="flex items-center justify-end gap-2">
+                            <span className="font-display text-lg text-primary">{palpite.pontos}</span>
+                            {palpite.tipo === 'exato' && <Badge variant="success">Exato</Badge>}
+                            {palpite.tipo === 'vencedor' && <Badge variant="info">Vencedor</Badge>}
+                            {palpite.tipo === 'erro' && <Badge variant="destructive">Erro</Badge>}
+                          </div>
+                          {palpite.bonus === 'acertou' && (
+                            <span className="text-xs font-normal text-green-700 dark:text-green-400">+6 quem passa</span>
+                          )}
+                          {palpite.bonus === 'errou' && (
+                            <span className="text-xs font-normal text-muted-foreground">errou +6 quem passa</span>
+                          )}
                         </div>
                       ) : (
                         <span className="text-muted-foreground">—</span>
