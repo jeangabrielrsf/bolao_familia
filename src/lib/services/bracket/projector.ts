@@ -1,5 +1,6 @@
 import type { BracketSlot, ClassificacaoGrupo, JogoComTimes } from './types'
 import { PARES_R32_OFICIAL, isRefSet, gruposDoRefSet } from './matrix'
+import { getSlotSofascoreId, type FaseMataMata } from './mata-mata-slots'
 
 type Input = {
   classificacao: ClassificacaoGrupo[]
@@ -11,7 +12,7 @@ export function projetarChaveamento(input: Input): BracketSlot[] {
   const slots: BracketSlot[] = []
 
   for (let i = 0; i < 16; i++) {
-    const jogo = input.jogosMataMata.find(j => j.sofascoreId === `R32-M${i + 1}`)
+    const jogo = findJogoDoSlot(input.jogosMataMata, 'dezesseis_avos', i + 1)
     if (!jogo) continue
     const par = PARES_R32_OFICIAL[i]
     const [refA, refB] = par
@@ -37,17 +38,21 @@ export function projetarChaveamento(input: Input): BracketSlot[] {
     })
   }
 
-  const fasesConfig = [
-    { fase: 'oitavas' as const, prefix: 'R16', count: 8, previous: 'R32' },
-    { fase: 'quartas' as const, prefix: 'QF', count: 4, previous: 'R16' },
-    { fase: 'semifinal' as const, prefix: 'SF', count: 2, previous: 'QF' },
+  const fasesConfig: Array<{
+    fase: Extract<FaseMataMata, 'oitavas' | 'quartas' | 'semifinal'>
+    count: number
+    previous: Extract<FaseMataMata, 'dezesseis_avos' | 'oitavas' | 'quartas'>
+  }> = [
+    { fase: 'oitavas', count: 8, previous: 'dezesseis_avos' },
+    { fase: 'quartas', count: 4, previous: 'oitavas' },
+    { fase: 'semifinal', count: 2, previous: 'quartas' },
   ]
   for (const cfg of fasesConfig) {
     for (let i = 0; i < cfg.count; i++) {
-      const jogo = input.jogosMataMata.find(j => j.sofascoreId === `${cfg.prefix}-M${i + 1}`)
+      const jogo = findJogoDoSlot(input.jogosMataMata, cfg.fase, i + 1)
       if (!jogo) continue
-      const j1 = input.jogosMataMata.find(j => j.sofascoreId === `${cfg.previous}-M${i * 2 + 1}`)
-      const j2 = input.jogosMataMata.find(j => j.sofascoreId === `${cfg.previous}-M${i * 2 + 2}`)
+      const j1 = findJogoDoSlot(input.jogosMataMata, cfg.previous, i * 2 + 1)
+      const j2 = findJogoDoSlot(input.jogosMataMata, cfg.previous, i * 2 + 2)
       slots.push({
         jogoId: jogo.id,
         fase: cfg.fase,
@@ -65,10 +70,10 @@ export function projetarChaveamento(input: Input): BracketSlot[] {
     }
   }
 
-  const final = input.jogosMataMata.find(j => j.sofascoreId === 'F-M1')
+  const final = findJogoDoSlot(input.jogosMataMata, 'final', 1)
   if (final) {
-    const sf1 = input.jogosMataMata.find(j => j.sofascoreId === 'SF-M1')
-    const sf2 = input.jogosMataMata.find(j => j.sofascoreId === 'SF-M2')
+    const sf1 = findJogoDoSlot(input.jogosMataMata, 'semifinal', 1)
+    const sf2 = findJogoDoSlot(input.jogosMataMata, 'semifinal', 2)
     slots.push({
       jogoId: final.id,
       fase: 'final',
@@ -85,7 +90,7 @@ export function projetarChaveamento(input: Input): BracketSlot[] {
     })
   }
 
-  const terceiro = input.jogosMataMata.find(j => j.sofascoreId === 'TP-M1')
+  const terceiro = findJogoDoSlot(input.jogosMataMata, 'terceiro', 1)
   if (terceiro) {
     slots.push({
       jogoId: terceiro.id,
@@ -151,4 +156,10 @@ function vencedorDoJogo(jogo: JogoComTimes): string | null {
     if (jogo.placarPenaltisB > jogo.placarPenaltisA) return jogo.timeB
   }
   return null
+}
+
+function findJogoDoSlot(jogos: JogoComTimes[], fase: FaseMataMata, slot: number): JogoComTimes | undefined {
+  const sofascoreId = getSlotSofascoreId(fase, slot)
+  if (sofascoreId === null) return undefined
+  return jogos.find(j => j.sofascoreId === sofascoreId)
 }

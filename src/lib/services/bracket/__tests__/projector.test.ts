@@ -1,30 +1,34 @@
 import { projetarChaveamento } from '../projector'
 import type { JogoComTimes, ClassificacaoGrupo } from '../types'
+import { getSlotSofascoreId } from '../mata-mata-slots'
 
-const makeJogo = (overrides: Partial<JogoComTimes>): JogoComTimes => ({
-  id: 'r32-1', fase: 'dezesseis_avos', grupo: null, timeA: null, timeB: null,
-  resultadoA: null, resultadoB: null, status: 'agendado',
-  placarPenaltisA: null, placarPenaltisB: null, vencedor: null,
-  sofascoreId: 'R32-M1', dataHora: new Date(),
-  ...overrides,
-})
+const makeJogo = (overrides: Partial<JogoComTimes>): JogoComTimes => {
+  const defaultSofascoreId = getSlotSofascoreId('dezesseis_avos', 1)!
+  return {
+    id: 'r32-1', fase: 'dezesseis_avos', grupo: null, timeA: null, timeB: null,
+    resultadoA: null, resultadoB: null, status: 'agendado',
+    placarPenaltisA: null, placarPenaltisB: null, vencedor: null,
+    sofascoreId: defaultSofascoreId, dataHora: new Date(),
+    ...overrides,
+  }
+}
 
 const makeChaveamentoCompleto = (): JogoComTimes[] => {
   const jogos: JogoComTimes[] = []
   for (let i = 1; i <= 16; i++) {
-    jogos.push(makeJogo({ id: `r32-${i}`, sofascoreId: `R32-M${i}`, fase: 'dezesseis_avos' }))
+    jogos.push(makeJogo({ id: `r32-${i}`, sofascoreId: getSlotSofascoreId('dezesseis_avos', i)!, fase: 'dezesseis_avos' }))
   }
   for (let i = 1; i <= 8; i++) {
-    jogos.push(makeJogo({ id: `r16-${i}`, sofascoreId: `R16-M${i}`, fase: 'oitavas' }))
+    jogos.push(makeJogo({ id: `r16-${i}`, sofascoreId: getSlotSofascoreId('oitavas', i)!, fase: 'oitavas' }))
   }
   for (let i = 1; i <= 4; i++) {
-    jogos.push(makeJogo({ id: `qf-${i}`, sofascoreId: `QF-M${i}`, fase: 'quartas' }))
+    jogos.push(makeJogo({ id: `qf-${i}`, sofascoreId: getSlotSofascoreId('quartas', i)!, fase: 'quartas' }))
   }
   for (let i = 1; i <= 2; i++) {
-    jogos.push(makeJogo({ id: `sf-${i}`, sofascoreId: `SF-M${i}`, fase: 'semifinal' }))
+    jogos.push(makeJogo({ id: `sf-${i}`, sofascoreId: getSlotSofascoreId('semifinal', i)!, fase: 'semifinal' }))
   }
-  jogos.push(makeJogo({ id: 'tp-1', sofascoreId: 'TP-M1', fase: 'terceiro' }))
-  jogos.push(makeJogo({ id: 'f-1', sofascoreId: 'F-M1', fase: 'final' }))
+  jogos.push(makeJogo({ id: 'tp-1', sofascoreId: getSlotSofascoreId('terceiro', 1)!, fase: 'terceiro' }))
+  jogos.push(makeJogo({ id: 'f-1', sofascoreId: getSlotSofascoreId('final', 1)!, fase: 'final' }))
   return jogos
 }
 
@@ -58,9 +62,9 @@ describe('projetarChaveamento', () => {
 
   it('preenche R16 com vencedor do R32 quando finalizado', () => {
     const jogos = [
-      makeJogo({ id: 'r32-1', sofascoreId: 'R32-M1', timeA: 'Brasil', timeB: 'México', resultadoA: 2, resultadoB: 1, status: 'finalizado', vencedor: 1 }),
-      makeJogo({ id: 'r32-2', sofascoreId: 'R32-M2', timeA: 'Argentina', timeB: 'Espanha', status: 'agendado' }),
-      makeJogo({ id: 'r16-1', sofascoreId: 'R16-M1', fase: 'oitavas' }),
+      makeJogo({ id: 'r32-1', sofascoreId: getSlotSofascoreId('dezesseis_avos', 1)!, timeA: 'Brasil', timeB: 'México', resultadoA: 2, resultadoB: 1, status: 'finalizado', vencedor: 1 }),
+      makeJogo({ id: 'r32-2', sofascoreId: getSlotSofascoreId('dezesseis_avos', 2)!, timeA: 'Argentina', timeB: 'Espanha', status: 'agendado' }),
+      makeJogo({ id: 'r16-1', sofascoreId: getSlotSofascoreId('oitavas', 1)!, fase: 'oitavas' }),
     ]
     const result = projetarChaveamento({
       classificacao: [],
@@ -185,9 +189,9 @@ describe('projetarChaveamento', () => {
     const dataR16 = new Date('2026-07-04T20:00:00.000Z')
     const dataFinal = new Date('2026-07-19T20:00:00.000Z')
     const jogos = makeChaveamentoCompleto().map(j => {
-      if (j.sofascoreId?.startsWith('R32-')) return { ...j, dataHora: dataR32 }
-      if (j.sofascoreId?.startsWith('R16-')) return { ...j, dataHora: dataR16 }
-      if (j.sofascoreId === 'F-M1') return { ...j, dataHora: dataFinal }
+      if (j.fase === 'dezesseis_avos') return { ...j, dataHora: dataR32 }
+      if (j.fase === 'oitavas') return { ...j, dataHora: dataR16 }
+      if (j.fase === 'final') return { ...j, dataHora: dataFinal }
       return j
     })
     const result = projetarChaveamento({

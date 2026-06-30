@@ -1,6 +1,7 @@
 import { PrismaClient } from '@prisma/client'
 import { PrismaPg } from '@prisma/adapter-pg'
 import { PONTUACAO_PADRAO, CONFIG_CHAVES, FASES_MATA_MATA, FASE_LABELS } from '../src/lib/utils/constants'
+import { MATA_MATA_SLOTS } from '../src/lib/services/bracket/mata-mata-slots'
 
 const adapter = new PrismaPg(process.env.DATABASE_URL!)
 const prisma = new PrismaClient({ adapter })
@@ -147,71 +148,14 @@ const jogosData: Array<{
   { grupo: 'L', timeA: 'Croácia', timeB: 'Gana', dataHora: '2026-06-27T21:00:00.000Z', cidade: 'Philadelphia', sofascoreId: '15186624' },
 ]
 
-// Chaveamento mata-mata — Copa 2026 oficial
-// R32: 16 jogos (28/jun - 03/jul)
-// R16: 8 jogos (04-07/jul)
-// QF: 4 jogos (11-12/jul)
-// SF: 2 jogos (15/jul)
-// 3º: 1 jogo (18/jul)
-// F: 1 jogo (19/jul)
-// Chaveamento mata-mata — Copa 2026 oficial
-// R32: 16 jogos (28/jun - 03/jul)
-// R16: 8 jogos (04-07/jul)
-// QF: 4 jogos (11-12/jul)
-// SF: 2 jogos (15/jul)
-// 3º: 1 jogo (18/jul)
-// F: 1 jogo (19/jul)
+// Chaveamento mata-mata: ver src/lib/services/bracket/mata-mata-slots.ts.
+// (Single source of truth — 16 R32 + 8 R16 + 4 QF + 2 SF + 1 TP + 1 F = 32 jogos.)
 //
-// sofascoreId usa os IDs REAIS do football-data.org (não placeholders).
+// sofascoreId usa os IDs REAIS do football-data.org (não placeholders),
+// porque o sync do microserviço precisa desses IDs pra buscar resultados.
 // Source: https://api.football-data.org/v4/competitions/WC/matches
 // Migration de prod: scripts/fix_sofascore_ids_mata_mata.py
 // (idempotente — pula se já existe por sofascoreId)
-const mataMataData: Array<{
-  fase: 'dezesseis_avos' | 'oitavas' | 'quartas' | 'semifinal' | 'terceiro' | 'final'
-  slot: number
-  dataHora: string
-  cidade: string
-  sofascoreId: string
-}> = [
-  // Round of 32
-  { fase: 'dezesseis_avos', slot: 1, dataHora: '2026-06-28T19:00:00.000Z', cidade: 'Inglewood', sofascoreId: '537417' },
-  { fase: 'dezesseis_avos', slot: 2, dataHora: '2026-06-29T20:30:00.000Z', cidade: 'Foxborough', sofascoreId: '537415' },
-  { fase: 'dezesseis_avos', slot: 3, dataHora: '2026-06-30T01:00:00.000Z', cidade: 'Monterrey', sofascoreId: '537418' },
-  { fase: 'dezesseis_avos', slot: 4, dataHora: '2026-06-29T17:00:00.000Z', cidade: 'Houston', sofascoreId: '537423' },
-  { fase: 'dezesseis_avos', slot: 5, dataHora: '2026-06-30T21:00:00.000Z', cidade: 'East Rutherford', sofascoreId: '537416' },
-  { fase: 'dezesseis_avos', slot: 6, dataHora: '2026-06-30T17:00:00.000Z', cidade: 'Dallas', sofascoreId: '537424' },
-  { fase: 'dezesseis_avos', slot: 7, dataHora: '2026-07-01T01:00:00.000Z', cidade: 'Mexico City', sofascoreId: '537425' },
-  { fase: 'dezesseis_avos', slot: 8, dataHora: '2026-07-01T16:00:00.000Z', cidade: 'Atlanta', sofascoreId: '537426' },
-  { fase: 'dezesseis_avos', slot: 9, dataHora: '2026-07-02T00:00:00.000Z', cidade: 'Santa Clara', sofascoreId: '537421' },
-  { fase: 'dezesseis_avos', slot: 10, dataHora: '2026-07-01T20:00:00.000Z', cidade: 'Seattle', sofascoreId: '537422' },
-  { fase: 'dezesseis_avos', slot: 11, dataHora: '2026-07-02T23:00:00.000Z', cidade: 'Toronto', sofascoreId: '537419' },
-  { fase: 'dezesseis_avos', slot: 12, dataHora: '2026-07-02T19:00:00.000Z', cidade: 'Miami Gardens', sofascoreId: '537420' },
-  { fase: 'dezesseis_avos', slot: 13, dataHora: '2026-07-03T03:00:00.000Z', cidade: 'Vancouver', sofascoreId: '537429' },
-  { fase: 'dezesseis_avos', slot: 14, dataHora: '2026-07-03T22:00:00.000Z', cidade: 'Miami Gardens', sofascoreId: '537427' },
-  { fase: 'dezesseis_avos', slot: 15, dataHora: '2026-07-04T01:30:00.000Z', cidade: 'Kansas City', sofascoreId: '537430' },
-  { fase: 'dezesseis_avos', slot: 16, dataHora: '2026-07-03T18:00:00.000Z', cidade: 'Dallas', sofascoreId: '537428' },
-  // Round of 16
-  { fase: 'oitavas', slot: 1, dataHora: '2026-07-04T17:00:00.000Z', cidade: 'Philadelphia', sofascoreId: '537376' },
-  { fase: 'oitavas', slot: 2, dataHora: '2026-07-04T21:00:00.000Z', cidade: 'Houston', sofascoreId: '537375' },
-  { fase: 'oitavas', slot: 3, dataHora: '2026-07-05T20:00:00.000Z', cidade: 'East Rutherford', sofascoreId: '537377' },
-  { fase: 'oitavas', slot: 4, dataHora: '2026-07-06T00:00:00.000Z', cidade: 'Mexico City', sofascoreId: '537378' },
-  { fase: 'oitavas', slot: 5, dataHora: '2026-07-06T19:00:00.000Z', cidade: 'Dallas', sofascoreId: '537379' },
-  { fase: 'oitavas', slot: 6, dataHora: '2026-07-07T00:00:00.000Z', cidade: 'Seattle', sofascoreId: '537380' },
-  { fase: 'oitavas', slot: 7, dataHora: '2026-07-07T16:00:00.000Z', cidade: 'Kansas City', sofascoreId: '537381' },
-  { fase: 'oitavas', slot: 8, dataHora: '2026-07-07T20:00:00.000Z', cidade: 'Atlanta', sofascoreId: '537382' },
-  // Quarter-finals
-  { fase: 'quartas', slot: 1, dataHora: '2026-07-09T20:00:00.000Z', cidade: 'East Rutherford', sofascoreId: '537383' },
-  { fase: 'quartas', slot: 2, dataHora: '2026-07-10T19:00:00.000Z', cidade: 'Dallas', sofascoreId: '537384' },
-  { fase: 'quartas', slot: 3, dataHora: '2026-07-11T21:00:00.000Z', cidade: 'Mexico City', sofascoreId: '537385' },
-  { fase: 'quartas', slot: 4, dataHora: '2026-07-12T01:00:00.000Z', cidade: 'Atlanta', sofascoreId: '537386' },
-  // Semi-finals
-  { fase: 'semifinal', slot: 1, dataHora: '2026-07-14T19:00:00.000Z', cidade: 'Dallas', sofascoreId: '537387' },
-  { fase: 'semifinal', slot: 2, dataHora: '2026-07-15T19:00:00.000Z', cidade: 'East Rutherford', sofascoreId: '537388' },
-  // Third place
-  { fase: 'terceiro', slot: 1, dataHora: '2026-07-18T21:00:00.000Z', cidade: 'Miami Gardens', sofascoreId: '537389' },
-  // Final
-  { fase: 'final', slot: 1, dataHora: '2026-07-19T19:00:00.000Z', cidade: 'East Rutherford', sofascoreId: '537390' },
-]
 
 // Idempotente: pula se já existe por sofascoreId.
 // Não usamos deleteMany porque Palpite.jogoId é FK sem CASCADE — apagar
@@ -255,15 +199,15 @@ async function main() {
 
   console.log('Criando jogos do mata-mata (idempotente)...')
   let mataMataCriados = 0
-  for (const jogo of mataMataData) {
+  for (const slot of MATA_MATA_SLOTS) {
     const created = await criarJogoSeNaoExiste({
-      fase: jogo.fase,
+      fase: slot.fase,
       grupo: null,
-      dataHora: new Date(jogo.dataHora),
+      dataHora: new Date(slot.dataHora),
       timeA: null,
       timeB: null,
-      sofascoreId: jogo.sofascoreId,
-      cidade: jogo.cidade,
+      sofascoreId: slot.sofascoreId,
+      cidade: slot.cidade,
       isBolao: false,
     })
     if (created) mataMataCriados++
