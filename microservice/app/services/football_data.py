@@ -192,28 +192,27 @@ def match_game(
 
     match = candidatos[0]
     score = match.get("score", {})
-    regular = score.get("regularTime") or {}
-    extra = score.get("extraTime") or {}
+    full_time = score.get("fullTime", {})
     penalties = score.get("penalties") or {}
-    # football-data.org v4 tem 3 placares sobrepostos:
-    # - regularTime: placar dos 90min
-    # - extraTime: placar da prorrogação
-    # - fullTime: running score cumulativo (regular + extra + penalties)
-    # - penalties: placar do shootout (só pra mata-mata com pen)
-    #
-    # Para o bolao, o placar que importa é "regularTime + extraTime" (o
-    # placar regulamentar+prorrogação). É o que o usuário vê em sites de
-    # esporte e o que determina placar exato / vencedor correto.
-    # `fullTime` é derivado de penalties na API, e a API tem dados errados
-    # de penalties em alguns jogos (ex: GER×PAR fd058594 retorna 4-4 quando
-    # foi 3-4), então calcular placar por `fullTime - penalties` propagaria
-    # o erro. `regularTime + extraTime` é direto da fonte.
-    home_score = (regular.get("home") or 0) + (extra.get("home") or 0)
-    away_score = (regular.get("away") or 0) + (extra.get("away") or 0)
     has_penalties = (
         penalties.get("home") is not None
         or penalties.get("away") is not None
     )
+    # football-data.org v4: fullTime é o "running score" cumulativo.
+    # Para jogos com pênaltis, fullTime = regularTime + extraTime + penalties
+    # (os pênaltis viram "gols" no running total). Para exibir o placar
+    # regulamentar+prorrogação (igual ao que o usuário vê em sites de
+    # esporte), subtraímos as penalidades do fullTime.
+    if has_penalties:
+        ft_home = full_time.get("home") or 0
+        ft_away = full_time.get("away") or 0
+        pen_home = penalties.get("home") or 0
+        pen_away = penalties.get("away") or 0
+        home_score = ft_home - pen_home
+        away_score = ft_away - pen_away
+    else:
+        home_score = full_time.get("home") or 0
+        away_score = full_time.get("away") or 0
     status = _normalize_status(match.get("status", "SCHEDULED"))
     score_winner = score.get("winner", "")
 
@@ -223,10 +222,9 @@ def match_game(
         "status": status,
         "local": match.get("venue"),
         "cidade": None,
-        "vencedor": None,
+        "vencedor": _derive_winner(home_score, away_score, score_winner) if status == "finished" else None,
         "placarPenaltisA": penalties.get("home"),
         "placarPenaltisB": penalties.get("away"),
-        "_fd_score_winner": score_winner,
     }
     pen_suffix = (
         f" (pen {result['placarPenaltisA']}-{result['placarPenaltisB']})"

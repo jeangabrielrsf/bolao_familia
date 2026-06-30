@@ -50,13 +50,6 @@ def _fd_match(
     """
     if full_time is None:
         full_time = {"home": home_score, "away": away_score}
-    # Compat retroativa: testes antigos passam só home_score/away_score sem
-    # regularTime/extraTime. Para esses casos, inferir que o placar está nos
-    # 90 min (sem prorrogação). Mata-mata com pen/ET deve passar
-    # regular_time/extra_time explicitamente.
-    if regular_time is None and extra_time is None:
-        regular_time = {"home": home_score, "away": away_score}
-        extra_time = None
     # Determina o winner autoritativo. Se há penalties, quem decide é o
     # placar dos pênaltis; senão, é o placar do fullTime (running total).
     if penalties is not None and (penalties.get("home") is not None or penalties.get("away") is not None):
@@ -254,12 +247,7 @@ def test_fd_penalty_shootout_uses_pre_penalty_score() -> None:
     assert result["resultadoB"] == 1
     assert result["placarPenaltisA"] == 3
     assert result["placarPenaltisB"] == 4
-    assert result["vencedor"] is None, (
-        "vencedor é computado pelo merger (combinar_resultados), não aqui"
-    )
-    assert result["_fd_score_winner"] == "AWAY_TEAM", (
-        "fd_score_winner fica disponível pro merger decidir em fallback"
-    )
+    assert result["vencedor"] == 2, "AWAY_TEAM (Paraguai) venceu nos pênaltis"
     assert result["status"] == "finished"
 
 
@@ -303,9 +291,7 @@ def test_fd_penalty_after_extra_time_with_goals_uses_full_pre_penalty_score() ->
     assert result["resultadoB"] == 2
     assert result["placarPenaltisA"] == 4
     assert result["placarPenaltisB"] == 5
-    assert result["vencedor"] is None, (
-        "vencedor é computado pelo merger, não aqui (ver test_combinar_resultados)"
-    )
+    assert result["vencedor"] == 2, "México (away) venceu nos pênaltis"
 
 
 def test_fd_extra_time_with_goal_uses_fulltime_score() -> None:
@@ -335,13 +321,11 @@ def test_fd_extra_time_with_goal_uses_fulltime_score() -> None:
         time_b_tla="ARG",
     )
     assert result is not None
-    assert result["resultadoA"] == 2, "ET com gol: regular(1) + extra(1) = 2"
+    assert result["resultadoA"] == 2, "ET com gol: usar fullTime (placar final)"
     assert result["resultadoB"] == 1
     assert result["placarPenaltisA"] is None
     assert result["placarPenaltisB"] is None
-    assert result["vencedor"] is None, (
-        "match_game não decide vencedor; merger computa via combinar_resultados"
-    )
+    assert result["vencedor"] == 1, "HOME_TEAM venceu no ET"
 
 
 def test_fd_extra_time_no_goals_uses_fulltime_score() -> None:
@@ -405,13 +389,11 @@ def test_fd_regular_time_uses_fulltime_score() -> None:
     assert result["placarPenaltisB"] is None
 
 
-def test_fd_penalty_shootout_vencedor_deferred_to_merger() -> None:
-    """match_game NÃO computa vencedor quando placar é empate (precisa de
-    penalties ou score.winner). Quem decide é o merger `combinar_resultados`.
-
-    Caso degenerado: placar pré-pênaltis 1-1 (empate). score.winner=AWAY_TEAM
-    é guardado em `_fd_score_winner` para o merger usar como fallback se
-    worldcup26 não tiver penalties corretos.
+def test_fd_penalty_shootout_vencedor_from_score_winner() -> None:
+    """Garante que o vencedor continua vindo de score.winner (autoritativo
+    da API), não da comparação de placar. Caso degenerado: placar
+    pré-pênaltis 1-1 (que daria DRAW=3 sem winner), mas a API retorna
+    score.winner=AWAY_TEAM porque houve vencedor nos pênaltis.
     """
     api_match = _fd_match(
         fd_id=537415,
@@ -434,10 +416,9 @@ def test_fd_penalty_shootout_vencedor_deferred_to_merger() -> None:
         time_b_tla="PAR",
     )
     assert result is not None
-    # Placar pré-pênaltis 1-1 = empate. Vencedor fica None no match_game;
-    # o merger decide via worldcup26 pen ou _fd_score_winner.
-    assert result["vencedor"] is None
-    assert result["_fd_score_winner"] == "AWAY_TEAM"
+    # Placar pré-pênaltis 1-1 daria DRAW=3 sem score.winner, mas a API
+    # retorna AWAY_TEAM (Paraguai). Vencedor deve ser 2, não 3.
+    assert result["vencedor"] == 2
 
 
 # ---------- worldcup26.match_game ----------
