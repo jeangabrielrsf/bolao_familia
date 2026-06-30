@@ -14,8 +14,8 @@ router = APIRouter()
 
 class JogoRequest(BaseModel):
     sofascoreId: str
-    timeA: str
-    timeB: str
+    timeA: Optional[str] = None
+    timeB: Optional[str] = None
     dataHora: str
     grupo: str
 
