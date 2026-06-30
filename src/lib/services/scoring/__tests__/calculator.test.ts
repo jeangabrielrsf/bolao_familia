@@ -1,4 +1,4 @@
-import { calcularPontosJogo, calcularPontosExtra, calcularPontosMataMata } from '@/lib/utils/helpers'
+import { calcularPontosJogo, calcularPontosExtra, calcularPontosMataMata, statusBonusQuemPassa } from '@/lib/utils/helpers'
 import { PONTUACAO_PADRAO } from '@/lib/utils/constants'
 
 describe('calcularPontosJogo', () => {
@@ -108,5 +108,56 @@ describe('calcularPontosMataMata', () => {
   it('vencedorPalpite null com resultado empate → sem bonus', () => {
     expect(calcularPontosMataMata(1, 1, null, 1, 1, 1, config))
       .toEqual({ pontos: 10, tipo: 'exato', quemPassa: false })
+  })
+})
+
+describe('statusBonusQuemPassa', () => {
+  it('fase de grupos → nao-aplicavel', () => {
+    expect(statusBonusQuemPassa(
+      { placarA: 1, placarB: 1, vencedorPalpite: 1 },
+      { resultadoA: 1, resultadoB: 1, vencedor: 2, fase: 'grupos' }
+    )).toBe('nao-aplicavel')
+  })
+
+  it('mata-mata sem empate no resultado → nao-aplicavel', () => {
+    expect(statusBonusQuemPassa(
+      { placarA: 1, placarB: 1, vencedorPalpite: 1 },
+      { resultadoA: 2, resultadoB: 1, vencedor: 1, fase: 'oitavas' }
+    )).toBe('nao-aplicavel')
+  })
+
+  it('mata-mata empate resultado, palpite de placar não-empate → nao-aplicavel', () => {
+    expect(statusBonusQuemPassa(
+      { placarA: 2, placarB: 1, vencedorPalpite: 1 },
+      { resultadoA: 1, resultadoB: 1, vencedor: 2, fase: 'oitavas' }
+    )).toBe('nao-aplicavel')
+  })
+
+  it('empate com palpite empate mas vencedorPalpite null → nao-aplicavel', () => {
+    expect(statusBonusQuemPassa(
+      { placarA: 1, placarB: 1, vencedorPalpite: null },
+      { resultadoA: 1, resultadoB: 1, vencedor: 2, fase: 'oitavas' }
+    )).toBe('nao-aplicavel')
+  })
+
+  it('empate com palpite empate mas resultado.vencedor null → nao-aplicavel', () => {
+    expect(statusBonusQuemPassa(
+      { placarA: 1, placarB: 1, vencedorPalpite: 2 },
+      { resultadoA: 1, resultadoB: 1, vencedor: null, fase: 'oitavas' }
+    )).toBe('nao-aplicavel')
+  })
+
+  it('mata-mata empate, palpite empate, vencedor palpite === resultado → acertou', () => {
+    expect(statusBonusQuemPassa(
+      { placarA: 1, placarB: 1, vencedorPalpite: 2 },
+      { resultadoA: 1, resultadoB: 1, vencedor: 2, fase: 'oitavas' }
+    )).toBe('acertou')
+  })
+
+  it('mata-mata empate, palpite empate, vencedor palpite !== resultado → errou', () => {
+    expect(statusBonusQuemPassa(
+      { placarA: 1, placarB: 1, vencedorPalpite: 1 },
+      { resultadoA: 1, resultadoB: 1, vencedor: 2, fase: 'oitavas' }
+    )).toBe('errou')
   })
 })

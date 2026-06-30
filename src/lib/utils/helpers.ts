@@ -67,6 +67,19 @@ export function calcularPontosMataMata(
   return { pontos: 0, tipo: 'erro', quemPassa: false }
 }
 
+export type StatusBonusQuemPassa = 'acertou' | 'errou' | 'nao-aplicavel'
+
+export function statusBonusQuemPassa(
+  palpite: { placarA: number; placarB: number; vencedorPalpite: number | null },
+  resultado: { resultadoA: number; resultadoB: number; vencedor: number | null; fase: string }
+): StatusBonusQuemPassa {
+  if (resultado.fase === 'grupos') return 'nao-aplicavel'
+  if (resultado.resultadoA !== resultado.resultadoB) return 'nao-aplicavel'
+  if (palpite.placarA !== palpite.placarB) return 'nao-aplicavel'
+  if (palpite.vencedorPalpite === null || resultado.vencedor === null) return 'nao-aplicavel'
+  return palpite.vencedorPalpite === resultado.vencedor ? 'acertou' : 'errou'
+}
+
 function normalize(s: string): string {
   return s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim()
 }
