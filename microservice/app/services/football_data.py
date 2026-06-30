@@ -193,26 +193,32 @@ def match_game(
     match = candidatos[0]
     score = match.get("score", {})
     full_time = score.get("fullTime", {})
+    regular = score.get("regularTime") or {}
+    extra = score.get("extraTime") or {}
     penalties = score.get("penalties") or {}
+    # football-data.org v4 retorna campos diferentes por tipo de jogo:
+    # - GRUPO: só fullTime populado (regularTime/extraTime/penalties = null)
+    # - MATA-MATA sem pen: fullTime populado, regularTime/extraTime populados
+    #   com mesmo valor (foi decidido no tempo regulamentar ou na ET)
+    # - MATA-MATA com pen: fullTime = regularTime + extraTime + penalties
+    #   (running score cumulativo, com pen virando "gol" no total)
+    #
+    # Para o placar pré-pênaltis (o que importa para o bolao):
+    # 1. Se regularTime populado → placar = regularTime + extraTime (direto
+    #    da fonte, ignora fullTime bagunçado pelos penalties)
+    # 2. Senão → placar = fullTime (não tem pen, então fullTime já é o placar)
+    regular_home = regular.get("home")
+    regular_away = regular.get("away")
+    if regular_home is not None and regular_away is not None:
+        home_score = regular_home + (extra.get("home") or 0)
+        away_score = regular_away + (extra.get("away") or 0)
+    else:
+        home_score = full_time.get("home") or 0
+        away_score = full_time.get("away") or 0
     has_penalties = (
         penalties.get("home") is not None
         or penalties.get("away") is not None
     )
-    # football-data.org v4: fullTime é o "running score" cumulativo.
-    # Para jogos com pênaltis, fullTime = regularTime + extraTime + penalties
-    # (os pênaltis viram "gols" no running total). Para exibir o placar
-    # regulamentar+prorrogação (igual ao que o usuário vê em sites de
-    # esporte), subtraímos as penalidades do fullTime.
-    if has_penalties:
-        ft_home = full_time.get("home") or 0
-        ft_away = full_time.get("away") or 0
-        pen_home = penalties.get("home") or 0
-        pen_away = penalties.get("away") or 0
-        home_score = ft_home - pen_home
-        away_score = ft_away - pen_away
-    else:
-        home_score = full_time.get("home") or 0
-        away_score = full_time.get("away") or 0
     status = _normalize_status(match.get("status", "SCHEDULED"))
     score_winner = score.get("winner", "")
 

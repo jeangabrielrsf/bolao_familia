@@ -421,6 +421,57 @@ def test_fd_penalty_shootout_vencedor_from_score_winner() -> None:
     assert result["vencedor"] == 2
 
 
+def test_fd_ger_par_real_api_data_with_wrong_penalties() -> None:
+    """REGRESSÃO: football-data.org v4 retorna penalties ERRADO para
+    Alemanha x Paraguai (537415) — diz 4-4 quando foi 3-4. Mas
+    regularTime+extraTime estão corretos (1-1 + 0-0 = 1-1).
+
+    O fix correto: usar regularTime+extraTime para placar (fonte direta),
+    IGNORAR o penalties da API para o cálculo de placar. O penalties
+    fica apenas para display.
+
+    Cenário real (curl em 2026-06-30 00:27Z):
+      fullTime    = 4-5
+      regularTime = 1-1
+      extraTime   = 0-0
+      penalties   = 4-4 (ERRADO — FIFA reportou 3-4)
+      duration    = PENALTY_SHOOTOUT
+
+    Esperado: placar 1-1 (NÃO 0-1 como daria fullTime - penalties=4-4=0)
+    """
+    api_match = _fd_match(
+        fd_id=537415,
+        utc_date="2026-06-29T23:30:00Z",
+        home_tla="GER",
+        away_tla="PAR",
+        home_score=1,
+        away_score=1,
+        group="ROUND_OF_32",
+        full_time={"home": 4, "away": 5},
+        regular_time={"home": 1, "away": 1},
+        extra_time={"home": 0, "away": 0},
+        penalties={"home": 4, "away": 4},  # API retorna 4-4 (errado)
+        duration="PENALTY_SHOOTOUT",
+    )
+    result = football_data.match_game(
+        [api_match],
+        "",
+        "2026-06-29T23:30:00+00:00",
+        time_a_tla="GER",
+        time_b_tla="PAR",
+    )
+    assert result is not None
+    assert result["resultadoA"] == 1, "Placar = regularTime+extraTime = 1+0 = 1"
+    assert result["resultadoB"] == 1
+    # placarPenaltis vem da API (mesmo que errado — display honesto)
+    assert result["placarPenaltisA"] == 4
+    assert result["placarPenaltisB"] == 4
+    # Vencedor: API não retorna winner (null no caso real), mas
+    # _fd_match infere do placar — mas placar aqui é 1-1 (regularTime),
+    # então winner vem do fixture. Para um teste mais fiel, ver
+    # test_fd_penalty_shootout_vencedor_from_score_winner.
+
+
 # ---------- worldcup26.match_game ----------
 
 
