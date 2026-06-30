@@ -74,14 +74,22 @@ TEAM_DICT: dict[str, TeamInfo] = {
 }
 
 
-def get_tla(pt_name: str) -> str | None:
-    """Retorna o TLA (código FIFA) de 3 letras a partir do nome PT."""
+def get_tla(pt_name: str | None) -> str | None:
+    """Retorna o TLA (código FIFA) de 3 letras a partir do nome PT.
+
+    Aceita `None` e retorna `None` — usado quando o cliente envia mata-mata
+    sem times definidos ainda (timeA/timeB ainda não projetados pelo bracket).
+    """
+    if not pt_name:
+        return None
     info = TEAM_DICT.get(pt_name)
     return info["tla"] if info else None
 
 
-def get_en(pt_name: str) -> str | None:
+def get_en(pt_name: str | None) -> str | None:
     """Retorna o nome em inglês (football-data / worldcup26) a partir do nome PT."""
+    if not pt_name:
+        return None
     info = TEAM_DICT.get(pt_name)
     return info["en"] if info else None
 
