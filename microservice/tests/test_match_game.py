@@ -28,15 +28,50 @@ from app.services import football_data, teams, worldcup26
 def _fd_match(
     *,
     fd_id: int,
-    group: str,
     utc_date: str,
     home_tla: str,
     away_tla: str,
     home_score: int | None = 0,
     away_score: int | None = 0,
     status: str = "FINISHED",
+    group: str | None = None,
+    full_time: dict[str, Any] | None = None,
+    regular_time: dict[str, Any] | None = None,
+    extra_time: dict[str, Any] | None = None,
+    penalties: dict[str, Any] | None = None,
+    duration: str | None = None,
 ) -> dict[str, Any]:
-    full_time: dict[str, Any] = {"home": home_score, "away": away_score}
+    """Fixture de match da API football-data.org v4.
+
+    Compatibilidade retroativa: testes antigos que só passam home_score/
+    away_score ainda funcionam — o helper infere full_time = {home, away}.
+    Para cenários de penalty/ET, passar full_time/regular_time/extra_time/
+    penalties/duration explicitamente.
+    """
+    if full_time is None:
+        full_time = {"home": home_score, "away": away_score}
+    # Determina o winner autoritativo. Se há penalties, quem decide é o
+    # placar dos pênaltis; senão, é o placar do fullTime (running total).
+    if penalties is not None and (penalties.get("home") is not None or penalties.get("away") is not None):
+        pen_h = penalties.get("home") or 0
+        pen_a = penalties.get("away") or 0
+        winner = "HOME_TEAM" if pen_h > pen_a else "AWAY_TEAM" if pen_a > pen_h else "DRAW"
+    else:
+        ft_h = full_time.get("home") or 0
+        ft_a = full_time.get("away") or 0
+        winner = "HOME_TEAM" if ft_h > ft_a else "AWAY_TEAM" if ft_a > ft_h else "DRAW"
+    score: dict[str, Any] = {
+        "winner": winner,
+        "fullTime": full_time,
+    }
+    if regular_time is not None:
+        score["regularTime"] = regular_time
+    if extra_time is not None:
+        score["extraTime"] = extra_time
+    if penalties is not None:
+        score["penalties"] = penalties
+    if duration is not None:
+        score["duration"] = duration
     return {
         "id": fd_id,
         "utcDate": utc_date,
@@ -44,10 +79,7 @@ def _fd_match(
         "group": group,
         "homeTeam": {"id": fd_id, "name": home_tla, "tla": home_tla},
         "awayTeam": {"id": fd_id + 1, "name": away_tla, "tla": away_tla},
-        "score": {
-            "winner": "HOME_TEAM" if home_score > away_score else "DRAW",
-            "fullTime": full_time,
-        },
+        "score": score,
     }
 
 
@@ -167,6 +199,226 @@ def test_fd_missing_tla_warns_but_falls_back(caplog: pytest.LogCaptureFixture) -
     assert any(
         "match_game sem time_a_tla" in rec.message for rec in caplog.records
     ), f"Esperava warning sobre TLA ausente. Records: {[r.message for r in caplog.records]}"
+
+
+# ---------- football_data.match_game — pênaltis e prorrogação ----------
+
+
+def test_fd_penalty_shootout_uses_pre_penalty_score() -> None:
+    """REGRESSÃO: jogo com disputa de pênaltis deve mostrar o placar
+    pré-pênaltis (= fullTime - penalties = regulamentar + prorrogação),
+    NÃO o running total de fullTime que inclui os pênaltis como gols.
+
+    Caso real: Alemanha x Paraguai, 16-avos, 2026-06-29.
+    Placar FIFA: 1-1 nos 90 min, 0-0 na prorrogação, 3-4 nos pênaltis.
+    football-data.org retorna:
+      fullTime    = 4-5   (1+0+3 vs 1+0+4 = running total)
+      regularTime = 1-1   (90 min)
+      extraTime   = 0-0
+      penalties   = 3-4
+    Comportamento esperado: resultadoA/B = 1-1, placarPenaltisA/B = 3-4.
+    Bug antigo lia fullTime direto e mostrava 4-5.
+    """
+    api_match = _fd_match(
+        fd_id=537415,
+        utc_date="2026-06-29T23:30:00Z",
+        home_tla="GER",
+        away_tla="PAR",
+        home_score=1,
+        away_score=1,
+        group="ROUND_OF_32",
+        full_time={"home": 4, "away": 5},
+        regular_time={"home": 1, "away": 1},
+        extra_time={"home": 0, "away": 0},
+        penalties={"home": 3, "away": 4},
+        duration="PENALTY_SHOOTOUT",
+    )
+    result = football_data.match_game(
+        [api_match],
+        "",
+        "2026-06-29T23:30:00+00:00",
+        time_a_tla="GER",
+        time_b_tla="PAR",
+    )
+    assert result is not None
+    assert result["resultadoA"] == 1, (
+        "Deve mostrar placar pré-pênaltis (1-1), não running total (4-5)"
+    )
+    assert result["resultadoB"] == 1
+    assert result["placarPenaltisA"] == 3
+    assert result["placarPenaltisB"] == 4
+    assert result["vencedor"] == 2, "AWAY_TEAM (Paraguai) venceu nos pênaltis"
+    assert result["status"] == "finished"
+
+
+def test_fd_penalty_after_extra_time_with_goals_uses_full_pre_penalty_score() -> None:
+    """REGRESSÃO: jogo com gols na prorrogação que VAI para pênaltis
+    deve mostrar o placar regulamentar + prorrogação, NÃO apenas 90 min.
+
+    Cenário: 1-1 nos 90 min, 2-2 na prorrogação, 4-5 nos pênaltis.
+    football-data.org retorna:
+      fullTime    = 6-6   (1+1+4 vs 1+1+5)
+      regularTime = 1-1
+      extraTime   = 1-1
+      penalties   = 4-5
+    Esperado: resultadoA/B = 2-2 (NÃO 1-1!).
+    """
+    api_match = _fd_match(
+        fd_id=1001,
+        utc_date="2026-07-04T20:00:00Z",
+        home_tla="BRA",
+        away_tla="MEX",
+        home_score=2,
+        away_score=2,
+        group="ROUND_OF_16",
+        full_time={"home": 6, "away": 7},
+        regular_time={"home": 1, "away": 1},
+        extra_time={"home": 1, "away": 1},
+        penalties={"home": 4, "away": 5},
+        duration="PENALTY_SHOOTOUT",
+    )
+    result = football_data.match_game(
+        [api_match],
+        "",
+        "2026-07-04T20:00:00+00:00",
+        time_a_tla="BRA",
+        time_b_tla="MEX",
+    )
+    assert result is not None
+    assert result["resultadoA"] == 2, (
+        "Deve incluir gol do ET (1+1=2), não só os 90 min (1)"
+    )
+    assert result["resultadoB"] == 2
+    assert result["placarPenaltisA"] == 4
+    assert result["placarPenaltisB"] == 5
+    assert result["vencedor"] == 2, "México (away) venceu nos pênaltis"
+
+
+def test_fd_extra_time_with_goal_uses_fulltime_score() -> None:
+    """Prorrogação com gol (sem pênaltis): placar exibido é o final
+    (fullTime = regularTime + extraTime), não o dos 90 min.
+    fullTime=2-1, regularTime=1-1, extraTime=1-0, penalties=null.
+    """
+    api_match = _fd_match(
+        fd_id=999,
+        utc_date="2026-07-02T20:00:00Z",
+        home_tla="BRA",
+        away_tla="ARG",
+        home_score=2,
+        away_score=1,
+        group="ROUND_OF_16",
+        full_time={"home": 2, "away": 1},
+        regular_time={"home": 1, "away": 1},
+        extra_time={"home": 1, "away": 0},
+        penalties=None,
+        duration="EXTRA_TIME",
+    )
+    result = football_data.match_game(
+        [api_match],
+        "",
+        "2026-07-02T20:00:00+00:00",
+        time_a_tla="BRA",
+        time_b_tla="ARG",
+    )
+    assert result is not None
+    assert result["resultadoA"] == 2, "ET com gol: usar fullTime (placar final)"
+    assert result["resultadoB"] == 1
+    assert result["placarPenaltisA"] is None
+    assert result["placarPenaltisB"] is None
+    assert result["vencedor"] == 1, "HOME_TEAM venceu no ET"
+
+
+def test_fd_extra_time_no_goals_uses_fulltime_score() -> None:
+    """Prorrogação 0-0 nos gols mas com decisão: placar final = 1-1.
+    Garante que não confundimos com penalty shootout (que tem penalties
+    não-null).
+    """
+    api_match = _fd_match(
+        fd_id=998,
+        utc_date="2026-07-02T20:00:00Z",
+        home_tla="ARG",
+        away_tla="FRA",
+        home_score=1,
+        away_score=1,
+        group="ROUND_OF_16",
+        full_time={"home": 1, "away": 1},
+        regular_time={"home": 1, "away": 1},
+        extra_time={"home": 0, "away": 0},
+        penalties=None,
+        duration="EXTRA_TIME",
+    )
+    result = football_data.match_game(
+        [api_match],
+        "",
+        "2026-07-02T20:00:00+00:00",
+        time_a_tla="ARG",
+        time_b_tla="FRA",
+    )
+    assert result is not None
+    assert result["resultadoA"] == 1
+    assert result["resultadoB"] == 1
+    assert result["placarPenaltisA"] is None, "Não é pênaltis (duration=EXTRA_TIME)"
+    assert result["placarPenaltisB"] is None
+
+
+def test_fd_regular_time_uses_fulltime_score() -> None:
+    """Regressão: jogo de grupos sem prorrogação e sem pênaltis.
+    Comportamento atual (fullTime) deve ser preservado — fix não pode
+    quebrar o caso comum.
+    """
+    api_match = _fd_match(
+        fd_id=1,
+        group="GROUP_A",
+        utc_date="2026-06-12T18:00:00Z",
+        home_tla="BRA",
+        away_tla="HAI",
+        home_score=3,
+        away_score=0,
+    )
+    result = football_data.match_game(
+        [api_match],
+        "A",
+        "2026-06-12T18:00:00+00:00",
+        time_a_tla="BRA",
+        time_b_tla="HAI",
+    )
+    assert result is not None
+    assert result["resultadoA"] == 3
+    assert result["resultadoB"] == 0
+    assert result["placarPenaltisA"] is None
+    assert result["placarPenaltisB"] is None
+
+
+def test_fd_penalty_shootout_vencedor_from_score_winner() -> None:
+    """Garante que o vencedor continua vindo de score.winner (autoritativo
+    da API), não da comparação de placar. Caso degenerado: placar
+    pré-pênaltis 1-1 (que daria DRAW=3 sem winner), mas a API retorna
+    score.winner=AWAY_TEAM porque houve vencedor nos pênaltis.
+    """
+    api_match = _fd_match(
+        fd_id=537415,
+        utc_date="2026-06-29T23:30:00Z",
+        home_tla="GER",
+        away_tla="PAR",
+        home_score=1,
+        away_score=1,
+        group="ROUND_OF_32",
+        full_time={"home": 4, "away": 5},
+        regular_time={"home": 1, "away": 1},
+        penalties={"home": 3, "away": 4},
+        duration="PENALTY_SHOOTOUT",
+    )
+    result = football_data.match_game(
+        [api_match],
+        "",
+        "2026-06-29T23:30:00+00:00",
+        time_a_tla="GER",
+        time_b_tla="PAR",
+    )
+    assert result is not None
+    # Placar pré-pênaltis 1-1 daria DRAW=3 sem score.winner, mas a API
+    # retorna AWAY_TEAM (Paraguai). Vencedor deve ser 2, não 3.
+    assert result["vencedor"] == 2
 
 
 # ---------- worldcup26.match_game ----------

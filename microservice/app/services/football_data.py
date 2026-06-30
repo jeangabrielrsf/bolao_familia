@@ -193,9 +193,26 @@ def match_game(
     match = candidatos[0]
     score = match.get("score", {})
     full_time = score.get("fullTime", {})
-    home_score = full_time.get("home") or 0
-    away_score = full_time.get("away") or 0
-    penalties = score.get("penalties", {})
+    penalties = score.get("penalties") or {}
+    has_penalties = (
+        penalties.get("home") is not None
+        or penalties.get("away") is not None
+    )
+    # football-data.org v4: fullTime é o "running score" cumulativo.
+    # Para jogos com pênaltis, fullTime = regularTime + extraTime + penalties
+    # (os pênaltis viram "gols" no running total). Para exibir o placar
+    # regulamentar+prorrogação (igual ao que o usuário vê em sites de
+    # esporte), subtraímos as penalidades do fullTime.
+    if has_penalties:
+        ft_home = full_time.get("home") or 0
+        ft_away = full_time.get("away") or 0
+        pen_home = penalties.get("home") or 0
+        pen_away = penalties.get("away") or 0
+        home_score = ft_home - pen_home
+        away_score = ft_away - pen_away
+    else:
+        home_score = full_time.get("home") or 0
+        away_score = full_time.get("away") or 0
     status = _normalize_status(match.get("status", "SCHEDULED"))
     score_winner = score.get("winner", "")
 
@@ -209,11 +226,16 @@ def match_game(
         "placarPenaltisA": penalties.get("home"),
         "placarPenaltisB": penalties.get("away"),
     }
+    pen_suffix = (
+        f" (pen {result['placarPenaltisA']}-{result['placarPenaltisB']})"
+        if has_penalties
+        else ""
+    )
     logger.info(
         f"match_game OK: grupo={group} tla_db={time_a_tla}x{time_b_tla} "
         f"tla_api={match.get('homeTeam', {}).get('tla')}x"
         f"{match.get('awayTeam', {}).get('tla')} status={status} "
-        f"placar={result['resultadoA']}x{result['resultadoB']}"
+        f"placar={result['resultadoA']}x{result['resultadoB']}{pen_suffix}"
     )
     return result
 
