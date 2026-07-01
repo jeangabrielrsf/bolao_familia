@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Protótipo 2: Curvas Bezier</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  body { background: #0f172a; color: #e2e8f0; font-family: system-ui; margin: 0; padding: 16px; }
+  .match-card { background: #1e293b; border: 1px solid #334155; border-radius: 8px; padding: 8px 12px; min-width: 130px; position: absolute; }
+  .match-card.winner { border-color: #10b981; }
+  .hero-match { border-color: #fbbf24 !important; border-width: 2px !important; background: #1a2a1a !important; }
+  .label { font-size: 10px; color: #64748b; text-transform: uppercase; letter-spacing: 1px; position: absolute; }
+</style>
+</head>
+<body>
+<h1 style="font-size:18px;margin-bottom:8px;color:#94a3b8">Protótipo 2 — Curvas Bezier</h1>
+<p style="font-size:12px;color:#64748b;margin-bottom:20px">Conectores com path SVG curvo (C/quadratic bezier), visual mais orgânico.</p>
+
+<div style="position:relative;width:900px;height:650px;overflow-x:auto;background:#0a0f1a;border-radius:12px;padding:20px">
+  <!-- Labels -->
+  <div class="label" style="left:20px;top:30px">16 AVOS</div>
+  <div class="label" style="left:180px;top:30px">OITAVAS</div>
+  <div class="label" style="left:340px;top:30px">QUARTAS</div>
+  <div class="label" style="left:500px;top:30px">SEMI</div>
+  <div class="label" style="left:660px;top:30px">FINAL</div>
+
+  <svg style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none">
+    <!-- R32 par 1 → Oit1: curvas bezier -->
+    <path d="M 160 65 C 175 65, 175 65, 180 65 L 190 65 L 190 95 C 190 100, 190 105, 185 105 L 180 105" stroke="#475569" stroke-width="1.2" fill="none"/>
+    <path d="M 160 145 C 175 145, 175 145, 180 145 L 190 145 L 190 105" stroke="#475569" stroke-width="1.2" fill="none"/>
+
+    <!-- R32 par 2 → Oit2 -->
+    <path d="M 160 235 C 175 235, 175 235, 180 235 L 190 235 L 190 195" stroke="#475569" stroke-width="1.2" fill="none"/>
+    <path d="M 160 315 C 175 315, 175 315, 180 315 L 190 315 L 190 195" stroke="#475569" stroke-width="1.2" fill="none"/>
+
+    <!-- Oit1,Oit2 → QF1 -->
+    <path d="M 325 105 C 340 105, 340 185, 335 185" stroke="#475569" stroke-width="1.2" fill="none"/>
+    <path d="M 335 185 L 340 185 L 348 185" stroke="#475569" stroke-width="1.2" fill="none"/>
+
+    <!-- QF1 → SF1 -->
+    <path d="M 500 195 C 520 195, 530 210, 535 210 L 540 210 L 548 210" stroke="#475569" stroke-width="1.2" fill="none"/>
+
+    <!-- SF1 → Final (curva suave ao centro) -->
+    <path d="M 680 210 C 700 210, 710 280, 710 280 L 710 285 L 712 285" stroke="#fbbf24" stroke-width="1.5" fill="none"/>
+    <polygon points="708,281 708,289 702,285" fill="#fbbf24"/>
+
+    <!-- 3º lugar -->
+    <path d="M 680 210 L 710 210 L 710 340 L 715 340" stroke="#64748b" stroke-width="1" fill="none" stroke-dasharray="3,3"/>
+    <text x="680" y="340" fill="#64748b" font-size="8" text-anchor="middle">Perdedores SF → 3º lugar</text>
+  </svg>
+
+  <!-- Match cards posicionadas -->
+  <div class="match-card" style="left:30px;top:50px">🇧🇷 Brasil <span style="color:#10b981;float:right;font-weight:600">3</span><br>🇵🇹 Portugal <span style="float:right">1</span><br><span style="font-size:9px;color:#64748b">FT · Los Angeles</span></div>
+  <div class="match-card" style="left:30px;top:130px">🇦🇷 Argentina <span>—</span><br>🏴󠁧󠁢󠁥󠁮󠁧󠁿 Inglaterra <span>—</span><br><span style="font-size:9px;color:#64748b">29/06 · 15:00</span></div>
+  <div class="match-card" style="left:30px;top:220px;opacity:0.5">1C vs 2D<br><span style="font-size:9px;color:#64748b">30/06 · 13:00</span></div>
+  <div class="match-card" style="left:30px;top:300px;opacity:0.5">1E vs 2F</div>
+  <div class="match-card" style="left:185px;top:93px;opacity:0.5">Venc.M1 vs Venc.M2</div>
+  <div class="match-card" style="left:185px;top:183px;opacity:0.5">Venc.M3 vs Venc.M4</div>
+  <div class="match-card" style="left:350px;top:173px;opacity:0.5">Venc.O1 vs Venc.O2</div>
+  <div class="match-card" style="left:510px;top:198px;opacity:0.5">Venc.Q1 vs Venc.Q2</div>
+  <div class="match-card hero-match" style="left:670px;top:278px;text-align:center">🏆 FINAL<br><span style="font-size:9px;color:#fbbf24">19/07 · Nova York</span></div>
+  <div class="match-card" style="left:665px;top:340px;opacity:0.5;border-style:dashed">3º Lugar</div>
+
+  <!-- Side labels -->
+  <div style="position:absolute;left:30px;top:10px;color:#60a5fa;font-size:10px">LADO ESQUERDO → SF-1</div>
+</div>
+</body>
+</html>
