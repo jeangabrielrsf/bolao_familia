@@ -8,32 +8,32 @@ type Props = {
 
 export function BracketCenter({ final, terceiro }: Props) {
   return (
-    <div className="flex flex-col items-center justify-center gap-6 px-3 min-w-[140px]">
+    <div className="min-w-[140px] flex flex-col items-center justify-center gap-4 px-2">
       {/* Final */}
-      <div className="text-center">
-        <div className="text-[10px] text-muted-foreground uppercase tracking-wider mb-2">FINAL</div>
-        <div className="relative">
-          {final ? (
-            <BracketMatchCard
-              slot={final}
-              size="md"
-              href={`/jogos/${final.jogoId}`}
-            />
-          ) : (
-            <div className="bg-card border border-amber-500/50 rounded-md p-3 min-w-[130px] text-center">
-              <div className="text-amber-400 font-bold text-sm">🏆 FINAL</div>
-              <div className="text-[10px] text-muted-foreground mt-1">A definir</div>
-            </div>
-          )}
-        </div>
+      <div className="text-center flex flex-col items-center">
+        <div className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1">FINAL</div>
+        {final ? (
+          <BracketMatchCard
+            slot={final}
+            size="md"
+            href={`/jogos/${final.jogoId}`}
+          />
+        ) : (
+          <div className="bg-card border border-amber-500/50 rounded-md p-3 min-w-[130px] text-center">
+            <div className="text-amber-400 font-bold text-sm">🏆 FINAL</div>
+            <div className="text-[10px] text-muted-foreground mt-1">A definir</div>
+          </div>
+        )}
       </div>
 
       {/* Connector: dashed line */}
-      <div className="w-0.5 h-6 bg-border/50" style={{ borderLeft: '2px dashed #475569' }} />
+      <div className="flex items-center justify-center">
+        <div className="w-0.5 h-6" style={{ borderLeft: '2px dashed #475569' }} />
+      </div>
 
       {/* 3rd place */}
-      <div className="text-center">
-        <div className="text-[10px] text-muted-foreground uppercase tracking-wider mb-2">3º LUGAR</div>
+      <div className="text-center flex flex-col items-center">
+        <div className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1">3º LUGAR</div>
         {terceiro ? (
           <BracketMatchCard
             slot={terceiro}

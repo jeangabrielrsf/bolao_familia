@@ -50,8 +50,10 @@ export function BracketTwoSided({ slots }: Props) {
   useLayoutEffect(() => {
     const container = containerRef.current
     if (!container) return
-    requestAnimationFrame(() => {
-      const cRect = container.getBoundingClientRect()
+
+    const measure = () => {
+      requestAnimationFrame(() => {
+        const cRect = container.getBoundingClientRect()
 
       const card = (jogoId: string): CardRect | null => {
         const el = container.querySelector(`[data-jogo-id="${jogoId}"]`)
@@ -78,16 +80,14 @@ export function BracketTwoSided({ slots }: Props) {
         if (!ca || !cb || !ct) return
 
         const isLeft = side === 'left'
-        // Source cards: start from the edge facing the spine
         const srcEdgeA = isLeft ? ca.right : ca.left
         const srcEdgeB = isLeft ? cb.right : cb.left
-        const spineX = isLeft
-          ? Math.max(ca.right, cb.right) + SPINE_GAP
-          : Math.min(ca.left, cb.left) - SPINE_GAP
-        const midY = (ca.cy + cb.cy) / 2
-        // Target card: end at the edge facing the spine
+        const srcEdge = isLeft ? Math.max(ca.right, cb.right) : Math.min(ca.left, cb.left)
         const tgtEdge = isLeft ? ct.left - 4 : ct.right + 4
-        // Connector enters target at its vertical center
+        const distance = Math.abs(tgtEdge - srcEdge)
+        const dynamicGap = Math.max(SPINE_GAP, distance * 0.15)
+        const spineX = isLeft ? srcEdge + dynamicGap : srcEdge - dynamicGap
+        const midY = (ca.cy + cb.cy) / 2
         const tgtY = ct.cy
 
         const key = `${faseSource}-${slotA}-${slotB}-${faseTarget}-${targetSlot}`
@@ -96,8 +96,12 @@ export function BracketTwoSided({ slots }: Props) {
         lines.push({ a: { x: srcEdgeA, y: ca.cy }, b: { x: spineX, y: ca.cy }, key: `${key}-a` })
         // Card B edge → spine
         lines.push({ a: { x: srcEdgeB, y: cb.cy }, b: { x: spineX, y: cb.cy }, key: `${key}-b` })
-        // Spine vertical between A and B
-        lines.push({ a: { x: spineX, y: ca.cy }, b: { x: spineX, y: cb.cy }, key: `${key}-v` })
+        // Spine vertical: do card superior até midY
+        const spineTop = Math.min(ca.cy, cb.cy)
+        lines.push({ a: { x: spineX, y: spineTop }, b: { x: spineX, y: midY }, key: `${key}-v1` })
+        // Spine vertical: de midY até o card inferior
+        const spineBottom = Math.max(ca.cy, cb.cy)
+        lines.push({ a: { x: spineX, y: midY }, b: { x: spineX, y: spineBottom }, key: `${key}-v2` })
         // Spine midline → target edge X, at mid Y
         lines.push({ a: { x: spineX, y: midY }, b: { x: tgtEdge, y: midY }, key: `${key}-t` })
         // Vertical from mid Y → target Y at target edge X
@@ -115,18 +119,19 @@ export function BracketTwoSided({ slots }: Props) {
         if (!cs || !ct) return
 
         const isLeft = side === 'left'
-        const srcEdge = isLeft ? cs.right + SPINE_GAP : cs.left - SPINE_GAP
-        const tgtEdge = targetFase === 'final'
-          ? (isLeft ? ct.left - 4 : ct.right + 4)
-          : cs.cx // Keep horizontal for 3rd place, go to center
+        const srcEdge = isLeft ? cs.right : cs.left
+        const tgtEdge = isLeft ? ct.left - 4 : ct.right + 4
+        const distance = Math.abs(tgtEdge - srcEdge)
+        const dynamicGap = Math.max(SPINE_GAP, distance * 0.15)
+        const spineX = isLeft ? srcEdge + dynamicGap : srcEdge - dynamicGap
         const key = `sf-${sourceSlot}-to-${targetFase}`
 
-        // Source card edge → outward horizontal
-        lines.push({ a: { x: isLeft ? cs.right : cs.left, y: cs.cy }, b: { x: srcEdge, y: cs.cy }, key: `${key}-h` })
-        // Vertical to target Y
-        lines.push({ a: { x: srcEdge, y: cs.cy }, b: { x: srcEdge, y: ct.cy }, key: `${key}-v` })
-        // Horizontal to target edge
-        lines.push({ a: { x: srcEdge, y: ct.cy }, b: { x: tgtEdge, y: ct.cy }, key: `${key}-h2` })
+        // Source card edge → spine
+        lines.push({ a: { x: srcEdge, y: cs.cy }, b: { x: spineX, y: cs.cy }, key: `${key}-h` })
+        // Spine vertical to target Y
+        lines.push({ a: { x: spineX, y: cs.cy }, b: { x: spineX, y: ct.cy }, key: `${key}-v` })
+        // Spine → target edge
+        lines.push({ a: { x: spineX, y: ct.cy }, b: { x: tgtEdge, y: ct.cy }, key: `${key}-h2` })
       }
 
       // R32 → Oit pairs
@@ -157,26 +162,33 @@ export function BracketTwoSided({ slots }: Props) {
       connectCenter(2, 'terceiro', 'right')
 
       setConnectors(lines.map((l) => (
-        <line key={l.key} x1={l.a.x} y1={l.a.y} x2={l.b.x} y2={l.b.y}
-          stroke="#475569" strokeWidth={1}
+        <path key={l.key}
+          d={`M${l.a.x},${l.a.y} L${l.b.x},${l.b.y}`}
+          stroke="#475569" fill="none" strokeWidth={1.5}
+          strokeLinecap="round" strokeLinejoin="round"
           className="transition-all duration-300"
         />
       )))
-    })
+      })
+    }
+
+    measure()
+    window.addEventListener('resize', measure)
+    return () => window.removeEventListener('resize', measure)
   }, [slots])
 
   return (
     <div className="hidden lg:block">
       <div className="overflow-x-auto" ref={containerRef}>
         <div className="relative min-w-[900px]">
-          <svg className="absolute inset-0 pointer-events-none" style={{ width: '100%', height: '100%' }}>
-            {connectors}
-          </svg>
-          <div className="flex items-start gap-4 justify-center px-4 py-2 relative z-[1]">
+          <div className="flex items-stretch gap-4 justify-center px-4 py-2 relative">
             <BracketSide side="left" slots={leftSlots} />
             <BracketCenter final={finalSlot} terceiro={terceiroSlot} />
             <BracketSide side="right" slots={rightSlots} />
           </div>
+          <svg className="absolute inset-0 pointer-events-none" style={{ width: '100%', height: '100%' }}>
+            {connectors}
+          </svg>
         </div>
       </div>
     </div>

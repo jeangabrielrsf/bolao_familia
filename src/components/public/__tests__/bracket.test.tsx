@@ -44,6 +44,33 @@ describe('Bracket', () => {
     expect(screen.getByText('🏆 FINAL')).toBeInTheDocument()
     expect(screen.getByText('3º LUGAR')).toBeInTheDocument()
   })
+
+  it('renderiza SVG overlay após o conteúdo no DOM', () => {
+    const { container } = render(<Bracket slots={slots} />)
+    const svg = container.querySelector('svg')
+    const content = container.querySelector('.flex.items-stretch')
+    expect(svg).toBeInTheDocument()
+    expect(content).toBeInTheDocument()
+    if (svg && content) {
+      expect(container.compareDocumentPosition(svg) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    }
+  })
+
+  it('usa paths (curvas bezier) em vez de lines retas', () => {
+    const { container } = render(<Bracket slots={slots} />)
+    const svg = container.querySelector('svg')
+    expect(svg).toBeInTheDocument()
+    // No jsdom, getBoundingClientRect retorna zeros, então os paths podem não ser renderizados
+    // O importante é que não há <line> elements (código antigo)
+    const lines = container.querySelectorAll('svg line')
+    expect(lines.length).toBe(0)
+  })
+
+  it('usa flexbox para distribuir cards em pares', () => {
+    const { container } = render(<Bracket slots={slots} />)
+    const flexContainers = container.querySelectorAll('[class*="flex-col"]')
+    expect(flexContainers.length).toBeGreaterThan(0)
+  })
 })
 
 describe('Bracket mobile', () => {

@@ -31,3 +31,78 @@ export function groupR32BySide<T extends { slot: number }>(slots: T[]): { left: 
   }
   return { left, right }
 }
+
+/**
+ * Pareamento R32 → Oitavas para cada lado
+ * Lado esquerdo: pares que alimentam Oitavas 1, 2, 5, 6
+ * Lado direito: pares que alimentam Oitavas 3, 4, 7, 8
+ */
+const PAIRING_R32_LEFT = [[2, 5], [1, 3], [11, 12], [9, 10]] as const
+const PAIRING_R32_RIGHT = [[4, 6], [7, 8], [14, 16], [13, 15]] as const
+
+/**
+ * Reordena slots R32 para que os pares fiquem consecutivos
+ * Ex: [1, 2, 3, 5, 9, 10, 11, 12] → [2, 5, 1, 3, 11, 12, 9, 10]
+ */
+export function reorderR32ByPairing<T extends { slot: number }>(slots: T[], side: Lado): T[] {
+  const pairing = side === 'left' ? PAIRING_R32_LEFT : PAIRING_R32_RIGHT
+  const slotMap = new Map(slots.map(s => [s.slot, s]))
+  
+  const reordered: T[] = []
+  for (const [a, b] of pairing) {
+    const slotA = slotMap.get(a)
+    const slotB = slotMap.get(b)
+    if (slotA) reordered.push(slotA)
+    if (slotB) reordered.push(slotB)
+  }
+  
+  return reordered
+}
+
+/**
+ * Pareamento Oitavas → Quartas para cada lado
+ */
+const PAIRING_OIT_LEFT = [[1, 2], [5, 6]] as const
+const PAIRING_OIT_RIGHT = [[3, 4], [7, 8]] as const
+
+/**
+ * Reordena slots Oitavas para que os pares fiquem consecutivos
+ */
+export function reorderOitByPairing<T extends { slot: number }>(slots: T[], side: Lado): T[] {
+  const pairing = side === 'left' ? PAIRING_OIT_LEFT : PAIRING_OIT_RIGHT
+  const slotMap = new Map(slots.map(s => [s.slot, s]))
+  
+  const reordered: T[] = []
+  for (const [a, b] of pairing) {
+    const slotA = slotMap.get(a)
+    const slotB = slotMap.get(b)
+    if (slotA) reordered.push(slotA)
+    if (slotB) reordered.push(slotB)
+  }
+  
+  return reordered
+}
+
+/**
+ * Pareamento Quartas → Semi para cada lado
+ */
+const PAIRING_QF_LEFT = [[1, 2]] as const
+const PAIRING_QF_RIGHT = [[3, 4]] as const
+
+/**
+ * Reordena slots Quartas para que os pares fiquem consecutivos
+ */
+export function reorderQfByPairing<T extends { slot: number }>(slots: T[], side: Lado): T[] {
+  const pairing = side === 'left' ? PAIRING_QF_LEFT : PAIRING_QF_RIGHT
+  const slotMap = new Map(slots.map(s => [s.slot, s]))
+  
+  const reordered: T[] = []
+  for (const [a, b] of pairing) {
+    const slotA = slotMap.get(a)
+    const slotB = slotMap.get(b)
+    if (slotA) reordered.push(slotA)
+    if (slotB) reordered.push(slotB)
+  }
+  
+  return reordered
+}
