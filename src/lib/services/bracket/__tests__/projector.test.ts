@@ -62,8 +62,8 @@ describe('projetarChaveamento', () => {
 
   it('preenche R16 com vencedor do R32 quando finalizado', () => {
     const jogos = [
-      makeJogo({ id: 'r32-1', sofascoreId: getSlotSofascoreId('dezesseis_avos', 1)!, timeA: 'Brasil', timeB: 'México', resultadoA: 2, resultadoB: 1, status: 'finalizado', vencedor: 1 }),
-      makeJogo({ id: 'r32-2', sofascoreId: getSlotSofascoreId('dezesseis_avos', 2)!, timeA: 'Argentina', timeB: 'Espanha', status: 'agendado' }),
+      makeJogo({ id: 'r32-2', sofascoreId: getSlotSofascoreId('dezesseis_avos', 2)!, timeA: 'Brasil', timeB: 'México', resultadoA: 2, resultadoB: 1, status: 'finalizado', vencedor: 1 }),
+      makeJogo({ id: 'r32-5', sofascoreId: getSlotSofascoreId('dezesseis_avos', 5)!, timeA: 'Argentina', timeB: 'Espanha', status: 'agendado' }),
       makeJogo({ id: 'r16-1', sofascoreId: getSlotSofascoreId('oitavas', 1)!, fase: 'oitavas' }),
     ]
     const result = projetarChaveamento({
@@ -182,6 +182,134 @@ describe('projetarChaveamento', () => {
     // Não testamos qual é escolhido (empate ambíguo), só que algum é retornado
     expect(m2.timeB).not.toBeNull()
     expect(['Time A3', 'Time B3']).toContain(m2.timeB)
+  })
+
+  it('R32→R16: slot 1 usa R32 slots 2,5 (M89: M74×M77)', () => {
+    const jogos = [
+      makeJogo({ id: 'r32-2', sofascoreId: getSlotSofascoreId('dezesseis_avos', 2)!, timeA: 'Time2A', timeB: 'Time2B', resultadoA: 2, resultadoB: 0, status: 'finalizado', vencedor: 1 }),
+      makeJogo({ id: 'r32-5', sofascoreId: getSlotSofascoreId('dezesseis_avos', 5)!, timeA: 'Time5A', timeB: 'Time5B', resultadoA: 1, resultadoB: 3, status: 'finalizado', vencedor: 2 }),
+      makeJogo({ id: 'r16-1', sofascoreId: getSlotSofascoreId('oitavas', 1)!, fase: 'oitavas' }),
+    ]
+    const result = projetarChaveamento({
+      classificacao: [],
+      melhoresTerceiros: [],
+      jogosMataMata: jogos,
+    })
+    const r16_1 = result.find(s => s.fase === 'oitavas' && s.slot === 1)!
+    expect(r16_1.timeA).toBe('Time2A')
+    expect(r16_1.timeB).toBe('Time5B')
+  })
+
+  it('R32→R16: slot 2 usa R32 slots 1,3 (M90: M73×M75)', () => {
+    const jogos = [
+      makeJogo({ id: 'r32-1', sofascoreId: getSlotSofascoreId('dezesseis_avos', 1)!, timeA: 'Time1A', timeB: 'Time1B', resultadoA: 2, resultadoB: 0, status: 'finalizado', vencedor: 1 }),
+      makeJogo({ id: 'r32-3', sofascoreId: getSlotSofascoreId('dezesseis_avos', 3)!, timeA: 'Time3A', timeB: 'Time3B', resultadoA: 1, resultadoB: 3, status: 'finalizado', vencedor: 2 }),
+      makeJogo({ id: 'r16-2', sofascoreId: getSlotSofascoreId('oitavas', 2)!, fase: 'oitavas' }),
+    ]
+    const result = projetarChaveamento({
+      classificacao: [],
+      melhoresTerceiros: [],
+      jogosMataMata: jogos,
+    })
+    const r16_2 = result.find(s => s.fase === 'oitavas' && s.slot === 2)!
+    expect(r16_2.timeA).toBe('Time1A')
+    expect(r16_2.timeB).toBe('Time3B')
+  })
+
+  it('R32→R16: slot 3 usa R32 slots 4,6 (M91: M76×M78)', () => {
+    const jogos = [
+      makeJogo({ id: 'r32-4', sofascoreId: getSlotSofascoreId('dezesseis_avos', 4)!, timeA: 'Time4A', timeB: 'Time4B', resultadoA: 1, resultadoB: 0, status: 'finalizado', vencedor: 1 }),
+      makeJogo({ id: 'r32-6', sofascoreId: getSlotSofascoreId('dezesseis_avos', 6)!, timeA: 'Time6A', timeB: 'Time6B', resultadoA: 0, resultadoB: 2, status: 'finalizado', vencedor: 2 }),
+      makeJogo({ id: 'r16-3', sofascoreId: getSlotSofascoreId('oitavas', 3)!, fase: 'oitavas' }),
+    ]
+    const result = projetarChaveamento({
+      classificacao: [],
+      melhoresTerceiros: [],
+      jogosMataMata: jogos,
+    })
+    const r16_3 = result.find(s => s.fase === 'oitavas' && s.slot === 3)!
+    expect(r16_3.timeA).toBe('Time4A')
+    expect(r16_3.timeB).toBe('Time6B')
+  })
+
+  it('R32→R16: slot 4 usa R32 slots 7,8 (M92: M79×M80)', () => {
+    const jogos = [
+      makeJogo({ id: 'r32-7', sofascoreId: getSlotSofascoreId('dezesseis_avos', 7)!, timeA: 'Time7A', timeB: 'Time7B', resultadoA: 2, resultadoB: 0, status: 'finalizado', vencedor: 1 }),
+      makeJogo({ id: 'r32-8', sofascoreId: getSlotSofascoreId('dezesseis_avos', 8)!, timeA: 'Time8A', timeB: 'Time8B', resultadoA: 1, resultadoB: 3, status: 'finalizado', vencedor: 2 }),
+      makeJogo({ id: 'r16-4', sofascoreId: getSlotSofascoreId('oitavas', 4)!, fase: 'oitavas' }),
+    ]
+    const result = projetarChaveamento({
+      classificacao: [],
+      melhoresTerceiros: [],
+      jogosMataMata: jogos,
+    })
+    const r16_4 = result.find(s => s.fase === 'oitavas' && s.slot === 4)!
+    expect(r16_4.timeA).toBe('Time7A')
+    expect(r16_4.timeB).toBe('Time8B')
+  })
+
+  it('R32→R16: slot 5 usa R32 slots 11,12 (M93: M83×M84)', () => {
+    const jogos = [
+      makeJogo({ id: 'r32-11', sofascoreId: getSlotSofascoreId('dezesseis_avos', 11)!, timeA: 'Time11A', timeB: 'Time11B', resultadoA: 3, resultadoB: 1, status: 'finalizado', vencedor: 1 }),
+      makeJogo({ id: 'r32-12', sofascoreId: getSlotSofascoreId('dezesseis_avos', 12)!, timeA: 'Time12A', timeB: 'Time12B', resultadoA: 0, resultadoB: 0, status: 'finalizado', vencedor: null, placarPenaltisA: 4, placarPenaltisB: 2 }),
+      makeJogo({ id: 'r16-5', sofascoreId: getSlotSofascoreId('oitavas', 5)!, fase: 'oitavas' }),
+    ]
+    const result = projetarChaveamento({
+      classificacao: [],
+      melhoresTerceiros: [],
+      jogosMataMata: jogos,
+    })
+    const r16_5 = result.find(s => s.fase === 'oitavas' && s.slot === 5)!
+    expect(r16_5.timeA).toBe('Time11A')
+    expect(r16_5.timeB).toBe('Time12A')
+  })
+
+  it('R32→R16: slot 8 usa R32 slots 13,15 (M96: M85×M87)', () => {
+    const jogos = [
+      makeJogo({ id: 'r32-13', sofascoreId: getSlotSofascoreId('dezesseis_avos', 13)!, timeA: 'Time13A', timeB: 'Time13B', resultadoA: 2, resultadoB: 2, status: 'finalizado', vencedor: null, placarPenaltisA: 5, placarPenaltisB: 3 }),
+      makeJogo({ id: 'r32-15', sofascoreId: getSlotSofascoreId('dezesseis_avos', 15)!, timeA: 'Time15A', timeB: 'Time15B', resultadoA: 1, resultadoB: 0, status: 'finalizado', vencedor: 1 }),
+      makeJogo({ id: 'r16-8', sofascoreId: getSlotSofascoreId('oitavas', 8)!, fase: 'oitavas' }),
+    ]
+    const result = projetarChaveamento({
+      classificacao: [],
+      melhoresTerceiros: [],
+      jogosMataMata: jogos,
+    })
+    const r16_8 = result.find(s => s.fase === 'oitavas' && s.slot === 8)!
+    expect(r16_8.timeA).toBe('Time13A')
+    expect(r16_8.timeB).toBe('Time15A')
+  })
+
+  it('R16→QF: slot 2 usa R16 slots 5,6 (não 3,4)', () => {
+    const jogos = [
+      makeJogo({ id: 'r16-5', sofascoreId: getSlotSofascoreId('oitavas', 5)!, timeA: 'R16-5A', timeB: 'R16-5B', resultadoA: 2, resultadoB: 0, status: 'finalizado', vencedor: 1 }),
+      makeJogo({ id: 'r16-6', sofascoreId: getSlotSofascoreId('oitavas', 6)!, timeA: 'R16-6A', timeB: 'R16-6B', resultadoA: 1, resultadoB: 3, status: 'finalizado', vencedor: 2 }),
+      makeJogo({ id: 'qf-2', sofascoreId: getSlotSofascoreId('quartas', 2)!, fase: 'quartas' }),
+    ]
+    const result = projetarChaveamento({
+      classificacao: [],
+      melhoresTerceiros: [],
+      jogosMataMata: jogos,
+    })
+    const qf_2 = result.find(s => s.fase === 'quartas' && s.slot === 2)!
+    expect(qf_2.timeA).toBe('R16-5A')
+    expect(qf_2.timeB).toBe('R16-6B')
+  })
+
+  it('R16→QF: slot 3 usa R16 slots 3,4 (não 5,6)', () => {
+    const jogos = [
+      makeJogo({ id: 'r16-3', sofascoreId: getSlotSofascoreId('oitavas', 3)!, timeA: 'R16-3A', timeB: 'R16-3B', resultadoA: 0, resultadoB: 1, status: 'finalizado', vencedor: 2 }),
+      makeJogo({ id: 'r16-4', sofascoreId: getSlotSofascoreId('oitavas', 4)!, timeA: 'R16-4A', timeB: 'R16-4B', resultadoA: 2, resultadoB: 2, status: 'finalizado', vencedor: null, placarPenaltisA: 3, placarPenaltisB: 5 }),
+      makeJogo({ id: 'qf-3', sofascoreId: getSlotSofascoreId('quartas', 3)!, fase: 'quartas' }),
+    ]
+    const result = projetarChaveamento({
+      classificacao: [],
+      melhoresTerceiros: [],
+      jogosMataMata: jogos,
+    })
+    const qf_3 = result.find(s => s.fase === 'quartas' && s.slot === 3)!
+    expect(qf_3.timeA).toBe('R16-3B')
+    expect(qf_3.timeB).toBe('R16-4B')
   })
 
   it('propaga dataHora do Jogo em todos os slots mata-mata', () => {

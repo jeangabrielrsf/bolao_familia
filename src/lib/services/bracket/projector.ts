@@ -38,21 +38,41 @@ export function projetarChaveamento(input: Input): BracketSlot[] {
     })
   }
 
+  const PAREAMENTO_R32_PARA_R16: [number, number][] = [
+    [2, 5],
+    [1, 3],
+    [4, 6],
+    [7, 8],
+    [11, 12],
+    [9, 10],
+    [14, 16],
+    [13, 15],
+  ]
+
+  const PAREAMENTO_R16_PARA_QF: [number, number][] = [
+    [1, 2],
+    [5, 6],
+    [3, 4],
+    [7, 8],
+  ]
+
   const fasesConfig: Array<{
     fase: Extract<FaseMataMata, 'oitavas' | 'quartas' | 'semifinal'>
     count: number
     previous: Extract<FaseMataMata, 'dezesseis_avos' | 'oitavas' | 'quartas'>
+    pareamento: [number, number][]
   }> = [
-    { fase: 'oitavas', count: 8, previous: 'dezesseis_avos' },
-    { fase: 'quartas', count: 4, previous: 'oitavas' },
-    { fase: 'semifinal', count: 2, previous: 'quartas' },
+    { fase: 'oitavas', count: 8, previous: 'dezesseis_avos', pareamento: PAREAMENTO_R32_PARA_R16 },
+    { fase: 'quartas', count: 4, previous: 'oitavas', pareamento: PAREAMENTO_R16_PARA_QF },
+    { fase: 'semifinal', count: 2, previous: 'quartas', pareamento: [[1, 2], [3, 4]] },
   ]
   for (const cfg of fasesConfig) {
     for (let i = 0; i < cfg.count; i++) {
       const jogo = findJogoDoSlot(input.jogosMataMata, cfg.fase, i + 1)
       if (!jogo) continue
-      const j1 = findJogoDoSlot(input.jogosMataMata, cfg.previous, i * 2 + 1)
-      const j2 = findJogoDoSlot(input.jogosMataMata, cfg.previous, i * 2 + 2)
+      const [slotA, slotB] = cfg.pareamento[i]
+      const j1 = findJogoDoSlot(input.jogosMataMata, cfg.previous, slotA)
+      const j2 = findJogoDoSlot(input.jogosMataMata, cfg.previous, slotB)
       slots.push({
         jogoId: jogo.id,
         fase: cfg.fase,
