@@ -26,7 +26,7 @@ const FASE_LABELS: Record<BracketSlot['fase'], string> = {
   final: 'FINAL',
 }
 
-export function BracketSide({ side, slots, highlightedTeam, onTeamHover }: Props) {
+export function BracketSide({ side, slots }: Props) {
   const colors = SIDE_COLORS[side]
   const grouped = groupByFase(slots)
 

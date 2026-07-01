@@ -41,6 +41,8 @@ export function BracketMatchCard({ slot, size = 'md', href }: Props) {
   return (
     <CardTag
       {...cardProps}
+      data-jogo-id={slot.jogoId}
+      data-fase={slot.fase}
       className={cn(
         'block bg-card border rounded-md transition-all duration-200',
         SIZE_CLASSES[size],
