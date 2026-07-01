@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Protótipo 5: Animações e Path Highlight</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  body { background: #0f172a; color: #e2e8f0; font-family: system-ui; margin: 0; padding: 24px; }
+  .match { position: absolute; background: #1e293b; border: 1px solid #334155; border-radius: 6px; padding: 6px 10px; min-width: 110px; font-size: 11px; cursor: pointer; transition: all 0.2s; }
+  .match:hover { border-color: #10b981; transform: scale(1.03); z-index: 10; }
+  .match .team { padding: 2px 0; }
+  .connector-line { transition: stroke 0.3s, stroke-width 0.3s; }
+  .match[data-team="BRA"]:hover ~ svg .path-bra,
+  .match:has(.brazil:hover) ~ svg .path-bra { stroke: #10b981 !important; stroke-width: 2 !important; }
+</style>
+</head>
+<body>
+<h1 style="font-size:18px;margin-bottom:8px;color:#94a3b8">Protótipo 5 — Animações e Path Highlighting</h1>
+<p style="font-size:12px;color:#64748b;margin-bottom:20px">Passe o mouse sobre 🇧🇷 Brasil para ver o caminho até a Final. Clique num card para expandir.</p>
+
+<div style="position:relative;width:800px;height:500px;margin:0 auto">
+  <svg style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none">
+    <!-- Default connectors -->
+    <g class="connector-group">
+      <!-- R32 pair 1 → Oit1 -->
+      <line x1="130" y1="60" x2="150" y2="60" stroke="#475569" stroke-width="1" class="connector-line"/>
+      <line x1="150" y1="60" x2="150" y2="100" stroke="#475569" stroke-width="1" class="connector-line"/>
+      <line x1="130" y1="140" x2="150" y2="140" stroke="#475569" stroke-width="1" class="connector-line"/>
+      <line x1="150" y1="140" x2="150" y2="100" stroke="#475569" stroke-width="1" class="connector-line"/>
+      <line x1="150" y1="100" x2="170" y2="100" stroke="#475569" stroke-width="1" class="connector-line"/>
+
+      <!-- Oit1 → QF1 -->
+      <line x1="300" y1="100" x2="330" y2="100" stroke="#475569" stroke-width="1" class="connector-line"/>
+
+      <!-- QF1 → SF1 -->
+      <line x1="460" y1="100" x2="500" y2="100" stroke="#475569" stroke-width="1" class="connector-line"/>
+
+      <!-- SF1 → Final -->
+      <line x1="630" y1="100" x2="670" y2="200" stroke="#475569" stroke-width="1" class="connector-line path-bra"/>
+    </g>
+
+    <!-- Brasil path (highlighted on hover via JS) -->
+    <g id="path-brasil" opacity="0">
+      <line x1="130" y1="60" x2="150" y2="60" stroke="#10b981" stroke-width="2"/>
+      <line x1="150" y1="60" x2="150" y2="100" stroke="#10b981" stroke-width="2"/>
+      <line x1="150" y1="100" x2="170" y2="100" stroke="#10b981" stroke-width="2"/>
+      <line x1="300" y1="100" x2="330" y2="100" stroke="#10b981" stroke-width="2"/>
+      <line x1="460" y1="100" x2="500" y2="100" stroke="#10b981" stroke-width="2"/>
+      <line x1="630" y1="100" x2="670" y2="200" stroke="#10b981" stroke-width="2"/>
+    </g>
+  </svg>
+
+  <!-- Cards -->
+  <div class="match" style="left:20px;top:45px" onmouseenter="highlightPath(true)" onmouseleave="highlightPath(false)">
+    <div class="team" style="background:#064e3b;margin:0 -10px;padding:2px 10px">
+      🇧🇷 <b>Brasil</b> <span style="float:right;color:#10b981;font-weight:700">3</span>
+    </div>
+    <div class="team">🇵🇹 Portugal <span style="float:right">1</span></div>
+    <div style="font-size:9px;color:#64748b;margin-top:3px">FT · Los Angeles</div>
+  </div>
+  <div class="match" style="left:20px;top:125px;opacity:0.6">
+    <div class="team">🇦🇷 Argentina <span>—</span></div>
+    <div class="team">🏴󠁧󠁢󠁥󠁮󠁧󠁿 Inglaterra <span>—</span></div>
+  </div>
+  <div class="match" style="left:170px;top:88px;opacity:0.5">
+    <div style="color:#64748b;font-style:italic">Venc.M1 vs Venc.M2</div>
+  </div>
+  <div class="match" style="left:335px;top:88px;opacity:0.5">
+    <div style="color:#64748b;font-style:italic">Venc.O1 vs Venc.O2</div>
+  </div>
+  <div class="match" style="left:505px;top:88px;opacity:0.5">
+    <div style="color:#64748b;font-style:italic">Venc.Q1 vs Venc.Q2</div>
+  </div>
+  <div class="match" style="left:650px;top:188px;border-color:#fbbf24;background:#1a2a1a">
+    <div style="text-align:center;color:#fbbf24;font-weight:700">🏆 FINAL</div>
+    <div style="font-size:9px;color:#64748b;text-align:center">19/07 · Nova York</div>
+  </div>
+
+  <!-- Click indicator -->
+  <div style="position:absolute;left:200px;top:400px;font-size:10px;color:#64748b;text-align:center;width:400px">
+    Hover sobre o card do Brasil → caminho verde aparece com animação (opacity transition 0.3s)
+  </div>
+</div>
+
+<script>
+  function highlightPath(show) {
+    document.getElementById('path-brasil').style.opacity = show ? '1' : '0';
+    document.getElementById('path-brasil').style.transition = 'opacity 0.3s';
+  }
+</script>
+</body>
+</html>
