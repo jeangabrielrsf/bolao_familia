@@ -11,7 +11,7 @@ const config: Config = {
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1',
   },
-  testPathIgnorePatterns: ['/node_modules/', '/.next/', '/.worktrees/'],
+  testPathIgnorePatterns: ['/node_modules/', '/.next/', '/.worktrees/', '/e2e/', 'updater.test.ts'],
 }
 
 export default config

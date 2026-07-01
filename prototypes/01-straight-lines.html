@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Protótipo 1: Conectores Retos</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  body { background: #0f172a; color: #e2e8f0; font-family: system-ui; margin: 0; padding: 16px; }
+  .connector-h { position: absolute; border-top: 1px solid #475569; }
+  .connector-v { position: absolute; border-left: 1px solid #475569; }
+  .match-card { background: #1e293b; border: 1px solid #334155; border-radius: 6px; padding: 6px 10px; min-width: 120px; position: relative; }
+  .match-card.winner { border-color: #10b981; }
+  .match-card.winner .winner-row { background: #064e3b; border-radius: 4px; margin: 0 -6px; padding: 0 6px; }
+  .bracket-container { position: relative; overflow-x: auto; }
+  .bracket-svg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
+</style>
+</head>
+<body>
+<h1 style="font-size:18px;margin-bottom:16px;color:#94a3b8">Protótipo 1 — Conectores Retos Minimalistas</h1>
+<p style="font-size:12px;color:#64748b;margin-bottom:20px">Linhas horizontais + verticais de 1px, sem curvas. Cores neutras.</p>
+
+<div class="bracket-container" style="min-width:800px;height:500px;position:relative">
+  <!-- SVG connectors -->
+  <svg class="bracket-svg" viewBox="0 0 800 500" preserveAspectRatio="xMidYMid meet">
+    <!-- Coluna R32 → Oitavas: pares de matches se juntam -->
+    <!-- Par 1: match 0,1 → Oit1 -->
+    <line x1="125" y1="55" x2="145" y2="55" stroke="#475569" stroke-width="1"/>
+    <line x1="145" y1="55" x2="145" y2="95" stroke="#475569" stroke-width="1"/>
+    <line x1="125" y1="135" x2="145" y2="135" stroke="#475569" stroke-width="1"/>
+    <line x1="145" y1="135" x2="145" y2="95" stroke="#475569" stroke-width="1"/>
+    <line x1="145" y1="95" x2="160" y2="95" stroke="#475569" stroke-width="1"/>
+    <polygon points="156,91 156,99 150,95" fill="#64748b"/>
+
+    <!-- Par 2: match 2,3 → Oit2 -->
+    <line x1="125" y1="225" x2="145" y2="225" stroke="#475569" stroke-width="1"/>
+    <line x1="145" y1="225" x2="145" y2="265" stroke="#475569" stroke-width="1"/>
+    <line x1="125" y1="305" x2="145" y2="305" stroke="#475569" stroke-width="1"/>
+    <line x1="145" y1="305" x2="145" y2="265" stroke="#475569" stroke-width="1"/>
+    <line x1="145" y1="265" x2="160" y2="265" stroke="#475569" stroke-width="1"/>
+    <polygon points="156,261 156,269 150,265" fill="#64748b"/>
+
+    <!-- Oitavas → Quartas: match Oit1,Oit2 → QF1 -->
+    <line x1="285" y1="95" x2="310" y2="95" stroke="#475569" stroke-width="1"/>
+    <line x1="310" y1="95" x2="310" y2="275" stroke="#475569" stroke-width="1"/>
+    <line x1="285" y1="265" x2="310" y2="265" stroke="#475569" stroke-width="1"/>
+    <line x1="310" y1="275" x2="330" y2="275" stroke="#475569" stroke-width="1"/>
+    <polygon points="326,271 326,279 320,275" fill="#64748b"/>
+
+    <!-- Quartas → Semi: match QF1 → SF1 -->
+    <line x1="455" y1="275" x2="485" y2="275" stroke="#475569" stroke-width="1"/>
+
+    <!-- Semi → Final (centro) -->
+    <line x1="595" y1="275" x2="640" y2="275" stroke="#475569" stroke-width="1"/>
+    <polygon points="636,271 636,279 630,275" fill="#64748b"/>
+  </svg>
+
+  <!-- Cards posicionados absolutamente -->
+  <div style="position:absolute;left:5px;top:40px"><div class="match-card winner">🇧🇷 Brasil <span style="color:#10b981;float:right">3</span><br>🇵🇹 Portugal <span style="float:right">1</span></div></div>
+  <div style="position:absolute;left:5px;top:120px"><div class="match-card">🇦🇷 Argentina <span>—</span><br>🏴󠁧󠁢󠁥󠁮󠁧󠁿 Inglaterra <span>—</span></div></div>
+  <div style="position:absolute;left:5px;top:210px"><div class="match-card" style="opacity:0.5">1C vs 2D</div></div>
+  <div style="position:absolute;left:5px;top:290px"><div class="match-card" style="opacity:0.5">1E vs 2F</div></div>
+  <div style="position:absolute;left:160px;top:83px"><div class="match-card" style="opacity:0.5">Venc.M1 vs Venc.M2</div></div>
+  <div style="position:absolute;left:160px;top:253px"><div class="match-card" style="opacity:0.5">Venc.M3 vs Venc.M4</div></div>
+  <div style="position:absolute;left:335px;top:263px"><div class="match-card" style="opacity:0.5">Venc.O1 vs Venc.O2</div></div>
+  <div style="position:absolute;left:490px;top:263px"><div class="match-card" style="opacity:0.5">Venc.Q1 vs Venc.Q2</div></div>
+  <div style="position:absolute;left:645px;top:260px"><div class="match-card" style="border-color:#fbbf24;border-width:2px">🏆 FINAL</div></div>
+</div>
+</body>
+</html>

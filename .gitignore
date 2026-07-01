@@ -59,3 +59,10 @@ microservice/.venv
 
 # git worktrees
 .worktrees/
+
+# playwright
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
+e2e/**/*-snapshots/
