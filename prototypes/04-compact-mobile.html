@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Protótipo 4: Mobile Swipe</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  body { background: #0f172a; color: #e2e8f0; font-family: system-ui; margin: 0; padding: 16px; max-width: 420px; margin-inline: auto; }
+  .carousel { overflow: hidden; position: relative; }
+  .carousel-track { display: flex; transition: transform 0.3s ease; }
+  .phase-panel { flex: 0 0 100%; padding: 0 4px; }
+  .card { background: #1e293b; border: 1px solid #334155; border-radius: 8px; padding: 10px 12px; margin: 6px 0; }
+  .card.done { border-color: #10b981; }
+  .card.done .winner { background: #064e3b; margin: 0 -12px; padding: 4px 12px; }
+  .card.pending { opacity: 0.5; }
+  .dots { display: flex; justify-content: center; gap: 6px; margin: 16px 0; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: #334155; transition: background 0.2s; }
+  .dot.active { background: #3b82f6; }
+  .side-label { font-size: 11px; font-weight: 600; margin: 12px 0 6px; padding: 4px 8px; border-radius: 4px; }
+</style>
+</head>
+<body>
+<h1 style="font-size:16px;margin-bottom:8px;color:#94a3b8">Protótipo 4 — Mobile Swipe</h1>
+<p style="font-size:11px;color:#64748b;margin-bottom:16px">Deslize as setas ou clique nos dots para navegar entre fases</p>
+
+<!-- Phase selector -->
+<div style="display:flex;justify-content:center;gap:6px;margin-bottom:8px">
+  <button onclick="goTo(0)" class="dot active" id="dot-0"></button>
+  <button onclick="goTo(1)" class="dot" id="dot-1"></button>
+  <button onclick="goTo(2)" class="dot" id="dot-2"></button>
+  <button onclick="goTo(3)" class="dot" id="dot-3"></button>
+  <button onclick="goTo(4)" class="dot" id="dot-4"></button>
+  <button onclick="goTo(5)" class="dot" id="dot-5"></button>
+</div>
+
+<div style="text-align:center;margin-bottom:12px">
+  <div style="color:#3b82f6;font-size:12px;text-transform:uppercase;letter-spacing:1px;font-weight:600" id="phase-title">16 avos de final</div>
+  <div style="color:#64748b;font-size:10px" id="phase-sub">16 jogos · 32 seleções</div>
+</div>
+
+<div class="carousel" id="carousel">
+  <div class="carousel-track" id="track" style="transform:translateX(0%)">
+    <!-- Fase 1: 16 avos -->
+    <div class="phase-panel">
+      <div class="side-label" style="background:#1a2540;color:#60a5fa">LADO ESQUERDO → SF-1</div>
+
+      <div class="card done">
+        <div style="font-size:9px;color:#64748b;margin-bottom:6px">29/06 · 13:00 · Los Angeles</div>
+        <div class="winner">
+          <span class="flag">🇧🇷</span> Brasil
+          <span style="float:right;color:#10b981;font-weight:700">3</span>
+        </div>
+        <div style="padding:3px 0"><span class="flag">🇵🇹</span> Portugal <span style="float:right">1</span></div>
+        <div style="text-align:right;font-size:9px;color:#475569;margin-top:4px">→ Oitavas J1</div>
+      </div>
+
+      <div class="card">
+        <div style="font-size:9px;color:#64748b;margin-bottom:6px">29/06 · 18:00 · Kansas City</div>
+        <div style="padding:3px 0"><span class="flag">🇦🇷</span> Argentina <span>—</span></div>
+        <div style="padding:3px 0"><span class="flag">🇫🇷</span> França <span>—</span></div>
+        <div style="text-align:right;font-size:9px;color:#475569;margin-top:4px">→ Oitavas J1</div>
+      </div>
+
+      <div class="card pending">
+        <div style="font-size:9px;color:#64748b;margin-bottom:6px">30/06 · 13:00 · Seattle</div>
+        <div style="color:#64748b;font-style:italic">1C vs 2D</div>
+        <div style="color:#475569;font-size:9px">Grupo C (1º) vs Grupo D (2º)</div>
+        <div style="text-align:right;font-size:9px;color:#475569;margin-top:4px">→ Oitavas J2</div>
+      </div>
+
+      <div class="side-label" style="background:#1a2540;color:#a78bfa">LADO DIREITO → SF-2</div>
+
+      <div class="card done">
+        <div style="font-size:9px;color:#64748b;margin-bottom:6px">30/06 · 18:00 · São Francisco</div>
+        <div class="winner">
+          <span class="flag">🏴󠁧󠁢󠁥󠁮󠁧󠁿</span> Inglaterra
+          <span style="float:right;color:#10b981;font-weight:700">2</span>
+        </div>
+        <div style="padding:3px 0"><span class="flag">🇩🇪</span> Alemanha <span style="float:right">0</span></div>
+        <div style="text-align:right;font-size:9px;color:#475569;margin-top:4px">→ Oitavas J5</div>
+      </div>
+
+      <div class="card pending">
+        <div style="font-size:9px;color:#64748b;margin-bottom:6px">01/07 · 13:00 · Houston</div>
+        <div style="color:#64748b;font-style:italic">1I vs 2J</div>
+        <div style="text-align:right;font-size:9px;color:#475569;margin-top:4px">→ Oitavas J5</div>
+      </div>
+    </div>
+
+    <!-- Fase 2: Oitavas -->
+    <div class="phase-panel">
+      <div class="side-label" style="background:#1a2540;color:#60a5fa">LADO ESQUERDO</div>
+      <div class="card">
+        <div style="font-size:9px;color:#64748b;margin-bottom:6px">03/07 · 15:00 · Los Angeles</div>
+        <div style="padding:3px 0"><span class="flag">🇧🇷</span> Brasil</div>
+        <div style="padding:3px 0;color:#94a3b8;font-style:italic">vs Venc.R32</div>
+        <div style="text-align:right;font-size:9px;color:#475569;margin-top:4px">→ Quartas J1</div>
+      </div>
+      <div class="card pending">
+        <div style="text-align:right;font-size:9px;color:#475569;margin-top:4px">→ Quartas J1</div>
+      </div>
+    </div>
+
+    <!-- Fase 3-6: placeholders -->
+    <div class="phase-panel"><div style="text-align:center;padding:40px;color:#64748b">Quartas de Final — 4 jogos<br><span style="font-size:11px">(cards similares)</span></div></div>
+    <div class="phase-panel"><div style="text-align:center;padding:40px;color:#64748b">Semifinal — 2 jogos<br><span style="font-size:11px">(cards similares)</span></div></div>
+    <div class="phase-panel"><div style="text-align:center;padding:40px;color:#fbbf24;font-size:18px;font-weight:700">🏆 FINAL</div></div>
+    <div class="phase-panel"><div style="text-align:center;padding:40px;color:#64748b">3º Lugar</div></div>
+  </div>
+</div>
+
+<div style="display:flex;justify-content:space-between;margin-top:12px">
+  <button onclick="prev()" style="background:#1e293b;border:1px solid #334155;color:#e2e8f0;padding:6px 12px;border-radius:6px;font-size:12px">← Anterior</button>
+  <button onclick="next()" style="background:#1e293b;border:1px solid #334155;color:#e2e8f0;padding:6px 12px;border-radius:6px;font-size:12px">Próximo →</button>
+</div>
+
+<script>
+  const phases = ['16 avos de final','Oitavas de final','Quartas de final','Semifinal','Final','3º Lugar'];
+  const subs = ['16 jogos · 32 seleções','8 jogos · 16 seleções','4 jogos · 8 seleções','2 jogos · 4 seleções','1 jogo · campeão','1 jogo · bronze'];
+  let current = 0;
+
+  function goTo(i) {
+    current = Math.max(0, Math.min(5, i));
+    document.getElementById('track').style.transform = `translateX(-${current * 100}%)`;
+    document.getElementById('phase-title').textContent = phases[current];
+    document.getElementById('phase-sub').textContent = subs[current];
+    for (let d = 0; d < 6; d++) document.getElementById(`dot-${d}`).classList.toggle('active', d === current);
+  }
+
+  function next() { goTo(current + 1); }
+  function prev() { goTo(current - 1); }
+
+  // Touch swipe
+  let startX = 0;
+  document.getElementById('carousel').addEventListener('touchstart', e => { startX = e.touches[0].clientX; });
+  document.getElementById('carousel').addEventListener('touchend', e => {
+    const diff = startX - e.changedTouches[0].clientX;
+    if (Math.abs(diff) > 50) diff > 0 ? next() : prev();
+  });
+</script>
+</body>
+</html>
