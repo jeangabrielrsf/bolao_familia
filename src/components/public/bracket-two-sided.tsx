@@ -9,6 +9,7 @@ type Props = {
   slots: BracketSlot[]
 }
 
+type CardRect = { cx: number; cy: number; left: number; right: number }
 type Point = { x: number; y: number }
 
 const PAIRING_R32_TO_OIT = [[2,5],[1,3],[4,6],[7,8],[11,12],[9,10],[14,16],[13,15]] as const
@@ -52,18 +53,17 @@ export function BracketTwoSided({ slots }: Props) {
     requestAnimationFrame(() => {
       const cRect = container.getBoundingClientRect()
 
-      const center = (jogoId: string): Point | null => {
+      const card = (jogoId: string): CardRect | null => {
         const el = container.querySelector(`[data-jogo-id="${jogoId}"]`)
         if (!el) return null
         const r = el.getBoundingClientRect()
-        return {
-          x: r.left - cRect.left + r.width / 2,
-          y: r.top - cRect.top + r.height / 2,
-        }
+        const l = r.left - cRect.left
+        return { cx: l + r.width / 2, cy: r.top - cRect.top + r.height / 2, left: l, right: l + r.width }
       }
 
       type Conn = { a: Point; b: Point; key: string }
       const lines: Conn[] = []
+      const SPINE_GAP = 12
 
       const connectPair = (slotA: number, slotB: number, targetSlot: number, faseSource: string, faseTarget: string, side: 'left' | 'right') => {
         const srcA = slots.find(s => (s as Record<string, unknown>).slot === slotA && (s as Record<string, unknown>).fase === faseSource)
@@ -72,32 +72,37 @@ export function BracketTwoSided({ slots }: Props) {
 
         if (!srcA || !srcB || !tgt) return
 
-        const pa = center(srcA.jogoId)
-        const pb = center(srcB.jogoId)
-        const pt = center(tgt.jogoId)
-        if (!pa || !pb || !pt) return
+        const ca = card(srcA.jogoId)
+        const cb = card(srcB.jogoId)
+        const ct = card(tgt.jogoId)
+        if (!ca || !cb || !ct) return
 
         const isLeft = side === 'left'
-        const edgeX = isLeft ? Math.max(pa.x, pb.x) + 8 : Math.min(pa.x, pb.x) - 8
-        const midY = (pa.y + pb.y) / 2
-        const targetX = isLeft ? pt.x - 6 : pt.x + 6
+        // Source cards: start from the edge facing the spine
+        const srcEdgeA = isLeft ? ca.right : ca.left
+        const srcEdgeB = isLeft ? cb.right : cb.left
+        const spineX = isLeft
+          ? Math.max(ca.right, cb.right) + SPINE_GAP
+          : Math.min(ca.left, cb.left) - SPINE_GAP
+        const midY = (ca.cy + cb.cy) / 2
+        // Target card: end at the edge facing the spine
+        const tgtEdge = isLeft ? ct.left - 4 : ct.right + 4
+        // Connector enters target at its vertical center
+        const tgtY = ct.cy
 
         const key = `${faseSource}-${slotA}-${slotB}-${faseTarget}-${targetSlot}`
 
-        // Horizontal from card A to edge
-        lines.push({ a: pa, b: { x: edgeX, y: pa.y }, key: `${key}-a` })
-        // Horizontal from card B to edge
-        lines.push({ a: pb, b: { x: edgeX, y: pb.y }, key: `${key}-b` })
-        // Vertical joining A and B
-        lines.push({ a: { x: edgeX, y: pa.y }, b: { x: edgeX, y: pb.y }, key: `${key}-v` })
-        // Horizontal from midline to target
-        lines.push({ a: { x: edgeX, y: midY }, b: { x: targetX, y: midY }, key: `${key}-t` })
-        // Vertical down/up from midline to target Y if different
-        if (Math.abs(midY - pt.y) > 2) {
-          lines.push({ a: { x: targetX, y: midY }, b: { x: targetX, y: pt.y }, key: `${key}-tv` })
-          lines.push({ a: { x: targetX, y: pt.y }, b: pt, key: `${key}-th` })
-        } else {
-          lines.push({ a: { x: targetX, y: midY }, b: pt, key: `${key}-th` })
+        // Card A edge → spine
+        lines.push({ a: { x: srcEdgeA, y: ca.cy }, b: { x: spineX, y: ca.cy }, key: `${key}-a` })
+        // Card B edge → spine
+        lines.push({ a: { x: srcEdgeB, y: cb.cy }, b: { x: spineX, y: cb.cy }, key: `${key}-b` })
+        // Spine vertical between A and B
+        lines.push({ a: { x: spineX, y: ca.cy }, b: { x: spineX, y: cb.cy }, key: `${key}-v` })
+        // Spine midline → target edge X, at mid Y
+        lines.push({ a: { x: spineX, y: midY }, b: { x: tgtEdge, y: midY }, key: `${key}-t` })
+        // Vertical from mid Y → target Y at target edge X
+        if (Math.abs(midY - tgtY) > 2) {
+          lines.push({ a: { x: tgtEdge, y: midY }, b: { x: tgtEdge, y: tgtY }, key: `${key}-tv` })
         }
       }
 
@@ -105,17 +110,23 @@ export function BracketTwoSided({ slots }: Props) {
         const src = slots.find(s => (s as Record<string, unknown>).slot === sourceSlot && (s as Record<string, unknown>).fase === 'semifinal')
         const tgt = slots.find(s => (s as Record<string, unknown>).fase === targetFase)
         if (!src || !tgt) return
-        const ps = center(src.jogoId)
-        const pt = center(tgt.jogoId)
-        if (!ps || !pt) return
+        const cs = card(src.jogoId)
+        const ct = card(tgt.jogoId)
+        if (!cs || !ct) return
 
         const isLeft = side === 'left'
-        const edgeX = isLeft ? ps.x + 8 : ps.x - 8
+        const srcEdge = isLeft ? cs.right + SPINE_GAP : cs.left - SPINE_GAP
+        const tgtEdge = targetFase === 'final'
+          ? (isLeft ? ct.left - 4 : ct.right + 4)
+          : cs.cx // Keep horizontal for 3rd place, go to center
         const key = `sf-${sourceSlot}-to-${targetFase}`
 
-        lines.push({ a: ps, b: { x: edgeX, y: ps.y }, key: `${key}-h` })
-        lines.push({ a: { x: edgeX, y: ps.y }, b: { x: edgeX, y: pt.y }, key: `${key}-v` })
-        lines.push({ a: { x: edgeX, y: pt.y }, b: pt, key: `${key}-h2` })
+        // Source card edge → outward horizontal
+        lines.push({ a: { x: isLeft ? cs.right : cs.left, y: cs.cy }, b: { x: srcEdge, y: cs.cy }, key: `${key}-h` })
+        // Vertical to target Y
+        lines.push({ a: { x: srcEdge, y: cs.cy }, b: { x: srcEdge, y: ct.cy }, key: `${key}-v` })
+        // Horizontal to target edge
+        lines.push({ a: { x: srcEdge, y: ct.cy }, b: { x: tgtEdge, y: ct.cy }, key: `${key}-h2` })
       }
 
       // R32 → Oit pairs
