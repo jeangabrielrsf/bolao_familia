@@ -131,11 +131,16 @@ def _normalize_status(time_elapsed: str, finished: str) -> str:
     return "inprogress"
 
 
-def _derive_winner(home_score: int, away_score: int) -> Optional[int]:
+def _derive_winner(home_score: int, away_score: int, home_pen: int | None = None, away_pen: int | None = None) -> Optional[int]:
     if home_score > away_score:
         return 1
     elif away_score > home_score:
         return 2
+    if home_pen is not None and away_pen is not None:
+        if home_pen > away_pen:
+            return 1
+        elif away_pen > home_pen:
+            return 2
     return 3
 
 
@@ -205,6 +210,17 @@ def match_game(
         home_score = 0
         away_score = 0
 
+    home_pen = match.get("home_penalty_score")
+    away_pen = match.get("away_penalty_score")
+    try:
+        home_pen = int(home_pen) if home_pen is not None and home_pen != "null" else None
+    except (ValueError, TypeError):
+        home_pen = None
+    try:
+        away_pen = int(away_pen) if away_pen is not None and away_pen != "null" else None
+    except (ValueError, TypeError):
+        away_pen = None
+
     stadium_id = int(match.get("stadium_id", 0))
     stadium = stadiums.get(stadium_id, {})
 
@@ -219,9 +235,9 @@ def match_game(
         "status": status,
         "local": stadium.get("name_en"),
         "cidade": stadium.get("city_en"),
-        "vencedor": _derive_winner(home_score, away_score) if status == "finished" else None,
-        "placarPenaltisA": None,
-        "placarPenaltisB": None,
+        "vencedor": _derive_winner(home_score, away_score, home_pen, away_pen) if status == "finished" else None,
+        "placarPenaltisA": home_pen,
+        "placarPenaltisB": away_pen,
     }
     logger.info(
         f"worldcup26 match_game OK: grupo={group} pt={time_a_pt}x{time_b_pt} "
