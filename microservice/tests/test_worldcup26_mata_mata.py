@@ -14,6 +14,8 @@ def _wc_match(
     away_en: str,
     home_score: int = 0,
     away_score: int = 0,
+    home_penalty_score: str | int | None = None,
+    away_penalty_score: str | int | None = None,
     finished: str = "TRUE",
 ) -> dict[str, Any]:
     return {
@@ -24,6 +26,8 @@ def _wc_match(
         "away_team_name_en": away_en,
         "home_score": home_score,
         "away_score": away_score,
+        "home_penalty_score": home_penalty_score,
+        "away_penalty_score": away_penalty_score,
         "time_elapsed": "finished",
         "finished": finished,
     }
@@ -92,3 +96,86 @@ def test_worldcup26_mata_mata_api_retorna_group_none():
     assert result is not None
     assert result["resultadoA"] == 3
     assert result["resultadoB"] == 0
+
+
+def test_worldcup26_mata_mata_penaltis():
+    """Jogo empatado no tempo normal, decidido nos penaltis — vencedor correto."""
+    api_match = _wc_match(
+        group="R32",
+        local_date="07/03/2026 13:00",
+        stadium_id=4,
+        home_en="Australia",
+        away_en="Egypt",
+        home_score=1,
+        away_score=1,
+        home_penalty_score=2,
+        away_penalty_score=4,
+    )
+    result = worldcup26.match_game(
+        [api_match],
+        "",
+        "2026-07-03T18:00:00Z",
+        stadiums={},
+        time_a_pt="Austrália",
+        time_b_pt="Egito",
+    )
+    assert result is not None
+    assert result["resultadoA"] == 1
+    assert result["resultadoB"] == 1
+    assert result["placarPenaltisA"] == 2
+    assert result["placarPenaltisB"] == 4
+    assert result["vencedor"] == 2  # Egito (away) venceu nos penaltis
+
+
+def test_worldcup26_mata_mata_penaltis_string():
+    """Penaltis podem vir como string da API."""
+    api_match = _wc_match(
+        group="R32",
+        local_date="07/03/2026 13:00",
+        stadium_id=4,
+        home_en="Australia",
+        away_en="Egypt",
+        home_score=1,
+        away_score=1,
+        home_penalty_score="2",
+        away_penalty_score="4",
+    )
+    result = worldcup26.match_game(
+        [api_match],
+        "",
+        "2026-07-03T18:00:00Z",
+        stadiums={},
+        time_a_pt="Austrália",
+        time_b_pt="Egito",
+    )
+    assert result is not None
+    assert result["placarPenaltisA"] == 2
+    assert result["placarPenaltisB"] == 4
+    assert result["vencedor"] == 2
+
+
+def test_worldcup26_mata_mata_penaltis_null():
+    """Penaltis como 'null' string devem ser tratados como None."""
+    api_match = _wc_match(
+        group="R32",
+        local_date="07/03/2026 13:00",
+        stadium_id=4,
+        home_en="Australia",
+        away_en="Egypt",
+        home_score=1,
+        away_score=1,
+        home_penalty_score="null",
+        away_penalty_score="null",
+    )
+    result = worldcup26.match_game(
+        [api_match],
+        "",
+        "2026-07-03T18:00:00Z",
+        stadiums={},
+        time_a_pt="Austrália",
+        time_b_pt="Egito",
+    )
+    assert result is not None
+    assert result["placarPenaltisA"] is None
+    assert result["placarPenaltisB"] is None
+    assert result["vencedor"] == 3  # empate sem penaltis
