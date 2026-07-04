@@ -13,7 +13,7 @@ from datetime import timezone
 from typing import Any
 
 from app.config import settings
-from app.services import db, football_data, sync_writer, teams, worldcup26
+from app.services import bracket_client, db, football_data, sync_writer, teams, worldcup26
 
 logger = logging.getLogger(__name__)
 
@@ -34,6 +34,8 @@ async def run(window_hours: int = 12, origem: str = "auto") -> dict[str, Any]:
     logger.info(
         f"\n=== INÍCIO SYNC RESULTADOS (origem={origem}, window={window_hours}h) ==="
     )
+
+    sync_result = None
 
     try:
         async with db.with_db_tx() as conn:
@@ -139,6 +141,12 @@ async def run(window_hours: int = 12, origem: str = "auto") -> dict[str, Any]:
             sync_result = await sync_writer.sincronizar_jogos(
                 conn, list(rows), resultados
             )
+
+        # 6. Fora da transação (após commit): notifica Next.js pra propagar
+        #    bracket. Best-effort: falha não quebra o sync de resultados.
+        #    Se sync_result.atualizados == 0, não houve mudança — pula.
+        if sync_result is not None and sync_result.atualizados > 0:
+            await bracket_client.notificar_bracket()
 
     except Exception as e:
         logger.exception("Erro durante sincronização")
