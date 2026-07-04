@@ -353,17 +353,38 @@ Spec detalhada em `docs/superpowers/specs/2026-06-12-auto-sync-resultados-design
 - **Endpoint target:** `POST /resultados/sincronizar` no microserviço (autentica, adquire lock, escreve DB).
 - **Bypass do Next.js:** o auto-sync não passa pelo Next.js. Admin manual pode continuar via Next.js (legado) ou via curl direto.
 
-**Status atual:** ✅ **Implementado e deployado em produção.**
+### Propagação do Bracket (times pras próximas fases)
 
-- Microserviço refatorado deployado no Fly.io (`bolao-copa-microservice.fly.dev`)
-- Endpoint `POST /resultados/sincronizar` com auth + lock + write direto
-- Workflow `.github/workflows/sync-resultados.yml` criado
-- Secrets deployados no Fly.io: `DATABASE_URL`, `CRON_SECRET`
+Após cada sync bem-sucedido de resultados, o microserviço chama `POST /api/admin/bracket/atualizar` no Next.js (via `X-Cron-Secret`). Esse endpoint executa `atualizarBracket()` — lê classificação dos grupos, projeta o chaveamento, grava `timeA`/`timeB` dos jogos mata-mata.
+
+Fluxo completo:
+```
+GitHub Actions (cron) → microserviço /resultados/sincronizar
+  → sync_writer.sincronizar_jogos (placar/status/vencedor)
+  → bracket_client.notificar_bracket (HTTP pro Next.js)
+  → Next.js /api/admin/bracket/atualizar
+  → atualizarBracket() grava times das próximas fases
+```
+
+Variáveis de ambiente necessárias:
+- Microserviço: `NEXTJS_BASE_URL` (ex: `https://bolao-copa.vercel.app`) + `CRON_SECRET`
+- Next.js: `CRON_SECRET` (já existe)
+
+Fallback: `/copa/page.tsx` também chama `atualizarBracket()` no SSR (cache 60s), então mesmo sem sync recente a página mostra dados atualizados.
+
+**Status:** ✅ **Implementado, pendente deploy.**
+
+Pendente: adicionar `NEXTJS_BASE_URL` como secret no Fly.io (`fly secrets set NEXTJS_BASE_URL=https://bolao-copa.vercel.app`) e fazer redeploy.
+
+### Infraestrutura Existente (Auto-Sync)
+
+**Status:** ✅ **Implementado e deployado em produção.**
+
 - Pendente: adicionar `MICROSERVICE_URL` e `CRON_SECRET` como secrets no GitHub, fazer push, validar primeira execução
 
 ## Variáveis de Ambiente
 
-Ver `.env.example`. Obrigatórias: `DATABASE_URL`, `SUPABASE_URL`, `SUPABASE_SERVICE_KEY`, `ADMIN_PASSWORD`, `SESSION_SECRET`. Condicionais: `OPENCODE_GO_API_KEY` (OCR), `MICROSERVICE_URL` (resultados ao vivo), `FOOTBALL_DATA_API_KEY` (API de resultados, configurada no microserviço Fly.io).
+Ver `.env.example`. Obrigatórias: `DATABASE_URL`, `SUPABASE_URL`, `SUPABASE_SERVICE_KEY`, `ADMIN_PASSWORD`, `SESSION_SECRET`. Condicionais: `OPENCODE_GO_API_KEY` (OCR), `MICROSERVICE_URL` (resultados ao vivo), `FOOTBALL_DATA_API_KEY` (API de resultados, configurada no microserviço Fly.io). **Microserviço também precisa:** `NEXTJS_BASE_URL` (URL do Next.js, pra notificar bracket após sync).
 
 ## Trabalho Pendente
 
