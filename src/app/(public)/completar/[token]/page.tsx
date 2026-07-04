@@ -186,6 +186,7 @@ export default function CompletarBolaoPage() {
   const [mataMataInputs, setMataMataInputs] = useState<Map<string, PalpiteInput>>(new Map())
   const [mataMataOriginais, setMataMataOriginais] = useState<Map<string, PalpiteInput>>(new Map())
   const [mataMataEditavel, setMataMataEditavel] = useState(false)
+  const [carregandoFase, setCarregandoFase] = useState(false)
 
   const carregarDados = useCallback(async (): Promise<{ totalJogos: number; grupoAtivoId: string | null; todasAbas: PalpitesPorAba }> => {
     let totalJogos = 0
@@ -233,8 +234,6 @@ export default function CompletarBolaoPage() {
     } catch {
       toast.error('Erro ao carregar jogos')
       return { totalJogos: 0, grupoAtivoId: null, todasAbas: new Map() }
-    } finally {
-      setCarregandoInicial(false)
     }
     return { totalJogos, grupoAtivoId, todasAbas: todasAbasData }
   }, [token, grupoAtivo, todasAbas, abasOriginais])
@@ -253,16 +252,19 @@ export default function CompletarBolaoPage() {
 
         if (!info.valido) {
           setStatus('invalido')
+          setCarregandoInicial(false)
           return
         }
 
         if (!info.habilitado) {
           setStatus('desabilitado')
+          setCarregandoInicial(false)
           return
         }
 
         if (info.prazo && new Date() > new Date(info.prazo)) {
           setStatus('prazo_encerrado')
+          setCarregandoInicial(false)
           return
         }
 
@@ -272,31 +274,39 @@ export default function CompletarBolaoPage() {
           const enabledMataMata = info.fasesHabilitadas
             ? FASES_MATA_MATA.filter((f: string) => info.fasesHabilitadas![f])
             : []
-          if (enabledMataMata.length === 0) return
+          if (enabledMataMata.length === 0) {
+            setCarregandoInicial(false)
+            return
+          }
 
           const grupoInputs = todasAbas.get(grupoAtivoId ?? '') ?? new Map()
           const totalPreenchidos = countFilled(grupoInputs)
-          if (totalPreenchidos < totalJogos || totalJogos === 0) return
+          if (totalPreenchidos < totalJogos || totalJogos === 0) {
+            setCarregandoInicial(false)
+            return
+          }
 
-          const primeiraFase = enabledMataMata[0]
-          setFase(primeiraFase)
-          fetch(`/api/completar/${token}/jogos?fase=${primeiraFase}&grupoId=${grupoAtivoId ?? ''}`)
+          const ultimaFase = enabledMataMata[enabledMataMata.length - 1]
+          setFase(ultimaFase)
+          fetch(`/api/completar/${token}/jogos?fase=${ultimaFase}&grupoId=${grupoAtivoId ?? ''}`)
             .then((r) => r.json())
             .then((data) => {
               const jogosFase = data.jogos ?? []
               setMataMataJogos(jogosFase)
               setMataMataEditavel(data.editavel ?? false)
               const inputs = inputsFromJogos(jogosFase)
-              const draft = loadDraft(token, '', primeiraFase)
+              const draft = loadDraft(token, '', ultimaFase)
               const inputsComDraft = draft ?? inputs
               setMataMataInputs(inputsComDraft)
               setMataMataOriginais(inputs)
             })
             .catch(() => toast.error('Erro ao carregar jogos da fase'))
+            .finally(() => setCarregandoInicial(false))
         })
       })
       .catch(() => {
         setStatus('invalido')
+        setCarregandoInicial(false)
       })
   }, [token, carregarDados])
 
@@ -306,7 +316,24 @@ export default function CompletarBolaoPage() {
     const grupoData = grupos.find((g) => g.id === palpiteGrupoId) as GrupoComModo | undefined
     if (grupoData?.modo) setModo(grupoData.modo)
 
-    if (!todasAbas.has(palpiteGrupoId)) {
+    setCarregandoFase(true)
+
+    if (fase) {
+      fetch(`/api/completar/${token}/jogos?fase=${fase}&grupoId=${palpiteGrupoId}`)
+        .then((r) => r.json())
+        .then((data) => {
+          const jogosFase = data.jogos ?? []
+          setMataMataJogos(jogosFase)
+          setMataMataEditavel(data.editavel ?? false)
+          const inputs = inputsFromJogos(jogosFase)
+          const draft = loadDraft(token, '', fase)
+          const inputsComDraft = draft ?? inputs
+          setMataMataInputs(inputsComDraft)
+          setMataMataOriginais(inputs)
+        })
+        .catch(() => toast.error('Erro ao carregar jogos da fase'))
+        .finally(() => setCarregandoFase(false))
+    } else if (!todasAbas.has(palpiteGrupoId)) {
       fetch(`/api/completar/${token}/jogos?grupoId=${palpiteGrupoId}`)
         .then((r) => r.json())
         .then((data) => {
@@ -332,6 +359,9 @@ export default function CompletarBolaoPage() {
           }
         })
         .catch(() => toast.error('Erro ao carregar jogos'))
+        .finally(() => setCarregandoFase(false))
+    } else {
+      setCarregandoFase(false)
     }
   }
 
@@ -369,6 +399,7 @@ export default function CompletarBolaoPage() {
   const trocarFase = async (novaFase: string | null) => {
     setFase(novaFase)
     if (novaFase) {
+      setCarregandoFase(true)
       try {
         const res = await fetch(`/api/completar/${token}/jogos?fase=${novaFase}&grupoId=${grupoAtivo ?? ''}`)
         const data = await res.json()
@@ -383,6 +414,8 @@ export default function CompletarBolaoPage() {
         setMataMataOriginais(inputs)
       } catch {
         toast.error('Erro ao carregar jogos da fase')
+      } finally {
+        setCarregandoFase(false)
       }
     }
   }
@@ -678,7 +711,7 @@ export default function CompletarBolaoPage() {
                 <p className="font-medium text-sm">Pontuação do Mata-Mata</p>
                 <div className="text-sm text-muted-foreground space-y-1">
                   <p>Placar exato — 10 pts</p>
-                  <p>Vencedor correto — 6 pts</p>
+                  <p>Acertar vencedor (sem cravar placar) — 6 pts</p>
                   <div className="border-b border-border my-2" />
                   <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                     Se arriscar o empate
@@ -688,7 +721,7 @@ export default function CompletarBolaoPage() {
                     (cravar o placar = 10 pts)
                   </p>
                   <p>
-                    + Acertar quem passa —{' '}
+                    +                     Acertar quem passa nos pênaltis —{' '}
                     <span className="font-semibold text-success">+6 pts</span>
                   </p>
                   <p className="font-semibold text-sm text-foreground border-t border-border pt-2 mt-2">
@@ -701,12 +734,66 @@ export default function CompletarBolaoPage() {
         </Card>
       )}
 
+      {grupos.length > 1 && (
+        <Tabs value={grupoAtivo ?? ''} onValueChange={trocarGrupo}>
+          <TabsList className="w-full flex-wrap h-auto">
+            {grupos.map((g) => (
+              <TabsTrigger key={g.id} value={g.id} className="relative">
+                {g.apelido}
+                {abaComAlteracoes(g.id) && (
+                  <span className="absolute -top-1 -right-1 w-2 h-2 bg-amber-500 rounded-full" />
+                )}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+          {!fase && grupos.map((g) => (
+            <TabsContent key={g.id} value={g.id}>
+              {carregandoFase ? (
+                <div className="space-y-3">
+                  {[1, 2, 3, 4, 5].map((i) => (
+                    <Skeleton key={i} className="h-24 w-full" />
+                  ))}
+                </div>
+              ) : (
+                <JogosLista
+                  jogos={jogos}
+                  jogosComGrupo={jogosComGrupo}
+                  gruposOrdenados={gruposOrdenados}
+                  inputs={todasAbas.get(g.id) ?? new Map()}
+                  atualizarPalpite={atualizarPalpite}
+                  desabilitado={estaCompleto}
+                />
+              )}
+            </TabsContent>
+          ))}
+        </Tabs>
+      )}
+
       {(fasesHabilitadas && Object.values(fasesHabilitadas).some(Boolean)) && (
         <PhaseSelector
           fasesHabilitadas={fasesHabilitadas}
           faseAtual={fase}
           onFaseChange={trocarFase}
         />
+      )}
+
+      {grupos.length <= 1 && !fase && (
+        carregandoFase ? (
+          <div className="space-y-3">
+            {[1, 2, 3, 4, 5].map((i) => (
+              <Skeleton key={i} className="h-24 w-full" />
+            ))}
+          </div>
+        ) : (
+          <JogosLista
+            jogos={jogos}
+            jogosComGrupo={jogosComGrupo}
+            gruposOrdenados={gruposOrdenados}
+            inputs={inputsAtuais}
+            atualizarPalpite={atualizarPalpite}
+            desabilitado={estaCompleto}
+          />
+        )
       )}
 
       {fase && (
@@ -719,13 +806,21 @@ export default function CompletarBolaoPage() {
               </CardContent>
             </Card>
           )}
-          <MataMataJogosLista
-            jogos={mataMataJogos}
-            inputs={mataMataInputs}
-            atualizarPalpite={atualizarMataMata}
-            atualizarVencedor={atualizarVencedorPalpite}
-            desabilitado={!mataMataEditavel || mataMataCompleto}
-          />
+          {carregandoFase ? (
+            <div className="space-y-3">
+              {[1, 2, 3].map((i) => (
+                <Skeleton key={i} className="h-24 w-full" />
+              ))}
+            </div>
+          ) : (
+            <MataMataJogosLista
+              jogos={mataMataJogos}
+              inputs={mataMataInputs}
+              atualizarPalpite={atualizarMataMata}
+              atualizarVencedor={atualizarVencedorPalpite}
+              desabilitado={!mataMataEditavel || mataMataCompleto}
+            />
+          )}
           {mataMataEditavel && !mataMataCompleto && (
             <div className="sticky bottom-4">
               <Button
@@ -781,57 +876,6 @@ export default function CompletarBolaoPage() {
             </div>
           </CardContent>
         </Card>
-      )}
-
-      {temAlteracoes && (
-        <div className="flex justify-end">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={descartarAlteracoes}
-          >
-            <RotateCcw className="w-4 h-4 mr-2" />
-            Descartar alterações
-          </Button>
-        </div>
-      )}
-
-      {grupos.length > 1 && (
-        <Tabs value={grupoAtivo ?? ''} onValueChange={trocarGrupo}>
-          <TabsList className="w-full flex-wrap h-auto">
-            {grupos.map((g) => (
-              <TabsTrigger key={g.id} value={g.id} className="relative">
-                {g.apelido}
-                {abaComAlteracoes(g.id) && (
-                  <span className="absolute -top-1 -right-1 w-2 h-2 bg-amber-500 rounded-full" />
-                )}
-              </TabsTrigger>
-            ))}
-          </TabsList>
-          {grupos.map((g) => (
-            <TabsContent key={g.id} value={g.id}>
-              <JogosLista
-                jogos={jogos}
-                jogosComGrupo={jogosComGrupo}
-                gruposOrdenados={gruposOrdenados}
-                inputs={todasAbas.get(g.id) ?? new Map()}
-                atualizarPalpite={atualizarPalpite}
-                desabilitado={estaCompleto}
-              />
-            </TabsContent>
-          ))}
-        </Tabs>
-      )}
-
-      {grupos.length <= 1 && (
-        <JogosLista
-          jogos={jogos}
-          jogosComGrupo={jogosComGrupo}
-          gruposOrdenados={gruposOrdenados}
-          inputs={inputsAtuais}
-          atualizarPalpite={atualizarPalpite}
-          desabilitado={estaCompleto}
-        />
       )}
 
       {temAlteracoes && (
