@@ -3,6 +3,7 @@ import { requireAdmin } from '@/lib/auth/middleware'
 import { getTodosJogos } from '@/lib/db/queries/jogos'
 import { syncResultados } from '@/lib/services/resultados/client'
 import { prisma } from '@/lib/db/client'
+import { atualizarBracket } from '@/lib/services/bracket/updater'
 
 interface MudancaJogo {
   sofascoreId: string
@@ -183,6 +184,17 @@ export async function POST(request: NextRequest) {
         ),
         { timeout: 30000 }
       )
+
+      // Propaga vencedores pros jogos da próxima fase (mata-mata)
+      console.log('Atualizando bracket (propaga times pras próximas fases)...')
+      try {
+        const bracket = await atualizarBracket()
+        const comTimes = bracket.filter(s => s.timeA !== null || s.timeB !== null)
+        console.log(`  ${comTimes.length} slots com times preenchidos`)
+      } catch (err) {
+        // Bracket update é best-effort — não falha o sync por causa dele
+        console.error('  [warn] falha ao atualizar bracket:', err)
+      }
     }
 
     console.log(`\n=== FIM SYNC RESULTADOS ===`)
