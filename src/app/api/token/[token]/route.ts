@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getParticipanteByToken, getConfigCompletarBolao, getFasesHabilitadas } from '@/lib/db/queries/completar-bolao'
+import { getParticipanteByToken, getConfigCompletarBolao, getFasesHabilitadas, getLiberacoesParticipante } from '@/lib/db/queries/completar-bolao'
 
 export async function GET(
   _request: NextRequest,
@@ -18,9 +18,10 @@ export async function GET(
       return NextResponse.json({ error: 'Token inválido', valido: false }, { status: 404 })
     }
 
-    const [config, fasesHabilitadas] = await Promise.all([
+    const [config, fasesHabilitadas, liberacoes] = await Promise.all([
       getConfigCompletarBolao(),
       getFasesHabilitadas(),
+      getLiberacoesParticipante(participante.id),
     ])
 
     return NextResponse.json({
@@ -31,6 +32,7 @@ export async function GET(
       prazo: config.prazo.toISOString(),
       habilitado: config.habilitado,
       fasesHabilitadas,
+      liberacoes,
     })
   } catch {
     return NextResponse.json({ error: 'Erro interno do servidor' }, { status: 500 })

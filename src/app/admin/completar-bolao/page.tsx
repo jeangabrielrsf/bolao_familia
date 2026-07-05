@@ -10,13 +10,15 @@ import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@
 import { Skeleton } from '@/components/ui/skeleton'
 import { toast } from 'sonner'
 import { formatarDataHoraCompleta } from '@/lib/utils/date'
-import { Loader2, ChevronLeft, Copy, Dice5, CheckCircle, AlertCircle, Settings, ExternalLink } from 'lucide-react'
+import { Loader2, ChevronLeft, Copy, Dice5, CheckCircle, AlertCircle, Settings, ExternalLink, Unlock } from 'lucide-react'
+import { FASE_LABELS, FASES_LIBERAVEIS } from '@/lib/utils/constants'
 
 interface ParticipanteStatus {
   id: string
   nome: string
   token: string | null
   fotoUrl: string | null
+  liberacoes: string[]
   totalJogos: number
   jogosCompletos: number
   jogosFaltando: number
@@ -36,15 +38,6 @@ interface Resumo {
   participantesCompletos: number
   participantesIncompletos: number
   totalJogosFaltando: number
-}
-
-const faseLabels: Record<string, string> = {
-  dezesseis_avos: '16avos de Final',
-  oitavas: 'Oitavas de Final',
-  quartas: 'Quartas de Final',
-  semifinal: 'Semifinais',
-  terceiro: 'Disputa do 3º',
-  final: 'Final',
 }
 
 interface FaseStatus {
@@ -69,6 +62,9 @@ export default function AdminCompletarBolaoPage() {
   const [participanteSelecionado, setParticipanteSelecionado] = useState('')
   const [apelidoInput, setApelidoInput] = useState('')
   const [criando, setCriando] = useState(false)
+  const [liberacoesAberto, setLiberacoesAberto] = useState<string | null>(null)
+  const [liberacoesTemp, setLiberacoesTemp] = useState<string[]>([])
+  const [salvandoLiberacoes, setSalvandoLiberacoes] = useState(false)
 
   const fetchData = useCallback(async () => {
     try {
@@ -231,6 +227,40 @@ export default function AdminCompletarBolaoPage() {
     }
   }
 
+  function abrirLiberacoes(participante: ParticipanteStatus) {
+    setLiberacoesAberto(participante.id)
+    setLiberacoesTemp(participante.liberacoes ?? [])
+  }
+
+  function toggleLiberacaoTemp(fase: string) {
+    setLiberacoesTemp((prev) =>
+      prev.includes(fase) ? prev.filter((f) => f !== fase) : [...prev, fase]
+    )
+  }
+
+  async function salvarLiberacoes() {
+    if (!liberacoesAberto) return
+    setSalvandoLiberacoes(true)
+    try {
+      const res = await fetch(`/api/admin/participantes/${liberacoesAberto}/liberacoes`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ liberacoes: liberacoesTemp }),
+      })
+      if (!res.ok) throw new Error('Erro ao salvar')
+      setParticipantes((prev) =>
+        prev.map((p) => p.id === liberacoesAberto ? { ...p, liberacoes: liberacoesTemp } : p)
+      )
+      const nome = participantes.find((p) => p.id === liberacoesAberto)?.nome ?? ''
+      toast.success(`Liberações atualizadas para ${nome}!`)
+      setLiberacoesAberto(null)
+    } catch {
+      toast.error('Erro ao salvar liberações')
+    } finally {
+      setSalvandoLiberacoes(false)
+    }
+  }
+
   if (loading) {
     return (
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
@@ -343,7 +373,7 @@ export default function AdminCompletarBolaoPage() {
           </div>
           <div className="space-y-3">
             {fases.map((f) => {
-              const label = faseLabels[f.fase] ?? f.fase
+              const label = FASE_LABELS[f.fase] ?? f.fase
               const prazoStr = f.prazo ? formatarDataHoraCompleta(new Date(f.prazo)) : 'Não definido'
               return (
                 <div key={f.fase} className="flex items-center justify-between gap-4 p-3 rounded-lg border">
@@ -398,6 +428,7 @@ export default function AdminCompletarBolaoPage() {
               <TableRow>
                 <TableHead>Nome</TableHead>
                 <TableHead>Status</TableHead>
+                <TableHead>Liberações</TableHead>
                 <TableHead>Link</TableHead>
                 <TableHead className="text-right">Ações</TableHead>
               </TableRow>
@@ -418,6 +449,19 @@ export default function AdminCompletarBolaoPage() {
                     )}
                   </TableCell>
                   <TableCell>
+                    <div className="flex items-center gap-1 flex-wrap">
+                      {(p.liberacoes ?? []).length === 0 ? (
+                        <span className="text-xs text-muted-foreground">Nenhuma</span>
+                      ) : (
+                        (p.liberacoes ?? []).map((f) => (
+                          <Badge key={f} variant="info" className="text-xs">
+                            {f === 'grupos' ? 'Grupos' : FASE_LABELS[f] ?? f}
+                          </Badge>
+                        ))
+                      )}
+                    </div>
+                  </TableCell>
+                  <TableCell>
                     {p.token ? (
                       <Button variant="ghost" size="sm" onClick={() => { if (p.token) copiarLink(p.token, p.nome) }}>
                         <Copy className="w-3 h-3 mr-1" />Copiar
@@ -428,6 +472,13 @@ export default function AdminCompletarBolaoPage() {
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex gap-2 justify-end">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => abrirLiberacoes(p)}
+                      >
+                        <Unlock className="w-3 h-3 mr-1" />Liberar
+                      </Button>
                       {p.token && (
                         <Button variant="ghost" size="sm" asChild>
                           <Link href={`/completar/${p.token}`} target="_blank">
@@ -456,6 +507,45 @@ export default function AdminCompletarBolaoPage() {
             </TableBody>
           </Table>
         </Card>
+      )}
+
+      {liberacoesAberto && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <Card className="w-full max-w-md mx-4">
+            <CardContent className="p-6 space-y-4">
+              <h2 className="text-xl font-display font-bold flex items-center gap-2">
+                <Unlock className="w-5 h-5" />
+                Liberar Fases
+              </h2>
+              <p className="text-sm text-muted-foreground">
+                Selecione as fases que o participante poderá editar, mesmo após o prazo ou início dos jogos.
+              </p>
+              <div className="space-y-2">
+                {FASES_LIBERAVEIS.map((fase) => {
+                  const label = fase === 'grupos' ? 'Fase de Grupos' : (FASE_LABELS[fase] ?? fase)
+                  const checked = liberacoesTemp.includes(fase)
+                  return (
+                    <label key={fase} className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted/50 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        onChange={() => toggleLiberacaoTemp(fase)}
+                        className="w-4 h-4 rounded border-gray-300"
+                      />
+                      <span className="text-sm font-medium">{label}</span>
+                    </label>
+                  )
+                })}
+              </div>
+              <div className="flex justify-end gap-2">
+                <Button variant="outline" onClick={() => setLiberacoesAberto(null)}>Cancelar</Button>
+                <Button onClick={salvarLiberacoes} disabled={salvandoLiberacoes}>
+                  {salvandoLiberacoes ? <><Loader2 className="w-4 h-4 animate-spin" /> Salvando...</> : 'Salvar'}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       )}
 
       {modalAberto && (

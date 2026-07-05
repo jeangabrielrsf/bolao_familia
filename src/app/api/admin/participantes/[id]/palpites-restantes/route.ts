@@ -6,6 +6,8 @@ import {
   getGruposParticipante,
   getExtrasPorGrupo,
   detectarModoGrupo,
+  isFaseMataMata,
+  getJogosFaseComPalpites,
 } from '@/lib/db/queries/completar-bolao'
 
 export async function GET(
@@ -24,6 +26,12 @@ export async function GET(
 
     const { searchParams } = new URL(request.url)
     const palpiteGrupoId = searchParams.get('grupoId') ?? undefined
+    const fase = searchParams.get('fase')
+
+    if (fase && isFaseMataMata(fase)) {
+      const jogos = await getJogosFaseComPalpites(fase, id, palpiteGrupoId)
+      return NextResponse.json({ fase, jogos })
+    }
 
     const gruposRaw = await getGruposParticipante(id)
 

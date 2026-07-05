@@ -10,6 +10,7 @@ import {
   getJogosFaseComPalpites,
   getConfigFaseMataMata,
   isFaseEditavel,
+  isParticipanteLiberadoParaFase,
 } from '@/lib/db/queries/completar-bolao'
 
 export async function GET(
@@ -34,17 +35,18 @@ export async function GET(
     const fase = searchParams.get('fase')
 
     if (fase && isFaseMataMata(fase)) {
-      const [jogos, config, editavel] = await Promise.all([
+      const [jogos, config, editavel, liberado] = await Promise.all([
         getJogosFaseComPalpites(fase, participante.id, palpiteGrupoId),
         getConfigFaseMataMata(fase),
-        isFaseEditavel(fase),
+        isFaseEditavel(fase, participante.id),
+        isParticipanteLiberadoParaFase(participante.id, fase),
       ])
 
       return NextResponse.json({
         fase,
         jogos,
-        habilitado: config.habilitado,
-        editavel,
+        habilitado: config.habilitado || liberado,
+        editavel: editavel || liberado,
         prazo: config.prazo?.toISOString() ?? null,
       })
     }

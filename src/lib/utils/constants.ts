@@ -50,6 +50,8 @@ export const FASES = ['grupos', 'dezesseis_avos', 'oitavas', 'quartas', 'semifin
 
 export const FASES_MATA_MATA = ['dezesseis_avos', 'oitavas', 'quartas', 'semifinal', 'terceiro', 'final'] as const
 
+export const FASES_LIBERAVEIS = ['grupos', 'dezesseis_avos', 'oitavas', 'quartas', 'semifinal', 'terceiro', 'final'] as const
+
 export const FASE_LABELS: Record<string, string> = {
   grupos: 'Fase de Grupos',
   dezesseis_avos: '16avos de Final',

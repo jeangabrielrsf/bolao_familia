@@ -3,10 +3,13 @@ import { requireAdmin } from '@/lib/auth/middleware'
 import {
   salvarPalpitesCompletar,
   salvarExtrasCompletar,
+  salvarPalpitesFase,
   getJogosRestantes,
   getJogosCompletos,
+  getJogosFase,
   detectarModoGrupo,
   getGruposParticipante,
+  isFaseMataMata,
 } from '@/lib/db/queries/completar-bolao'
 
 export async function PUT(
@@ -24,14 +27,57 @@ export async function PUT(
     }
 
     const body = await request.json()
-    const { palpites, extras, palpiteGrupoId } = body as {
-      palpites: { jogoId: string; placarA: number; placarB: number }[]
+    const { palpites, extras, palpiteGrupoId, fase } = body as {
+      palpites: { jogoId: string; placarA: number; placarB: number; vencedorPalpite?: number | null }[]
       extras?: { tipo: string; valor: string }[]
       palpiteGrupoId?: string
+      fase?: string
     }
 
     if (!Array.isArray(palpites) || palpites.length === 0) {
       return NextResponse.json({ error: 'Palpites inválidos' }, { status: 400 })
+    }
+
+    for (const p of palpites) {
+      if (!p.jogoId || typeof p.placarA !== 'number' || typeof p.placarB !== 'number') {
+        return NextResponse.json({ error: 'Formato de palpite inválido' }, { status: 400 })
+      }
+      if (p.placarA < 0 || p.placarB < 0 || p.placarA > 99 || p.placarB > 99) {
+        return NextResponse.json({ error: 'Placar inválido' }, { status: 400 })
+      }
+    }
+
+    if (fase && isFaseMataMata(fase)) {
+      const jogosFase = await getJogosFase(fase)
+      const jogosFaseIds = new Set(jogosFase.map((j) => j.id))
+
+      for (const p of palpites) {
+        if (!jogosFaseIds.has(p.jogoId)) {
+          return NextResponse.json(
+            { error: `Jogo ${p.jogoId} não pertence a esta fase` },
+            { status: 400 }
+          )
+        }
+      }
+
+      const grupos = await getGruposParticipante(id)
+      const targetGrupoId = palpiteGrupoId ?? grupos[0]?.id
+      if (!targetGrupoId) {
+        return NextResponse.json({ error: 'Grupo de palpites não encontrado' }, { status: 400 })
+      }
+
+      const resultado = await salvarPalpitesFase(
+        id,
+        palpites.map((p) => ({
+          jogoId: p.jogoId,
+          placarA: p.placarA,
+          placarB: p.placarB,
+          vencedorPalpite: p.vencedorPalpite ?? null,
+        })),
+        targetGrupoId
+      )
+
+      return NextResponse.json({ success: true, ...resultado })
     }
 
     const grupos = await getGruposParticipante(id)
