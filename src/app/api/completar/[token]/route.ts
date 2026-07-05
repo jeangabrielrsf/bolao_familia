@@ -13,6 +13,7 @@ import {
   salvarPalpitesFase,
   getConfigFaseMataMata,
   isFaseEditavel,
+  isParticipanteLiberadoParaFase,
 } from '@/lib/db/queries/completar-bolao'
 
 export async function POST(
@@ -54,23 +55,27 @@ export async function POST(
     }
 
     if (fase && isFaseMataMata(fase)) {
-      const [config, editavel] = await Promise.all([
-        getConfigFaseMataMata(fase),
-        isFaseEditavel(fase),
-      ])
+      const liberado = await isParticipanteLiberadoParaFase(participante.id, fase)
 
-      if (!config.habilitado) {
-        return NextResponse.json(
-          { error: `Palpites para esta fase estão desabilitados` },
-          { status: 403 }
-        )
-      }
+      if (!liberado) {
+        const [config, editavel] = await Promise.all([
+          getConfigFaseMataMata(fase),
+          isFaseEditavel(fase, participante.id),
+        ])
 
-      if (!editavel) {
-        return NextResponse.json(
-          { error: `Esta fase já começou ou o prazo encerrou` },
-          { status: 403 }
-        )
+        if (!config.habilitado) {
+          return NextResponse.json(
+            { error: `Palpites para esta fase estão desabilitados` },
+            { status: 403 }
+          )
+        }
+
+        if (!editavel) {
+          return NextResponse.json(
+            { error: `Esta fase já começou ou o prazo encerrou` },
+            { status: 403 }
+          )
+        }
       }
 
       const jogosFase = await getJogosFase(fase)
@@ -112,20 +117,24 @@ export async function POST(
       return NextResponse.json({ success: true, ...resultado })
     }
 
-    const config = await getConfigCompletarBolao()
+    const liberadoGrupos = await isParticipanteLiberadoParaFase(participante.id, 'grupos')
 
-    if (!config.habilitado) {
-      return NextResponse.json(
-        { error: 'A coleta de palpites está desabilitada no momento' },
-        { status: 403 }
-      )
-    }
+    if (!liberadoGrupos) {
+      const config = await getConfigCompletarBolao()
 
-    if (new Date() > config.prazo) {
-      return NextResponse.json(
-        { error: 'O prazo para completar o bolão já foi encerrado' },
-        { status: 403 }
-      )
+      if (!config.habilitado) {
+        return NextResponse.json(
+          { error: 'A coleta de palpites está desabilitada no momento' },
+          { status: 403 }
+        )
+      }
+
+      if (new Date() > config.prazo) {
+        return NextResponse.json(
+          { error: 'O prazo para completar o bolão já foi encerrado' },
+          { status: 403 }
+        )
+      }
     }
 
     const grupos = await getGruposParticipante(participante.id)

@@ -13,7 +13,7 @@ import { getTimeFlag } from '@/lib/utils/flags'
 import { formatarData, formatarHora } from '@/lib/utils/date'
 import { toast } from 'sonner'
 import { Save, XCircle, Calendar, Lock, AlertCircle, RotateCcw, CheckCircle, Info, Award } from 'lucide-react'
-import { FASE_LABELS, FASES_MATA_MATA } from '@/lib/utils/constants'
+import { FASE_LABELS } from '@/lib/utils/constants'
 import { PhaseSelector } from '@/components/public/phase-selector'
 import { QuemPassaCard } from '@/components/public/quem-passa-card'
 
@@ -25,6 +25,7 @@ interface TokenInfo {
   prazo?: string
   habilitado?: boolean
   fasesHabilitadas?: Record<string, boolean>
+  liberacoes?: string[]
   erro?: string
 }
 
@@ -246,9 +247,14 @@ export default function CompletarBolaoPage() {
       .then((info: TokenInfo) => {
         setTokenInfo(info)
 
-        if (info.fasesHabilitadas) {
-          setFasesHabilitadas(info.fasesHabilitadas)
+        const liberacoes = info.liberacoes ?? []
+        const liberadoGrupos = liberacoes.includes('grupos')
+
+        const fasesComLiberacoes: Record<string, boolean> = { ...(info.fasesHabilitadas ?? {}) }
+        for (const f of liberacoes) {
+          if (f !== 'grupos') fasesComLiberacoes[f] = true
         }
+        setFasesHabilitadas(fasesComLiberacoes)
 
         if (!info.valido) {
           setStatus('invalido')
@@ -256,13 +262,13 @@ export default function CompletarBolaoPage() {
           return
         }
 
-        if (!info.habilitado) {
+        if (!info.habilitado && !liberadoGrupos) {
           setStatus('desabilitado')
           setCarregandoInicial(false)
           return
         }
 
-        if (info.prazo && new Date() > new Date(info.prazo)) {
+        if (!liberadoGrupos && info.prazo && new Date() > new Date(info.prazo)) {
           setStatus('prazo_encerrado')
           setCarregandoInicial(false)
           return
@@ -271,9 +277,9 @@ export default function CompletarBolaoPage() {
         setStatus('pronto')
         initializedRef.current = true
         carregarDados().then(({ totalJogos, grupoAtivoId, todasAbas }) => {
-          const enabledMataMata = info.fasesHabilitadas
-            ? FASES_MATA_MATA.filter((f: string) => info.fasesHabilitadas![f])
-            : []
+          const enabledMataMata = Object.entries(fasesComLiberacoes)
+            .filter(([, habilitado]) => habilitado)
+            .map(([fase]) => fase)
           if (enabledMataMata.length === 0) {
             setCarregandoInicial(false)
             return

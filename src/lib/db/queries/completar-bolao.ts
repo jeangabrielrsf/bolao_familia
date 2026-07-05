@@ -238,12 +238,14 @@ export async function getStatusCompletarBolao() {
   const jogosRestantesSet = new Set(jogosRestantesIds.map((j) => j.id))
 
   return participantes.map((p) => {
+    const liberacoes = (p.liberacoes as string[]) ?? []
     if (p.grupos.length === 0) {
       return {
         id: p.id,
         nome: p.nome,
         token: p.token,
         fotoUrl: p.fotoUrl,
+        liberacoes,
         totalJogos: totalJogosGrupos,
         jogosCompletos: 0,
         jogosFaltando: totalJogosGrupos,
@@ -281,6 +283,7 @@ export async function getStatusCompletarBolao() {
       nome: p.nome,
       token: p.token,
       fotoUrl: p.fotoUrl,
+      liberacoes,
       totalJogos: modo === 'completo' ? totalJogosGrupos : totalJogosRestantes,
       jogosCompletos: totalCompletos,
       jogosFaltando,
@@ -570,7 +573,20 @@ export async function salvarPalpitesFase(
   return { totalSalvos: palpites.length, palpiteGrupoId: grupo.id }
 }
 
-export async function isFaseEditavel(fase: string): Promise<boolean> {
+export async function isFaseEditavel(fase: string, participanteId?: string): Promise<boolean> {
+  if (participanteId) {
+    const liberacoes = await getLiberacoesParticipante(participanteId)
+    const faseKey = fase === 'grupos' ? 'grupos' : fase
+    if (liberacoes.includes(faseKey)) return true
+  }
+
+  if (fase === 'grupos') {
+    const config = await getConfigCompletarBolao()
+    if (!config.habilitado) return false
+    if (new Date() > config.prazo) return false
+    return true
+  }
+
   const config = await getConfigFaseMataMata(fase)
   if (!config.habilitado) return false
 
@@ -587,4 +603,25 @@ export async function isFaseEditavel(fase: string): Promise<boolean> {
   if (prazo && new Date() > prazo) return false
 
   return new Date() < primeiroJogo.dataHora
+}
+
+export async function getLiberacoesParticipante(participanteId: string): Promise<string[]> {
+  const participante = await prisma.participante.findUnique({
+    where: { id: participanteId },
+    select: { liberacoes: true },
+  })
+  return (participante?.liberacoes as string[]) ?? []
+}
+
+export async function setLiberacoesParticipante(participanteId: string, liberacoes: string[]): Promise<void> {
+  await prisma.participante.update({
+    where: { id: participanteId },
+    data: { liberacoes },
+  })
+}
+
+export async function isParticipanteLiberadoParaFase(participanteId: string, fase: string): Promise<boolean> {
+  const liberacoes = await getLiberacoesParticipante(participanteId)
+  const faseKey = fase === 'grupos' ? 'grupos' : fase
+  return liberacoes.includes(faseKey)
 }
