@@ -39,8 +39,16 @@ interface JogoDetalhesTabsProps {
   status: string
   palpites: Palpite[]
   lineups: {
-    timeA: { nome: string; posicao: string }[]
-    timeB: { nome: string; posicao: string }[]
+    timeA: {
+      titulares: { nome: string; numero: number | null; posicao: string }[]
+      suplentes: { nome: string; numero: number | null; posicao: string }[]
+      formacao: string
+    }
+    timeB: {
+      titulares: { nome: string; numero: number | null; posicao: string }[]
+      suplentes: { nome: string; numero: number | null; posicao: string }[]
+      formacao: string
+    }
   } | null
   estatisticas: Record<string, number> | null
 }

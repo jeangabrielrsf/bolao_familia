@@ -3,6 +3,8 @@ interface Estatisticas {
   timeB_posse?: number
   timeA_xg?: number
   timeB_xg?: number
+  timeA_grandes_chances?: number
+  timeB_grandes_chances?: number
   timeA_chutes_gol?: number
   timeB_chutes_gol?: number
   timeA_chutes?: number
@@ -11,6 +13,12 @@ interface Estatisticas {
   timeB_escanteios?: number
   timeA_faltas?: number
   timeB_faltas?: number
+  timeA_defesas?: number
+  timeB_defesas?: number
+  timeA_cartoes_amarelos?: number
+  timeB_cartoes_amarelos?: number
+  timeA_cartoes_vermelhos?: number
+  timeB_cartoes_vermelhos?: number
   timeA_cartoes?: number
   timeB_cartoes?: number
 }
@@ -102,6 +110,10 @@ export function EstatisticasView({ estatisticas, timeA, timeB }: EstatisticasPro
     )
   }
 
+  const temCartoesAmarelos = estatisticas.timeA_cartoes_amarelos !== undefined || estatisticas.timeB_cartoes_amarelos !== undefined
+  const temCartoesVermelhos = estatisticas.timeA_cartoes_vermelhos !== undefined || estatisticas.timeB_cartoes_vermelhos !== undefined
+  const temCartoesGenerico = !temCartoesAmarelos && !temCartoesVermelhos && (estatisticas.timeA_cartoes !== undefined || estatisticas.timeB_cartoes !== undefined)
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between text-sm font-medium text-muted-foreground">
@@ -113,11 +125,21 @@ export function EstatisticasView({ estatisticas, timeA, timeB }: EstatisticasPro
       <div className="space-y-5">
         <StatBar label="Posse de bola" valorA={estatisticas.timeA_posse} valorB={estatisticas.timeB_posse} formato="porcentagem" />
         <StatBar label="Expected Goals" valorA={estatisticas.timeA_xg} valorB={estatisticas.timeB_xg} formato="xg" />
+        <StatBar label="Grandes chances" valorA={estatisticas.timeA_grandes_chances} valorB={estatisticas.timeB_grandes_chances} />
         <StatBar label="Chutes ao gol" valorA={estatisticas.timeA_chutes_gol} valorB={estatisticas.timeB_chutes_gol} />
         <StatBar label="Chutes totais" valorA={estatisticas.timeA_chutes} valorB={estatisticas.timeB_chutes} />
         <StatBar label="Escanteios" valorA={estatisticas.timeA_escanteios} valorB={estatisticas.timeB_escanteios} />
         <StatBar label="Faltas" valorA={estatisticas.timeA_faltas} valorB={estatisticas.timeB_faltas} />
-        <StatBar label="Cartões" valorA={estatisticas.timeA_cartoes} valorB={estatisticas.timeB_cartoes} />
+        <StatBar label="Defesas" valorA={estatisticas.timeA_defesas} valorB={estatisticas.timeB_defesas} />
+        {temCartoesAmarelos && (
+          <StatBar label="Cartões amarelos" valorA={estatisticas.timeA_cartoes_amarelos} valorB={estatisticas.timeB_cartoes_amarelos} />
+        )}
+        {temCartoesVermelhos && (
+          <StatBar label="Cartões vermelhos" valorA={estatisticas.timeA_cartoes_vermelhos} valorB={estatisticas.timeB_cartoes_vermelhos} />
+        )}
+        {temCartoesGenerico && (
+          <StatBar label="Cartões" valorA={estatisticas.timeA_cartoes} valorB={estatisticas.timeB_cartoes} />
+        )}
       </div>
     </div>
   )

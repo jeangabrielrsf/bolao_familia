@@ -1,14 +1,22 @@
 import { cn } from "@/lib/utils"
+import { Badge } from "@/components/ui/badge"
 
 interface Jogador {
   nome: string
+  numero: number | null
   posicao: string
+}
+
+interface LineupTime {
+  titulares: Jogador[]
+  suplentes: Jogador[]
+  formacao: string
 }
 
 interface LineupsProps {
   lineups: {
-    timeA: Jogador[]
-    timeB: Jogador[]
+    timeA: LineupTime
+    timeB: LineupTime
   } | null
   timeA: string | null
   timeB: string | null
@@ -79,11 +87,16 @@ function ListaJogadores({ jogadores }: { jogadores: Jogador[] }) {
               <div
                 key={`${jogador.nome}-${idx}`}
                 className={cn(
-                  "px-3 py-2 rounded-md text-sm",
+                  "px-3 py-2 rounded-md text-sm flex items-center gap-2",
                   posicaoCores[categoria]
                 )}
               >
-                {jogador.nome}
+                {jogador.numero !== null && jogador.numero !== undefined && (
+                  <span className="text-xs font-mono text-muted-foreground w-6 text-right shrink-0">
+                    #{jogador.numero}
+                  </span>
+                )}
+                <span className="truncate">{jogador.nome}</span>
               </div>
             ))}
           </div>
@@ -93,8 +106,44 @@ function ListaJogadores({ jogadores }: { jogadores: Jogador[] }) {
   )
 }
 
+function LineupTime({ time }: { time: LineupTime }) {
+  const temDados = time.titulares.length > 0
+
+  if (!temDados) {
+    return <p className="text-sm text-muted-foreground">Escalação não disponível</p>
+  }
+
+  return (
+    <div className="space-y-4">
+      {time.formacao && (
+        <div className="text-center">
+          <Badge variant="outline" className="font-mono">
+            {time.formacao}
+          </Badge>
+        </div>
+      )}
+
+      <div className="space-y-3">
+        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+          Titulares
+        </p>
+        <ListaJogadores jogadores={time.titulares} />
+      </div>
+
+      {time.suplentes.length > 0 && (
+        <div className="space-y-3">
+          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+            Suplentes
+          </p>
+          <ListaJogadores jogadores={time.suplentes} />
+        </div>
+      )}
+    </div>
+  )
+}
+
 export function LineupsView({ lineups, timeA, timeB }: LineupsProps) {
-  if (!lineups || (lineups.timeA.length === 0 && lineups.timeB.length === 0)) {
+  if (!lineups || (lineups.timeA.titulares.length === 0 && lineups.timeB.titulares.length === 0)) {
     return (
       <div className="flex flex-col items-center justify-center py-12">
         <span className="text-6xl mb-4">⚽</span>
@@ -112,13 +161,13 @@ export function LineupsView({ lineups, timeA, timeB }: LineupsProps) {
         <h3 className="text-lg font-display tracking-wide text-center">
           {timeA ?? "Time A"}
         </h3>
-        <ListaJogadores jogadores={lineups.timeA} />
+        <LineupTime time={lineups.timeA} />
       </div>
       <div className="space-y-3">
         <h3 className="text-lg font-display tracking-wide text-center">
           {timeB ?? "Time B"}
         </h3>
-        <ListaJogadores jogadores={lineups.timeB} />
+        <LineupTime time={lineups.timeB} />
       </div>
     </div>
   )
