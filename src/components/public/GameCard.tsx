@@ -8,6 +8,14 @@ import { formatarData, formatarHora } from "@/lib/utils/date"
 import { Calendar, ChevronRight, MapPin } from "lucide-react"
 import { cn } from "@/lib/utils"
 
+interface EventoAoVivo {
+  minuto: string
+  tipo: string
+  jogador: string
+  time: "timeA" | "timeB"
+  assistencia?: string | null
+}
+
 interface GameCardProps {
   id?: string
   timeA: string | null
@@ -24,9 +32,10 @@ interface GameCardProps {
   placarPenaltisB?: number | null
   rankingTimeA?: number | null
   rankingTimeB?: number | null
+  eventosAoVivo?: EventoAoVivo[] | null
 }
 
-export function GameCard({ id, timeA, timeB, dataHora, grupo, fase, resultadoA, resultadoB, status, local, cidade, placarPenaltisA, placarPenaltisB, rankingTimeA, rankingTimeB }: GameCardProps) {
+export function GameCard({ id, timeA, timeB, dataHora, grupo, fase, resultadoA, resultadoB, status, local, cidade, placarPenaltisA, placarPenaltisB, rankingTimeA, rankingTimeB, eventosAoVivo }: GameCardProps) {
   const dataFormatada = formatarData(dataHora)
   const horaFormatada = formatarHora(dataHora)
   const finalizado = status === "finalizado"
@@ -38,6 +47,9 @@ export function GameCard({ id, timeA, timeB, dataHora, grupo, fase, resultadoA, 
   const isBrasil = timeA === 'Brasil' || timeB === 'Brasil'
   const timeAExibir = timeA ?? 'A definir'
   const timeBExibir = timeB ?? 'A definir'
+
+  const eventosGols = eventosAoVivo?.filter(e => e.tipo === 'Goal' || e.tipo === 'Penalty') ?? []
+  const ultimosEventos = eventosGols.slice(-3)
 
   const content = (
     <Card className={cn(
@@ -88,6 +100,21 @@ export function GameCard({ id, timeA, timeB, dataHora, grupo, fase, resultadoA, 
             {rankingTimeB && <span className="text-[11px] text-muted-foreground font-medium whitespace-nowrap"><span className="text-[9px] text-muted-foreground/60 mr-0.5">FIFA</span>#{rankingTimeB}</span>}
           </div>
         </div>
+        
+        {ultimosEventos.length > 0 && (
+          <div className="space-y-1 pt-2 border-t border-border/50">
+            {ultimosEventos.map((evento, idx) => (
+              <div key={idx} className={cn(
+                "flex items-center gap-2 text-xs",
+                evento.time === "timeA" ? "justify-end" : "justify-start"
+              )}>
+                <span className="text-muted-foreground font-mono">{evento.minuto}</span>
+                <span className="font-medium">{evento.jogador}</span>
+                <span className="text-muted-foreground">⚽</span>
+              </div>
+            ))}
+          </div>
+        )}
       </CardContent>
       <CardFooter className="px-4 pb-4 pt-0">
         {finalizado && <Badge variant="success">Finalizado</Badge>}
