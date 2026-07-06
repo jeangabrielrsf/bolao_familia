@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Any, Optional
 
 import asyncpg
@@ -201,6 +201,33 @@ async def get_highlightly_id(jogo: asyncpg.Record) -> Optional[int]:
     return highlightly_id
 
 
+def _fetch_lineups(match_id: int) -> Optional[dict]:
+    """GET /lineups/{id} — escalação completa (titulares + suplentes)."""
+    if not settings.HIGHLIGHTLY_API_KEY:
+        return None
+
+    try:
+        response = requests.get(
+            f"{BASE_URL}/lineups/{match_id}",
+            headers=_headers(),
+            impersonate="chrome",
+            timeout=15,
+        )
+        if response.status_code != 200:
+            logger.warning("Highlightly lineups %d returned %d", match_id, response.status_code)
+            return None
+
+        data = response.json()
+        return data if isinstance(data, dict) else None
+    except Exception:
+        logger.exception("Error fetching Highlightly lineups %d", match_id)
+        return None
+
+
+async def get_lineups(match_id: int) -> Optional[dict]:
+    return await asyncio.to_thread(_fetch_lineups, match_id)
+
+
 def _parse_events(match_detail: dict) -> list[dict[str, Any]]:
     """Extrai eventos relevantes do match detail."""
     events_raw = match_detail.get("events", [])
@@ -218,29 +245,61 @@ def _parse_events(match_detail: dict) -> list[dict[str, Any]]:
         time_str = event.get("time", "")
         player = event.get("player", "")
         assist = event.get("assist", "")
+        substituted = event.get("substituted", "")
 
-        events.append({
+        event_data = {
             "minuto": time_str,
             "tipo": event_type,
             "jogador": player,
             "time": "timeA" if team_id == home_id else "timeB",
             "assistencia": assist if assist else None,
-        })
+        }
+
+        if event_type == "Substitution" and substituted:
+            event_data["substituido"] = substituted
+
+        events.append(event_data)
 
     return events
 
 
-def _parse_lineups(match_detail: dict) -> dict[str, list[dict]]:
-    """Extrai lineups do match detail."""
-    home_team = match_detail.get("homeTeam", {})
-    away_team = match_detail.get("awayTeam", {})
+def _parse_lineups(lineups_data: dict) -> dict[str, Any]:
+    """Extrai lineups completas do endpoint /lineups/{id}.
 
-    def parse_team_lineup(team_data: dict) -> list[dict]:
-        top_players = team_data.get("topPlayers", [])
-        return [
-            {"nome": p.get("name", ""), "posicao": p.get("position", "")}
-            for p in top_players
+    Estrutura: initialLineup (array de arrays por linha de formação),
+    substitutes, formation.
+    """
+    home_team = lineups_data.get("homeTeam", {})
+    away_team = lineups_data.get("awayTeam", {})
+
+    def parse_team_lineup(team_data: dict) -> dict[str, Any]:
+        initial_lineup_raw = team_data.get("initialLineup", [])
+        substitutes_raw = team_data.get("substitutes", [])
+        formation = team_data.get("formation", "")
+
+        titulares = []
+        for row in initial_lineup_raw:
+            for player in row:
+                titulares.append({
+                    "nome": player.get("name", ""),
+                    "numero": player.get("number"),
+                    "posicao": player.get("position", ""),
+                })
+
+        suplentes = [
+            {
+                "nome": p.get("name", ""),
+                "numero": p.get("number"),
+                "posicao": p.get("position", ""),
+            }
+            for p in substitutes_raw
         ]
+
+        return {
+            "titulares": titulares,
+            "suplentes": suplentes,
+            "formacao": formation,
+        }
 
     return {
         "timeA": parse_team_lineup(home_team),
@@ -267,6 +326,10 @@ def _parse_statistics(match_detail: dict) -> dict[str, Any]:
                 stats[f"{team_key}_posse"] = value
             elif "expected" in display_name or "xg" in display_name:
                 stats[f"{team_key}_xg"] = value
+            elif "big chance" in display_name or "grande chance" in display_name:
+                stats[f"{team_key}_grandes_chances"] = value
+            elif "goalkeeper save" in display_name or "defesa" in display_name or "save" in display_name:
+                stats[f"{team_key}_defesas"] = value
             elif "chute" in display_name or "shot" in display_name:
                 if "gol" in display_name or "target" in display_name:
                     stats[f"{team_key}_chutes_gol"] = value
@@ -276,6 +339,10 @@ def _parse_statistics(match_detail: dict) -> dict[str, Any]:
                 stats[f"{team_key}_escanteios"] = value
             elif "falta" in display_name or "foul" in display_name:
                 stats[f"{team_key}_faltas"] = value
+            elif "yellow card" in display_name or "cartão amarelo" in display_name:
+                stats[f"{team_key}_cartoes_amarelos"] = value
+            elif "red card" in display_name or "cartão vermelho" in display_name:
+                stats[f"{team_key}_cartoes_vermelhos"] = value
             elif "cartão" in display_name or "card" in display_name:
                 stats[f"{team_key}_cartoes"] = value
 
@@ -286,6 +353,11 @@ async def enrich_live_game(jogo: asyncpg.Record) -> Optional[dict[str, Any]]:
     """Busca eventos/lineups/stats de um jogo ao vivo na Highlightly.
 
     Retorna dict pronto pra UPDATE nas colunas JSONB, ou None se falhar.
+
+    Lógica de cache inteligente para lineups:
+    - Se jogo.lineups é NULL → busca /lineups (primeira vez)
+    - Se jogo começou há menos de 15min → busca /lineups (window de atualização)
+    - Após 15min do kickoff → não busca mais (lineups estáveis)
     """
     highlightly_id = await get_highlightly_id(jogo)
     if not highlightly_id:
@@ -296,11 +368,26 @@ async def enrich_live_game(jogo: asyncpg.Record) -> Optional[dict[str, Any]]:
         return None
 
     eventos = _parse_events(match_detail)
-    lineups = _parse_lineups(match_detail)
     estatisticas = _parse_statistics(match_detail)
 
-    return {
+    result = {
         "eventos_ao_vivo": eventos,
-        "lineups": lineups,
         "estatisticas": estatisticas,
     }
+
+    existing_lineups = jogo.get("lineups")
+    should_fetch_lineups = not existing_lineups
+
+    if existing_lineups:
+        data_hora = jogo.get("data_hora")
+        if data_hora and isinstance(data_hora, datetime):
+            tempo_desde_inicio = datetime.now(timezone.utc) - data_hora
+            if tempo_desde_inicio < timedelta(minutes=15):
+                should_fetch_lineups = True
+
+    if should_fetch_lineups:
+        lineups_data = await get_lineups(highlightly_id)
+        if lineups_data:
+            result["lineups"] = _parse_lineups(lineups_data)
+
+    return result

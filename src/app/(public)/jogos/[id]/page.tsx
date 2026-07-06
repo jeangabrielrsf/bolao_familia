@@ -196,7 +196,7 @@ export default async function JogoDetailPage({
               },
             },
           }))}
-          lineups={jogo.lineups as { timeA: { nome: string; posicao: string }[]; timeB: { nome: string; posicao: string }[] } | null}
+          lineups={jogo.lineups as { timeA: { titulares: { nome: string; numero: number | null; posicao: string }[]; suplentes: { nome: string; numero: number | null; posicao: string }[]; formacao: string }; timeB: { titulares: { nome: string; numero: number | null; posicao: string }[]; suplentes: { nome: string; numero: number | null; posicao: string }[]; formacao: string } } | null}
           estatisticas={jogo.estatisticas as Record<string, number> | null}
         />
       </section>

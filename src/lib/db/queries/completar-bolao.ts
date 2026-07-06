@@ -210,7 +210,12 @@ export async function salvarExtrasCompletar(
 export async function getStatusCompletarBolao() {
   const participantes = await prisma.participante.findMany({
     orderBy: { nome: 'asc' },
-    include: {
+    select: {
+      id: true,
+      nome: true,
+      token: true,
+      fotoUrl: true,
+      liberacoes: true,
       grupos: {
         include: {
           palpites: {
