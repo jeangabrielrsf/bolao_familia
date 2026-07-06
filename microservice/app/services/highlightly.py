@@ -26,7 +26,7 @@ BASE_URL = "https://soccer.highlightly.net"
 CACHE_KEY_PREFIX = "highlightly:match_id:"
 CACHE_KEY_DATE_PREFIX = "highlightly:date:"
 CACHE_TTL_IDS = 86400  # 24h — IDs dos jogos são estáveis
-CACHE_TTL_DATA = 300   # 5min — dados ao vivo
+CACHE_TTL_DATA = 600   # 10min — dados ao vivo (lineups atualizam a cada 10min)
 
 
 def _headers() -> dict[str, str]:
@@ -107,6 +107,10 @@ def _dates_match(match_date: str, our_date: str) -> bool:
     try:
         dt_match = datetime.fromisoformat(match_date.replace("Z", "+00:00"))
         dt_ours = datetime.fromisoformat(our_date.replace("Z", "+00:00"))
+        if dt_match.tzinfo is None:
+            dt_match = dt_match.replace(tzinfo=timezone.utc)
+        if dt_ours.tzinfo is None:
+            dt_ours = dt_ours.replace(tzinfo=timezone.utc)
         diff = abs((dt_match - dt_ours).total_seconds())
         return diff < 1 * 3600
     except (ValueError, AttributeError):
@@ -350,14 +354,12 @@ def _parse_statistics(match_detail: dict) -> dict[str, Any]:
 
 
 async def enrich_live_game(jogo: asyncpg.Record) -> Optional[dict[str, Any]]:
-    """Busca eventos/lineups/stats de um jogo ao vivo na Highlightly.
+    """Busca eventos/stats de um jogo ao vivo na Highlightly.
 
     Retorna dict pronto pra UPDATE nas colunas JSONB, ou None se falhar.
 
-    Lógica de cache inteligente para lineups:
-    - Se jogo.lineups é NULL → busca /lineups (primeira vez)
-    - Se jogo começou há menos de 15min → busca /lineups (window de atualização)
-    - Após 15min do kickoff → não busca mais (lineups estáveis)
+    Para jogos em andamento: busca eventos + stats (lineups já foram buscadas
+    pelo enrich_lineups_only() antes do jogo começar).
     """
     highlightly_id = await get_highlightly_id(jogo)
     if not highlightly_id:
@@ -370,24 +372,33 @@ async def enrich_live_game(jogo: asyncpg.Record) -> Optional[dict[str, Any]]:
     eventos = _parse_events(match_detail)
     estatisticas = _parse_statistics(match_detail)
 
-    result = {
+    return {
         "eventos_ao_vivo": eventos,
         "estatisticas": estatisticas,
     }
 
+
+async def enrich_lineups_only(jogo: asyncpg.Record) -> Optional[dict[str, Any]]:
+    """Busca APENAS lineups de um jogo (para jogos agendados próximos).
+
+    Retorna dict com lineups, ou None se falhar ou já existirem.
+
+    Lógica:
+    - Se jogo.lineups já existe → retorna None (não re-busca)
+    - Se jogo.lineups é NULL → busca /lineups e retorna
+    """
     existing_lineups = jogo.get("lineups")
-    should_fetch_lineups = not existing_lineups
-
     if existing_lineups:
-        data_hora = jogo.get("data_hora")
-        if data_hora and isinstance(data_hora, datetime):
-            tempo_desde_inicio = datetime.now(timezone.utc) - data_hora
-            if tempo_desde_inicio < timedelta(minutes=15):
-                should_fetch_lineups = True
+        return None
 
-    if should_fetch_lineups:
-        lineups_data = await get_lineups(highlightly_id)
-        if lineups_data:
-            result["lineups"] = _parse_lineups(lineups_data)
+    highlightly_id = await get_highlightly_id(jogo)
+    if not highlightly_id:
+        return None
 
-    return result
+    lineups_data = await get_lineups(highlightly_id)
+    if not lineups_data:
+        return None
+
+    return {
+        "lineups": _parse_lineups(lineups_data),
+    }
