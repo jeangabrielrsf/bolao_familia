@@ -7,6 +7,7 @@ múltiplas instâncias (GH Actions + APScheduler local).
 """
 from __future__ import annotations
 
+import json
 import logging
 import time
 from datetime import datetime, timezone
@@ -165,8 +166,8 @@ async def run(window_hours: int = 12, origem: str = "auto") -> dict[str, Any]:
                             enriched = await highlightly.enrich_lineups_only(jogo)
                             if enriched and enriched.get("lineups"):
                                 await conn.execute(
-                                    "UPDATE jogos SET lineups = $1 WHERE id = $2",
-                                    enriched["lineups"],
+                                    "UPDATE jogos SET lineups = $1::jsonb WHERE id = $2",
+                                    json.dumps(enriched["lineups"]),
                                     jogo["id"],
                                 )
                                 lineups_count += 1
@@ -186,12 +187,12 @@ async def run(window_hours: int = 12, origem: str = "auto") -> dict[str, Any]:
                                 await conn.execute(
                                     """
                                     UPDATE jogos 
-                                    SET eventos_ao_vivo = $1, 
-                                        estatisticas = $2 
+                                    SET eventos_ao_vivo = $1::jsonb, 
+                                        estatisticas = $2::jsonb 
                                     WHERE id = $3
                                     """,
-                                    enriched["eventos_ao_vivo"],
-                                    enriched["estatisticas"],
+                                    json.dumps(enriched["eventos_ao_vivo"]),
+                                    json.dumps(enriched["estatisticas"]),
                                     jogo["id"],
                                 )
                                 enriched_count += 1
