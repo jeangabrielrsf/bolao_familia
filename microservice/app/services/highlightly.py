@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Any, Optional
 
 import asyncpg
@@ -354,9 +354,10 @@ async def enrich_live_game(jogo: asyncpg.Record) -> Optional[dict[str, Any]]:
 
     Retorna dict pronto pra UPDATE nas colunas JSONB, ou None se falhar.
 
-    Lógica de cache inteligente:
-    - Se jogo.lineups é NULL → busca /lineups + /matches (2 requests)
-    - Se jogo.lineups já existe → busca apenas /matches (1 request)
+    Lógica de cache inteligente para lineups:
+    - Se jogo.lineups é NULL → busca /lineups (primeira vez)
+    - Se jogo começou há menos de 15min → busca /lineups (window de atualização)
+    - Após 15min do kickoff → não busca mais (lineups estáveis)
     """
     highlightly_id = await get_highlightly_id(jogo)
     if not highlightly_id:
@@ -375,7 +376,16 @@ async def enrich_live_game(jogo: asyncpg.Record) -> Optional[dict[str, Any]]:
     }
 
     existing_lineups = jogo.get("lineups")
-    if not existing_lineups:
+    should_fetch_lineups = not existing_lineups
+
+    if existing_lineups:
+        data_hora = jogo.get("data_hora")
+        if data_hora and isinstance(data_hora, datetime):
+            tempo_desde_inicio = datetime.now(timezone.utc) - data_hora
+            if tempo_desde_inicio < timedelta(minutes=15):
+                should_fetch_lineups = True
+
+    if should_fetch_lineups:
         lineups_data = await get_lineups(highlightly_id)
         if lineups_data:
             result["lineups"] = _parse_lineups(lineups_data)
