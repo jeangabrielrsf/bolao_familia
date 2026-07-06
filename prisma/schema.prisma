@@ -75,6 +75,9 @@ model Jogo {
   rankingTimeB    Int?      @map("ranking_time_b")
   placarPenaltisA Int?      @map("placar_penaltis_a")
   placarPenaltisB Int?      @map("placar_penaltis_b")
+  eventosAoVivo   Json?     @map("eventos_ao_vivo")
+  lineups         Json?
+  estatisticas    Json?
   criadoEm        DateTime  @default(now()) @map("criado_em")
 
   palpites        Palpite[]

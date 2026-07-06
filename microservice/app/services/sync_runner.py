@@ -13,7 +13,7 @@ from datetime import timezone
 from typing import Any
 
 from app.config import settings
-from app.services import bracket_client, db, football_data, sync_writer, teams, worldcup26
+from app.services import bracket_client, db, football_data, highlightly, sync_writer, teams, worldcup26
 
 logger = logging.getLogger(__name__)
 
@@ -142,7 +142,35 @@ async def run(window_hours: int = 12, origem: str = "auto") -> dict[str, Any]:
                 conn, list(rows), resultados
             )
 
-        # 6. Fora da transação (após commit): notifica Next.js pra propagar
+            # 6. Enriquece jogos ao vivo com Highlightly (eventos/lineups/stats)
+            if settings.HIGHLIGHTLY_API_KEY:
+                jogos_ao_vivo = [r for r in rows if r["status"] == "em_andamento"]
+                if jogos_ao_vivo:
+                    logger.info(f"Enriquecendo {len(jogos_ao_vivo)} jogos ao vivo com Highlightly...")
+                    enriched_count = 0
+                    for jogo in jogos_ao_vivo:
+                        try:
+                            enriched = await highlightly.enrich_live_game(jogo)
+                            if enriched:
+                                await conn.execute(
+                                    """
+                                    UPDATE jogos 
+                                    SET eventos_ao_vivo = $1, 
+                                        lineups = $2, 
+                                        estatisticas = $3 
+                                    WHERE id = $4
+                                    """,
+                                    enriched["eventos_ao_vivo"],
+                                    enriched["lineups"],
+                                    enriched["estatisticas"],
+                                    jogo["id"],
+                                )
+                                enriched_count += 1
+                        except Exception:
+                            logger.exception(f"Erro enriquecendo jogo {jogo['id']}")
+                    logger.info(f"Highlightly: {enriched_count}/{len(jogos_ao_vivo)} jogos enriquecidos")
+
+        # 7. Fora da transação (após commit): notifica Next.js pra propagar
         #    bracket. Best-effort: falha não quebra o sync de resultados.
         #    Se sync_result.atualizados == 0, não houve mudança — pula.
         if sync_result is not None and sync_result.atualizados > 0:
