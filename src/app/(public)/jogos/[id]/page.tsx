@@ -1,6 +1,4 @@
 import { notFound } from 'next/navigation'
-import Link from 'next/link'
-import Image from 'next/image'
 import { getJogoById } from '@/lib/db/queries/jogos'
 import { getConfiguracao } from '@/lib/db/queries/config'
 import { getRanking } from '@/lib/db/queries/ranking'
@@ -11,8 +9,8 @@ import { formatarData, formatarHora } from '@/lib/utils/date'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Flag } from '@/components/ui/flag'
-import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table'
 import { BackButton } from '@/components/public/BackButton'
+import { JogoDetalhesTabs } from '@/components/public/JogoDetalhesTabs'
 import { Calendar, MapPin, Trophy } from 'lucide-react'
 
 export const dynamic = 'force-dynamic'
@@ -173,93 +171,34 @@ export default async function JogoDetailPage({
       )}
 
       <section className="space-y-4">
-        <h2 className="text-xl sm:text-2xl font-display tracking-wide">Palpites ({palpitesComPontos.length})</h2>
-
-        {palpitesComPontos.length > 0 ? (
-          <Card>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Participante</TableHead>
-                  <TableHead>Palpite</TableHead>
-                  <TableHead className="text-right">Pontos</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {palpitesComPontos.map((palpite) => (
-                  <TableRow key={palpite.id}>
-                    <TableCell>
-                        <Link href={`/participantes/${palpite.palpiteGrupo.participante.id}`} className="flex items-center gap-2 sm:gap-3 hover:text-primary transition-colors">
-                          <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full overflow-hidden bg-muted flex items-center justify-center shrink-0">
-                            {palpite.palpiteGrupo.participante.fotoUrl ? (
-                              <Image src={palpite.palpiteGrupo.participante.fotoUrl} alt={palpite.palpiteGrupo.participante.nome} width={32} height={32} unoptimized className="w-full h-full object-cover" />
-                            ) : (
-                              <span className="text-xs font-bold text-muted-foreground">{palpite.palpiteGrupo.participante.nome.charAt(0).toUpperCase()}</span>
-                            )}
-                          </div>
-                          <div className="flex flex-col min-w-0">
-                            <span className="font-medium text-sm truncate">{palpite.palpiteGrupo.nome}</span>
-                            {palpite.posicaoRanking && <span className="text-xs text-muted-foreground">{palpite.posicaoRanking}º no ranking</span>}
-                          </div>
-                        </Link>
-                    </TableCell>
-                    <TableCell>
-                      {jogo.fase !== 'grupos' && palpite.placarA === palpite.placarB && palpite.vencedorPalpite ? (
-                        <div className="flex flex-col">
-                          <span className="font-semibold tabular-nums text-sm sm:text-base">{palpite.placarA} x {palpite.placarB}</span>
-                          <span className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
-                            <span>→</span>
-                            {palpite.vencedorPalpite === 1 ? (
-                              <>
-                                {jogo.timeA && getTimeFlag(jogo.timeA) && <Flag codigoIso={getTimeFlag(jogo.timeA)!} size={14} />}
-                                <span>{jogo.timeA} passa</span>
-                              </>
-                            ) : (
-                              <>
-                                {jogo.timeB && getTimeFlag(jogo.timeB) && <Flag codigoIso={getTimeFlag(jogo.timeB)!} size={14} />}
-                                <span>{jogo.timeB} passa</span>
-                              </>
-                            )}
-                          </span>
-                        </div>
-                      ) : (
-                        <span className="font-semibold tabular-nums text-sm sm:text-base">{palpite.placarA} x {palpite.placarB}</span>
-                      )}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      {jogo.status === 'finalizado' ? (
-                        <div className="flex flex-col items-end gap-1">
-                          <div className="flex items-center justify-end gap-2">
-                            <span className="font-display text-lg text-primary">{palpite.pontos}</span>
-                            {palpite.tipo === 'exato' && <Badge variant="success">Exato</Badge>}
-                            {palpite.tipo === 'vencedor' && <Badge variant="info">Vencedor</Badge>}
-                            {palpite.tipo === 'erro' && <Badge variant="destructive">Erro</Badge>}
-                          </div>
-                          {palpite.bonus === 'acertou' && (
-                            <span className="text-xs font-normal text-green-700 dark:text-green-400">+6 quem passa</span>
-                          )}
-                          {palpite.bonus === 'errou' && (
-                            <span className="text-xs font-normal text-muted-foreground">errou +6 quem passa</span>
-                          )}
-                        </div>
-                      ) : (
-                        <span className="text-muted-foreground">—</span>
-                      )}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </Card>
-        ) : (
-          <Card>
-            <CardContent className="flex flex-col items-center justify-center py-12">
-              <span className="text-6xl mb-4">⚽</span>
-              <h3 className="text-xl font-semibold mb-2">Nenhum palpite registrado</h3>
-              <p className="text-muted-foreground text-center max-w-md">Os palpites aparecerão aqui quando cadastrados.</p>
-            </CardContent>
-          </Card>
-        )}
+        <JogoDetalhesTabs
+          jogoId={jogo.id}
+          fase={jogo.fase}
+          timeA={jogo.timeA}
+          timeB={jogo.timeB}
+          status={jogo.status}
+          palpites={palpitesComPontos.map(p => ({
+            id: p.id,
+            placarA: p.placarA,
+            placarB: p.placarB,
+            vencedorPalpite: p.vencedorPalpite,
+            pontos: p.pontos,
+            tipo: p.tipo,
+            posicaoRanking: p.posicaoRanking,
+            quemPassa: p.quemPassa,
+            bonus: p.bonus,
+            palpiteGrupo: {
+              nome: p.palpiteGrupo.nome,
+              participante: {
+                id: p.palpiteGrupo.participante.id,
+                nome: p.palpiteGrupo.participante.nome,
+                fotoUrl: p.palpiteGrupo.participante.fotoUrl,
+              },
+            },
+          }))}
+          lineups={jogo.lineups as { timeA: { nome: string; posicao: string }[]; timeB: { nome: string; posicao: string }[] } | null}
+          estatisticas={jogo.estatisticas as Record<string, number> | null}
+        />
       </section>
     </div>
   )
