@@ -107,6 +107,10 @@ def _dates_match(match_date: str, our_date: str) -> bool:
     try:
         dt_match = datetime.fromisoformat(match_date.replace("Z", "+00:00"))
         dt_ours = datetime.fromisoformat(our_date.replace("Z", "+00:00"))
+        if dt_match.tzinfo is None:
+            dt_match = dt_match.replace(tzinfo=timezone.utc)
+        if dt_ours.tzinfo is None:
+            dt_ours = dt_ours.replace(tzinfo=timezone.utc)
         diff = abs((dt_match - dt_ours).total_seconds())
         return diff < 1 * 3600
     except (ValueError, AttributeError):
