@@ -265,6 +265,8 @@ def _parse_statistics(match_detail: dict) -> dict[str, Any]:
 
             if "posse" in display_name or "possession" in display_name:
                 stats[f"{team_key}_posse"] = value
+            elif "expected" in display_name or "xg" in display_name:
+                stats[f"{team_key}_xg"] = value
             elif "chute" in display_name or "shot" in display_name:
                 if "gol" in display_name or "target" in display_name:
                     stats[f"{team_key}_chutes_gol"] = value
