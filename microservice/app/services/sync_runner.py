@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import logging
 import time
-from datetime import timezone
+from datetime import datetime, timezone
 from typing import Any
 
 from app.config import settings
@@ -142,11 +142,42 @@ async def run(window_hours: int = 12, origem: str = "auto") -> dict[str, Any]:
                 conn, list(rows), resultados
             )
 
-            # 6. Enriquece jogos ao vivo com Highlightly (eventos/lineups/stats)
+            # 6. Enriquece com Highlightly (lineups + stats/eventos separados)
             if settings.HIGHLIGHTLY_API_KEY:
+                agora = datetime.now(timezone.utc)
+
+                # 6a. Lineups: jogos agendados próximos 30min (só se lineups NULL)
+                jogos_para_lineups = []
+                for r in rows:
+                    if r["status"] == "agendado":
+                        data_hora = r["data_hora"]
+                        if data_hora:
+                            data_hora_utc = data_hora.replace(tzinfo=timezone.utc) if data_hora.tzinfo is None else data_hora
+                            diff_minutos = (data_hora_utc - agora).total_seconds() / 60
+                            if 0 <= diff_minutos <= 30:
+                                jogos_para_lineups.append(r)
+
+                if jogos_para_lineups:
+                    logger.info(f"Buscando lineups para {len(jogos_para_lineups)} jogos próximos...")
+                    lineups_count = 0
+                    for jogo in jogos_para_lineups:
+                        try:
+                            enriched = await highlightly.enrich_lineups_only(jogo)
+                            if enriched and enriched.get("lineups"):
+                                await conn.execute(
+                                    "UPDATE jogos SET lineups = $1 WHERE id = $2",
+                                    enriched["lineups"],
+                                    jogo["id"],
+                                )
+                                lineups_count += 1
+                        except Exception:
+                            logger.exception(f"Erro buscando lineups do jogo {jogo['id']}")
+                    logger.info(f"Highlightly lineups: {lineups_count}/{len(jogos_para_lineups)} jogos atualizados")
+
+                # 6b. Stats/Eventos: APENAS jogos em andamento
                 jogos_ao_vivo = [r for r in rows if r["status"] == "em_andamento"]
                 if jogos_ao_vivo:
-                    logger.info(f"Enriquecendo {len(jogos_ao_vivo)} jogos ao vivo com Highlightly...")
+                    logger.info(f"Enriquecendo {len(jogos_ao_vivo)} jogos ao vivo com stats/eventos...")
                     enriched_count = 0
                     for jogo in jogos_ao_vivo:
                         try:
@@ -156,19 +187,17 @@ async def run(window_hours: int = 12, origem: str = "auto") -> dict[str, Any]:
                                     """
                                     UPDATE jogos 
                                     SET eventos_ao_vivo = $1, 
-                                        lineups = $2, 
-                                        estatisticas = $3 
-                                    WHERE id = $4
+                                        estatisticas = $2 
+                                    WHERE id = $3
                                     """,
                                     enriched["eventos_ao_vivo"],
-                                    enriched["lineups"],
                                     enriched["estatisticas"],
                                     jogo["id"],
                                 )
                                 enriched_count += 1
                         except Exception:
                             logger.exception(f"Erro enriquecendo jogo {jogo['id']}")
-                    logger.info(f"Highlightly: {enriched_count}/{len(jogos_ao_vivo)} jogos enriquecidos")
+                    logger.info(f"Highlightly stats: {enriched_count}/{len(jogos_ao_vivo)} jogos atualizados")
 
         # 7. Fora da transação (após commit): notifica Next.js pra propagar
         #    bracket. Best-effort: falha não quebra o sync de resultados.
