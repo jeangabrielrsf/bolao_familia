@@ -19,6 +19,40 @@ from app.services import bracket_client, db, football_data, highlightly, sync_wr
 logger = logging.getLogger(__name__)
 
 
+def _is_eliminatoria(fase: str) -> bool:
+    """Retorna True se a fase é eliminatória (mata-mata)."""
+    return fase in ["oitavas", "quartas", "semifinal", "terceiro", "final"]
+
+
+def _fd_penalty_data_inconsistent(result: dict, fase: str) -> bool:
+    """Detecta dados inconsistentes de pênaltis do football-data.org.
+
+    Para jogos de mata-mata finalizados:
+    - Se tem pênaltis mas estão empatados (impossível em mata-mata)
+    - Se tem pênaltis mas vencedor é null ou empate (impossível em mata-mata)
+    """
+    if not _is_eliminatoria(fase):
+        return False
+
+    if result.get("status") != "finished":
+        return False
+
+    pen_a = result.get("placarPenaltisA")
+    pen_b = result.get("placarPenaltisB")
+    vencedor = result.get("vencedor")
+
+    # Se tem pênaltis mas estão empatados, está inconsistente
+    if pen_a is not None and pen_b is not None and pen_a == pen_b:
+        return True
+
+    # Se tem pênaltis mas vencedor é null ou empate, está inconsistente
+    if pen_a is not None and pen_b is not None:
+        if vencedor is None or vencedor == 3:
+            return True
+
+    return False
+
+
 async def run(window_hours: int = 12, origem: str = "auto") -> dict[str, Any]:
     """Sincroniza resultados das APIs externas com o DB.
 
@@ -120,11 +154,24 @@ async def run(window_hours: int = 12, origem: str = "auto") -> dict[str, Any]:
                     )
 
                 if fd_result is not None:
-                    result = fd_result
-                    if not result.get("local") and wc_result is not None:
-                        result["local"] = wc_result.get("local")
-                    if not result.get("cidade") and wc_result is not None:
-                        result["cidade"] = wc_result.get("cidade")
+                    # Verificar se dados de pênaltis do football-data estão inconsistentes
+                    fase = jogo["fase"] or ""
+                    if _fd_penalty_data_inconsistent(fd_result, fase) and wc_result is not None:
+                        logger.warning(
+                            f"Football-data.org com dados inconsistentes para "
+                            f"{time_a_pt} x {time_b_pt} (fase={fase}). "
+                            f"Usando worldcup26.ir para pênaltis."
+                        )
+                        # Usar worldcup26 como primário, complementar com football-data
+                        result = wc_result
+                        if not result.get("local") and fd_result.get("local"):
+                            result["local"] = fd_result.get("local")
+                    else:
+                        result = fd_result
+                        if not result.get("local") and wc_result is not None:
+                            result["local"] = wc_result.get("local")
+                        if not result.get("cidade") and wc_result is not None:
+                            result["cidade"] = wc_result.get("cidade")
                 elif wc_result is not None:
                     result = wc_result
                 else:

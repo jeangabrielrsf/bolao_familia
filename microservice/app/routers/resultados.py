@@ -92,11 +92,35 @@ async def get_resultados_lote(req: LoteRequestV2) -> list[ResultadoResponse]:
             )
 
         if fd_result is not None:
-            result = fd_result
-            if not result.get("local") and wc_result is not None:
-                result["local"] = wc_result.get("local")
-            if not result.get("cidade") and wc_result is not None:
-                result["cidade"] = wc_result.get("cidade")
+            # Verificar se dados de pênaltis do football-data estão inconsistentes
+            # Para jogos de mata-mata (grupo vazio/None) com pênaltis empatados, usar worldcup26
+            is_eliminatoria = jogo.grupo in ["", None]
+
+            # Detectar inconsistência: pênaltis empatados em jogo finalizado de mata-mata
+            pen_a = fd_result.get("placarPenaltisA")
+            pen_b = fd_result.get("placarPenaltisB")
+            vencedor = fd_result.get("vencedor")
+            status = fd_result.get("status")
+
+            fd_inconsistent = (
+                is_eliminatoria
+                and status == "finished"
+                and pen_a is not None
+                and pen_b is not None
+                and (pen_a == pen_b or vencedor is None or vencedor == 3)
+            )
+
+            if fd_inconsistent and wc_result is not None:
+                # Usar worldcup26 como primário
+                result = wc_result
+                if not result.get("local") and fd_result.get("local"):
+                    result["local"] = fd_result.get("local")
+            else:
+                result = fd_result
+                if not result.get("local") and wc_result is not None:
+                    result["local"] = wc_result.get("local")
+                if not result.get("cidade") and wc_result is not None:
+                    result["cidade"] = wc_result.get("cidade")
             results.append(ResultadoResponse(sofascoreId=jogo.sofascoreId, **result))
         elif wc_result is not None:
             results.append(ResultadoResponse(sofascoreId=jogo.sofascoreId, **wc_result))
