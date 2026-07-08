@@ -117,7 +117,16 @@ def _normalize_status(status: str) -> str:
     return status_map.get(status.upper(), status.lower())
 
 
-def _derive_winner(home_score: int, away_score: int, score_winner: str) -> Optional[int]:
+def _derive_winner(home_score: int, away_score: int, score_winner: str, home_pen: Optional[int] = None, away_pen: Optional[int] = None) -> Optional[int]:
+    # Para jogos com pênaltis, o vencedor é quem ganhou os pênaltis, não o placar regular
+    if home_score == away_score and home_pen is not None and away_pen is not None:
+        if home_pen > away_pen:
+            return 1
+        elif away_pen > home_pen:
+            return 2
+        return 3  # Empate nos pênaltis (não deveria acontecer, mas por segurança)
+
+    # Para jogos sem pênaltis ou com placar diferente, usa o score_winner da API
     if score_winner == "HOME_TEAM":
         return 1
     elif score_winner == "AWAY_TEAM":
@@ -228,7 +237,7 @@ def match_game(
         "status": status,
         "local": match.get("venue"),
         "cidade": None,
-        "vencedor": _derive_winner(home_score, away_score, score_winner) if status == "finished" else None,
+        "vencedor": _derive_winner(home_score, away_score, score_winner, penalties.get("home"), penalties.get("away")) if status == "finished" else None,
         "placarPenaltisA": penalties.get("home"),
         "placarPenaltisB": penalties.get("away"),
     }

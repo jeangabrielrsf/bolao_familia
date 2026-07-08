@@ -389,6 +389,48 @@ def test_fd_regular_time_uses_fulltime_score() -> None:
     assert result["placarPenaltisB"] is None
 
 
+def test_fd_zero_zero_with_penalties_uses_penalty_winner() -> None:
+    """REGRESSÃO Bug Suíça x Colômbia: jogo 0x0 que vai para pênaltis
+    deve ter o vencedor determinado pelos pênaltis, não pelo score_winner
+    da API (que pode estar errado).
+
+    Cenário real: Suíça x Colômbia, fase de grupos, 0x0 no tempo normal.
+    Suíça venceu nos pênaltis (ex: 4-2). A API pode retornar
+    score_winner=AWAY_TEAM erroneamente, mas os pênaltis mostram que
+    home (Suíça) venceu.
+    """
+    api_match = _fd_match(
+        fd_id=999999,
+        utc_date="2026-07-07T20:00:00Z",
+        home_tla="SUI",
+        away_tla="COL",
+        home_score=0,
+        away_score=0,
+        group="GROUP_A",
+        full_time={"home": 0, "away": 0},
+        regular_time={"home": 0, "away": 0},
+        extra_time={"home": 0, "away": 0},
+        penalties={"home": 4, "away": 2},
+        duration="PENALTY_SHOOTOUT",
+    )
+    # Força score_winner=AWAY_TEAM para simular API errada
+    api_match["score"]["winner"] = "AWAY_TEAM"
+
+    result = football_data.match_game(
+        [api_match],
+        "A",
+        "2026-07-07T20:00:00+00:00",
+        time_a_tla="SUI",
+        time_b_tla="COL",
+    )
+    assert result is not None
+    assert result["resultadoA"] == 0, "Placar pré-pênaltis = 0"
+    assert result["resultadoB"] == 0
+    assert result["placarPenaltisA"] == 4
+    assert result["placarPenaltisB"] == 2
+    assert result["vencedor"] == 1, "HOME_TEAM (Suíça) venceu nos pênaltis 4-2, não AWAY_TEAM"
+
+
 def test_fd_penalty_shootout_vencedor_from_score_winner() -> None:
     """Garante que o vencedor continua vindo de score.winner (autoritativo
     da API), não da comparação de placar. Caso degenerado: placar
