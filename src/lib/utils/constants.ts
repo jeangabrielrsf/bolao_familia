@@ -60,4 +60,7 @@ export const FASE_LABELS: Record<string, string> = {
   semifinal: 'Semifinal',
   terceiro: 'Disputa pelo 3º Lugar',
   final: 'Final',
+  final_terceiro: '3º Lugar e Final',
 }
+
+export const FASE_COMBINADA_TERCEIRO_FINAL = 'final_terceiro'
