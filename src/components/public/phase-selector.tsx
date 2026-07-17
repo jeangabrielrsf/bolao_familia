@@ -1,7 +1,7 @@
 'use client'
 
 import { cn } from '@/lib/utils'
-import { FASE_LABELS } from '@/lib/utils/constants'
+import { FASE_LABELS, FASE_COMBINADA_TERCEIRO_FINAL } from '@/lib/utils/constants'
 
 interface PhaseSelectorProps {
   fasesHabilitadas: Record<string, boolean>
@@ -10,9 +10,17 @@ interface PhaseSelectorProps {
 }
 
 export function PhaseSelector({ fasesHabilitadas, faseAtual, onFaseChange }: PhaseSelectorProps) {
-  const fasesAtivas = Object.entries(fasesHabilitadas)
+  const fasesAtivasOriginal = Object.entries(fasesHabilitadas)
     .filter(([, habilitado]) => habilitado)
     .map(([fase]) => fase)
+
+  const terceiroHabilitado = fasesHabilitadas.terceiro === true
+  const finalHabilitada = fasesHabilitadas.final === true
+  const ambasHabilitadas = terceiroHabilitado && finalHabilitada
+
+  const fasesAtivas = ambasHabilitadas
+    ? [...fasesAtivasOriginal.filter((f) => f !== 'terceiro' && f !== 'final'), FASE_COMBINADA_TERCEIRO_FINAL]
+    : fasesAtivasOriginal
 
   if (fasesAtivas.length === 0) return null
 
