@@ -2,14 +2,17 @@ import { notFound } from 'next/navigation'
 import { getParticipanteById } from '@/lib/db/queries/participantes'
 import { getRanking } from '@/lib/db/queries/ranking'
 import { getConfiguracao } from '@/lib/db/queries/config'
+import { getResultadoExtras } from '@/lib/db/queries/resultados'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table'
 import { PalpitesTable } from '@/components/public/PalpitesTable'
 import { FotoPerfilModal } from '@/components/public/FotoPerfilModal'
+import { ResumoDeExtras } from '@/components/public/ResumoDeExtras'
 import { FASE_LABELS } from '@/lib/utils/constants'
 import { Trophy, Award } from 'lucide-react'
+import { calcularPontosExtra } from '@/lib/utils/helpers'
 
 export const dynamic = 'force-dynamic'
 
@@ -27,13 +30,16 @@ export default async function ParticipanteProfilePage({
   params: Promise<{ id: string }>
 }) {
   const { id } = await params
-  const [participante, ranking, config] = await Promise.all([
+  const [participante, ranking, config, resultadosExtras] = await Promise.all([
     getParticipanteById(id),
     getRanking(),
     getConfiguracao(),
+    getResultadoExtras(),
   ])
 
   if (!participante) notFound()
+
+  const resultadosExtrasMap = new Map(resultadosExtras.map(r => [r.tipo, r.valor]))
 
   const rankingEntries = ranking.filter((r) => r.participanteId === id)
   const totalPontos = rankingEntries.reduce((sum, r) => sum + r.pontos, 0)
@@ -62,6 +68,24 @@ export default async function ParticipanteProfilePage({
           </div>
         </CardContent>
       </Card>
+
+      {participante.grupos.length > 0 && (() => {
+        const primeiroGrupo = participante.grupos[0]
+        if (!primeiroGrupo || primeiroGrupo.extras.length === 0) return null
+
+        const extrasComStatus = primeiroGrupo.extras.map(extra => {
+          const valorReal = resultadosExtrasMap.get(extra.tipo) ?? null
+          const acertou = valorReal !== null ? calcularPontosExtra(extra.valor, valorReal, config, extra.tipo as 'campeao' | 'vice' | 'terceiro' | 'quarto' | 'artilheiro') > 0 : null
+          return {
+            tipo: extra.tipo,
+            valorPalpite: extra.valor,
+            valorReal,
+            acertou,
+          }
+        })
+
+        return <ResumoDeExtras extras={extrasComStatus} />
+      })()}
 
       {participante.grupos.length > 1 && (
         <Tabs defaultValue={participante.grupos[0]?.nome ?? ''}>
@@ -111,29 +135,51 @@ export default async function ParticipanteProfilePage({
                   </section>
                 )}
 
-                {grupo.extras.length > 0 && (
-                  <section className="space-y-4">
-                    <h2 className="text-2xl font-display tracking-wide">Extras</h2>
-                    <Card>
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead>Categoria</TableHead>
-                            <TableHead>Palpite</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {grupo.extras.map((extra) => (
-                            <TableRow key={extra.id}>
-                              <TableCell>{tipoExtraLabels[extra.tipo] ?? extra.tipo}</TableCell>
-                              <TableCell className="font-semibold">{extra.valor}</TableCell>
+                {grupo.extras.length > 0 && (() => {
+                  const extrasComResultado = grupo.extras
+                    .map(extra => {
+                      const valorReal = resultadosExtrasMap.get(extra.tipo) ?? null
+                      const pontos = valorReal !== null ? calcularPontosExtra(extra.valor, valorReal, config, extra.tipo as 'campeao' | 'vice' | 'terceiro' | 'quarto' | 'artilheiro') : 0
+                      return { ...extra, valorReal, pontos }
+                    })
+                    .filter(extra => extra.valorReal !== null)
+
+                  if (extrasComResultado.length === 0) return null
+
+                  return (
+                    <section className="space-y-4">
+                      <h2 className="text-2xl font-display tracking-wide">Extras</h2>
+                      <Card>
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>Categoria</TableHead>
+                              <TableHead>Palpite</TableHead>
+                              <TableHead>Resultado Oficial</TableHead>
+                              <TableHead>Status</TableHead>
                             </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
-                    </Card>
-                  </section>
-                )}
+                          </TableHeader>
+                          <TableBody>
+                            {extrasComResultado.map((extra) => (
+                              <TableRow key={extra.id}>
+                                <TableCell>{tipoExtraLabels[extra.tipo] ?? extra.tipo}</TableCell>
+                                <TableCell className="font-semibold">{extra.valor}</TableCell>
+                                <TableCell>{extra.valorReal}</TableCell>
+                                <TableCell>
+                                  {extra.pontos > 0 ? (
+                                    <Badge variant="success">✅ +{extra.pontos} pts</Badge>
+                                  ) : (
+                                    <Badge variant="destructive">❌ 0 pts</Badge>
+                                  )}
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </Card>
+                    </section>
+                  )
+                })()}
               </TabsContent>
             )
           })}
@@ -183,29 +229,51 @@ export default async function ParticipanteProfilePage({
                   </section>
                 )}
 
-                {grupo.extras.length > 0 && (
-                  <section className="space-y-4">
-                    <h2 className="text-2xl font-display tracking-wide">Palpites Extras</h2>
-                    <Card>
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead>Categoria</TableHead>
-                            <TableHead>Palpite</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {grupo.extras.map((extra) => (
-                            <TableRow key={extra.id}>
-                              <TableCell>{tipoExtraLabels[extra.tipo] ?? extra.tipo}</TableCell>
-                              <TableCell className="font-semibold">{extra.valor}</TableCell>
+                {grupo.extras.length > 0 && (() => {
+                  const extrasComResultado = grupo.extras
+                    .map(extra => {
+                      const valorReal = resultadosExtrasMap.get(extra.tipo) ?? null
+                      const pontos = valorReal !== null ? calcularPontosExtra(extra.valor, valorReal, config, extra.tipo as 'campeao' | 'vice' | 'terceiro' | 'quarto' | 'artilheiro') : 0
+                      return { ...extra, valorReal, pontos }
+                    })
+                    .filter(extra => extra.valorReal !== null)
+
+                  if (extrasComResultado.length === 0) return null
+
+                  return (
+                    <section className="space-y-4">
+                      <h2 className="text-2xl font-display tracking-wide">Palpites Extras</h2>
+                      <Card>
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>Categoria</TableHead>
+                              <TableHead>Palpite</TableHead>
+                              <TableHead>Resultado Oficial</TableHead>
+                              <TableHead>Status</TableHead>
                             </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
-                    </Card>
-                  </section>
-                )}
+                          </TableHeader>
+                          <TableBody>
+                            {extrasComResultado.map((extra) => (
+                              <TableRow key={extra.id}>
+                                <TableCell>{tipoExtraLabels[extra.tipo] ?? extra.tipo}</TableCell>
+                                <TableCell className="font-semibold">{extra.valor}</TableCell>
+                                <TableCell>{extra.valorReal}</TableCell>
+                                <TableCell>
+                                  {extra.pontos > 0 ? (
+                                    <Badge variant="success">✅ +{extra.pontos} pts</Badge>
+                                  ) : (
+                                    <Badge variant="destructive">❌ 0 pts</Badge>
+                                  )}
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </Card>
+                    </section>
+                  )
+                })()}
               </>
             )
           })()}
